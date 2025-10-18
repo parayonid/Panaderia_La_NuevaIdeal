@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil e Historial</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body { padding: 40px 20px; }
+        .user-container { max-width: 900px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
+        .user-container h1, .user-container h2 { color: #2D343C; text-align: center; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        table th, table td { border: 1px solid #ddd; padding: 12px; text-align: left; color: #333; }
+        table th { background-color: #4F231C; color: #FFFFFF; }
+    </style>
+</head>
+<body>
+    <div class="user-container">
+        <h1>Mi Perfil</h1>
+        <h2>Historial de Pedidos</h2>
+        <a href="index.html" class="btn-1" style="display: block; width: 200px; margin: 0 auto 30px; text-align: center;">Volver al Inicio</a>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID Pedido</th>
+                    <th>Fecha</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="historial-body"></tbody>
+        </table>
+    </div>
+
+    <div id="detalle-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">×</span>
+            <h3>Detalles del Pedido</h3>
+            <table id="detalle-pedido-tabla">
+                <thead>
+                    <tr>
+                        <th>Imagen</th>
+                        <th>Producto</th>
+                        <th>Precio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="js/user.js"></script>
+</body>
+</html>

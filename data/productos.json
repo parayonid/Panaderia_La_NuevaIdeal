@@ -1,0 +1,52 @@
+{
+"productos":[
+    {
+        "id":1,
+        "nombre":"Bolillo",
+        "precio":9,
+        "categoria":"pan"
+    },{
+        "id":2,
+        "nombre": "Concha",
+        "precio":10,
+        "categoria":"pan"
+
+
+
+
+    },{
+        "id":3,
+        "nombre":"Muffin",
+        "precio":10,
+        "categoria":"pan"
+    },{
+        "id":4,
+        "nombre":"Elote",
+        "precio":10,
+        "categoria":"pan"
+    },{
+        "id":5,
+        "nombre":"Mokaccino",
+        "precio":45,
+        "categoria":"cafe"
+    },{
+        "id":6,
+        "nombre":"Espresso",
+        "precio":25,
+        "categoria":"cafe"
+    },{
+        "id":7,
+        "nombre":"Capuccino",
+        "precio":55,
+        "categoria":"cafe"
+    },{
+        "id":8,
+        "nombre":"Americano",
+        "precio":35,
+        "categoria":"cafe"
+    }
+
+
+]
+
+}

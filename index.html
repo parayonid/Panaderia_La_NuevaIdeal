@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Nueva Ideal</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <header class="header">
+        <div class="menu container">
+            <a href="index.html" class="logo">
+                <img src="images/images/new_ideal.svg" alt="Logo de la panadería">
+            </a>
+
+            <input type="checkbox" id="menu" />
+            <label for="menu">
+                <img src="images/images/menu.png" class="menu-icono" alt="">
+            </label>
+
+            <nav class="navbar">
+                <ul>
+                    <li><a href="#">Inicio</a></li>
+                    <li><a href="#servicios">Servicios</a></li>
+                    <li><a href="#lista-1">Productos</a></li>
+                    <li><a href="#footer">Contacto</a></li>
+                </ul>
+            </nav>
+
+            <div class="header-icons">
+                <a href="views/admin.html" class="nav-icon" title="Panel de Administración">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-gear-fill" viewBox="0 0 16 16"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311a1.464 1.464 0 0 1-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413-1.4-2.397 0-2.81l.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" /></svg>
+                </a>
+                <a href="views/user.html" class="nav-icon" title="Mi Perfil e Historial">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-person-fill" viewBox="0 0 16 16"><path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" /></svg>
+                </a>
+                <ul>
+                    <li class="submenu">
+                        <img src="images/images/car.svg" id="ig-carrito" alt="Carrito de compras">
+                        <div id="carrito">
+                            <table id="lista-carrito">
+                                <thead><tr><th>Imagen</th><th>Nombre</th><th>Precio</th><th></th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                            <a href="#" id="vaciar-carrito" class="btn-2">Vaciar carrito</a>
+                            <div id="checkout"><p>Total: $<span id="total">0</span></p><a href="#" id="finalizar-compra" class="btn-2">Finalizar compra</a></div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="header-content container">
+            <div class="header-txt"><h1>La nueva ideal</h1><p>Pan calientito las 24 horas del día...</p><a href="#lista-1" class="btn-1">Sección menú</a></div>
+        </div>
+    </header>
+
+    <main>
+        <section class="icons">
+            <div class="icon"><img src="images/images/i1.svg" alt=""></div><div class="icon"><img src="images/images/i2.svg" alt=""></div><div class="icon"><img src="images/images/i3.svg" alt=""></div><div class="icon"><img src="images/images/i4.svg" alt=""></div><div class="icon"><img src="images/images/i5.svg" alt=""></div><div class="icon"><img src="images/images/i6.svg" alt=""></div><div class="icon"><img src="images/images/i7.svg" alt=""></div><div class="icon"><img src="images/images/i8.svg" alt=""></div><div class="icon"><img src="images/images/i9.svg" alt=""></div><div class="icon"><img src="images/images/i10.svg" alt=""></div>
+        </section>
+
+        <section class="products container" id="lista-1">
+            <h2>Panes</h2>
+            <div class="products-content">
+                <div class="product"><img src="images/images/bolillo.jpg" alt="Bolillo"><div class="product-txt"><h3>Bolillo</h3><p>calidad premium</p><p class="precio">$10</p><a href="#" class="agregar-carrito btn-2" data-id="1">agregar al carrito</a></div></div>
+                <div class="product"><img src="images/images/concha.jpg" alt="Concha"><div class="product-txt"><h3>Concha</h3><p>calidad premium</p><p class="precio">$10</p><a href="#" class="agregar-carrito btn-2" data-id="2">agregar al carrito</a></div></div>
+                <div class="product"><img src="images/images/elote.jpg" alt="Pan de elote"><div class="product-txt"><h3>Elote</h3><p>calidad premium</p><p class="precio">$10</p><a href="#" class="agregar-carrito btn-2" data-id="3">agregar al carrito</a></div></div>
+                <div class="product"><img src="images/images/pay queso.jpg" alt="Pay de queso"><div class="product-txt"><h3>Pay de Queso</h3><p>calidad premium</p><p class="precio">$10</p><a href="#" class="agregar-carrito btn-2" data-id="4">agregar al carrito</a></div></div>
+                <div class="product"><img src="images/images/muffin.jpg" alt="Muffin"><div class="product-txt"><h3>Muffin</h3><p>calidad premium</p><p class="precio">$10</p><a href="#" class="agregar-carrito btn-2" data-id="5">agregar al carrito</a></div></div>
+            </div>
+        </section>
+
+        <section class="products container" id="lista-2">
+            <h2>Cafés</h2>
+            <div class="products-content">
+                <div class="product"><img src="images/images/americano.jpeg" alt="Café Americano"><div class="product-txt"><h3>Americano</h3><p>calidad premium</p><p class="precio">$10</p><a href="#" class="agregar-carrito btn-2" data-id="6">agregar al carrito</a></div></div>
+                <div class="product"><img src="images/images/espresso.jpg" alt="Café Espresso"><div class="product-txt"><h3>Espresso</h3><p>calidad premium</p><p class="precio">$10</p><a href="#" class="agregar-carrito btn-2" data-id="7">agregar al carrito</a></div></div>
+                <div class="product"><img src="images/images/capuccino.png" alt="Capuccino"><div class="product-txt"><h3>Capuccino</h3><p>calidad premium</p><p class="precio">$10</p><a href="#" class="agregar-carrito btn-2" data-id="8">agregar al carrito</a></div></div>
+                <div class="product"><img src="images/images/mokaccino.jpg" alt="Mokaccino"><div class="product-txt"><h3>Mokaccino</h3><p>calidad premium</p><p class="precio">$10</p><a href="#" class="agregar-carrito btn-2" data-id="9">agregar al carrito</a></div></div>
+                <div class="product"><img src="images/images/latte.jpg" alt="Café Latte"><div class="product-txt"><h3>Latte</h3><p>calidad premium</p><p class="precio">$10</p><a href="#" class="agregar-carrito btn-2" data-id="10">agregar al carrito</a></div></div>
+            </div>
+        </section>
+
+        <section class="services" id="servicios">
+            <div class="services-content container">
+                <div class="service">
+                    <h3>Eventos Especiales</h3><hr>
+                    <p>Celebra con nosotros. Ofrecemos catering de pan dulce, pasteles y café para tus reuniones, bodas o eventos corporativos.</p>
+                </div>
+                <div class="service">
+                    <h3>Pedidos Personalizados</h3><hr>
+                    <p>¿Tienes un antojo especial? Hacemos pasteles y panes sobre pedido. Contáctanos para cotizar esa idea que tienes en mente.</p>
+                </div>
+                <div class="service">
+                    <h3>Café de Especialidad</h3><hr>
+                    <p>Trabajamos con granos de café de la más alta calidad, tostados localmente para garantizar una taza fresca y llena de sabor.</p>
+                </div>
+                <div class="service">
+                    <h3>Entregas a Domicilio</h3><hr>
+                    <p>Disfruta de nuestro pan calientito sin salir de casa. Consulta nuestras zonas de reparto y haz tu pedido en línea.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer container" id="footer">
+        <div class="footer-content">
+            <div class="link">
+                <h3>Navegación</h3>
+                <ul>
+                    <li><a href="#">Inicio</a></li>
+                    <li><a href="#servicios">Servicios</a></li>
+                    <li><a href="#lista-1">Productos</a></li>
+                    <li><a href="user.html">Mi Perfil</a></li>
+                </ul>
+            </div>
+            <div class="link">
+                <h3>Sobre Nosotros</h3>
+                <ul>
+                    <li><a href="#">Nuestra Historia</a></li>
+                    <li><a href="#">Trabaja con Nosotros</a></li>
+                    <li><a href="#">Prensa</a></li>
+                </ul>
+            </div>
+            <div class="link">
+                <h3>Contáctanos</h3>
+                <div class="contact-info">
+                    <a href="https://wa.me/524491725935" target="_blank">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-whatsapp" viewBox="0 0 16 16">
+                            <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
+                        </svg>
+                        <span>449 172 5935</span>
+                    </a>
+                </div>
+                <form class="contact-form" onsubmit="event.preventDefault(); alert('¡Gracias por tu mensaje!'); this.reset();">
+                    <input type="text" name="name" placeholder="Tu Nombre" required>
+                    <input type="email" name="email" placeholder="Tu Correo Electrónico" required>
+                    <textarea name="message" rows="4" placeholder="Escribe tu mensaje aquí..." required></textarea>
+                    <input type="submit" value="Enviar Mensaje" class="btn-1">
+                </form>
+            </div>
+        </div>
+        <div class="map-container">
+            <h3>Nuestra Ubicación</h3>
+            <img src="images/ubicacion.jpeg" alt="Mapa de ubicación de La Nueva Ideal">
+        </div>
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

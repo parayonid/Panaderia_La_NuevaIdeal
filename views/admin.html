@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body { padding: 40px 20px; }
+        .admin-container { max-width: 900px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
+        .admin-container h1 { color: #2D343C; text-align: center; }
+        .stats-cards { display: flex; justify-content: space-around; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+        .card { background-color: #f4f4f4; padding: 20px; border-radius: 8px; text-align: center; flex: 1; min-width: 200px; }
+        .card h3 { color: #F35200; }
+        .card p { font-size: 24px; font-weight: bold; color: #2D343C; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        table th, table td { border: 1px solid #ddd; padding: 12px; text-align: left; color: #333; }
+        table th { background-color: #4F231C; color: #FFFFFF; }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <h1>Panel de Administración</h1>
+        <a href="index.html" class="btn-1" style="display: block; width: 200px; margin: 0 auto 30px; text-align: center;">Volver al Inicio</a>
+        <div class="form-container">
+            <h2>Añadir/Modificar Producto</h2>
+            <form id="form-nuevo-producto">
+                <input type="hidden" id="producto-id">
+                <input type="text" id="nombre-producto" placeholder="Nombre del producto" required>
+                <input type="number" id="cantidad-producto" placeholder="Cantidad en stock" required min="0">
+                <button type="submit" class="btn-1">Guardar Producto</button>
+            </form>
+        </div>
+        <h2>Stock de Productos</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="stock-body"></tbody>
+        </table>
+    </div>
+    <script src="js/admin.js"></script>
+</body>
+</html>

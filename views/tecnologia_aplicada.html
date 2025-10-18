@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+   <link rel="stylesheet" href="style.css"> 
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Integración Tecnológica (Simulada) — Proyecto NE I</title>
+</head>
+<body>
+  <header>
+    <h1>Integración Tecnológica (Simulada) — Proyecto Panaderia la Nueva Ideal</h1>
+  </header>
+
+  <main>
+    
+    <section class="section" aria-labelledby="plataformas">
+      <h2 id="plataformas">¿Con qué plataforma se integraría “si fuera real”?</h2>
+      <p class="muted">Este proyecto es 100% front-end (sin back). A continuación se muestra, <strong>de forma informativa</strong>, con qué plataforma podría integrarse en un despliegue real y cómo se verían los flujos conectados.</p>
+
+      <div class="grid cols-2" role="list">
+        <!-- Opción abierta -->
+        <article class="card" role="listitem" aria-label="Plataforma abierta">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <h3 style="margin:0;">Opción A — WordPress + WooCommerce</h3>
+            <span class="badge primary">Abierta</span>
+          </div>
+          <p class="muted">Tienda y contenido administrables, gran ecosistema de plugins, bajo costo inicial.</p>
+          <ul class="list">
+            <li>✔ Integración por REST API (JSON).</li>
+            <li>✔ Personalización alta (temas/plantillas).</li>
+            <li>⚠ Requiere mantenimiento y actualizaciones.</li>
+          </ul>
+          <a class="cta" href="#demo-admin" aria-describedby="nota1">Ver “Admin (simulado)”</a>
+          <p id="nota1" class="footnote">Navegación a pantallas simuladas — no hay servidor.</p>
+        </article>
+
+        <!-- Opción cerrada -->
+        <article class="card" role="listitem" aria-label="Plataforma cerrada">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <h3 style="margin:0;">Opción B — Shopify</h3>
+            <span class="badge">Cerrada</span>
+          </div>
+          <p class="muted">Arranque muy rápido y hosting incluido; menor flexibilidad avanzada; suscripción mensual.</p>
+          <ul class="list">
+            <li>✔ Checkout nativo y seguro.</li>
+            <li>✔ Apps para ampliar funciones.</li>
+            <li>⚠ Dependencia de proveedor (lock-in) y costos.</li>
+          </ul>
+          <a class="cta" href="#demo-admin" aria-describedby="nota2">Ver “Admin (simulado)”</a>
+          <p id="nota2" class="footnote">Las pantallas son maquetas para demostrar flujo.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="flujos">
+      <h2 id="flujos">Flujos ya simulados en el Front</h2>
+      <p class="muted">Estos flujos funcionan sin back-end, usando datos de ejemplo y navegación entre pantallas.</p>
+
+      <div class="grid cols-2">
+        <div class="card">
+          <h3 style="margin-top:0;">Cara al cliente (E-commerce)</h3>
+          <div class="checklist">
+            <label class="row"><input type="checkbox" checked disabled> Catálogo desde JSON</label>
+            <label class="row"><input type="checkbox" checked disabled> Detalle de producto</label>
+            <label class="row"><input type="checkbox" checked disabled> Carrito (localStorage)</label>
+            <label class="row"><input type="checkbox" checked disabled> Checkout con confirmación (simulado)</label>
+          </div>
+          <p class="footnote">*Los datos se cargan con <span class="code">fetch('/src/data/products.json')</span>.</p>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top:0;">Back-office (E-business, simulado)</h3>
+          <div class="checklist">
+            <label class="row"><input type="checkbox" checked disabled> Dashboard con KPIs mock (indicador de performance)</label>
+            <label class="row"><input type="checkbox" checked disabled> Inventario (tabla editable ficticia)</label>
+            <label class="row"><input type="checkbox" checked disabled> Órdenes (lista mock + detalle)</label>
+            <label class="row"><input type="checkbox" checked disabled> Soporte (formulario con éxito simulado)</label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  
+    <section id="demo-admin" class="section" aria-labelledby="admin">
+      <h2 id="admin">Vistas de “Administración” (Simuladas, sin back)</h2>
+      <p class="muted">Estas pantallas sólo demuestran cómo sería la interfaz si se conectara a una plataforma (abierta o cerrada). No guardan cambios.</p>
+
+      <details class="card">
+        <summary>Inventario — actualizar stock (mock)</summary>
+        <div style="margin-top:12px;">
+          <div class="kpis">
+            <div class="kpi"><div class="n">126</div><div class="muted">SKUs</div></div>
+            <div class="kpi"><div class="n">23</div><div class="muted">Bajo stock</div></div>
+            <div class="kpi"><div class="n ok">+8%</div><div class="muted">Rotación</div></div>
+            <div class="kpi"><div class="n warn">7</div><div class="muted">Alertas</div></div>
+          </div>
+          <p class="muted">Tabla (mock):</p>
+          <div class="code" role="table" aria-label="Tabla de inventario simulada">
+            <div>SKU-001 | Conchas de Nata | Stock: 12 <span class="pill"><span>Actualizar</span></span></div>
+            <div>SKU-002 | Bocados de Salami | Stock: 5  <span class="pill"><span>Actualizar</span></span></div>
+            <div>SKU-003 | Bolillo | Stock: 0  <span class="pill danger">Reabastecer</span></div>
+          </div>
+          <p class="footnote">Acciones muestran un modal/alerta falsa de confirmación (no persiste).</p>
+        </div>
+      </details>
+
+      <details class="card">
+        <summary>Órdenes — ver detalle (mock)</summary>
+        <div style="margin-top:12px;">
+          <div class="code" role="list">
+            <div role="listitem">ORD-9842 — <strong>$45</strong> — 2 artículos — <span class="ok">Pagada</span> — <span class="pill">Ver detalle</span></div>
+            <div role="listitem">ORD-9843 — <strong>$18</strong> — 1 artículo — <span class="warn">Pendiente</span> — <span class="pill">Ver detalle</span></div>
+          </div>
+          <p class="footnote">En un despliegue real, esto vendría de la API de la plataforma elegida.</p>
+        </div>
+      </details>
+    </section>
+
+  
+  </main>
+</body>
+</html>
