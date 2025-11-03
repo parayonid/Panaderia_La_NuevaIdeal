@@ -10,16 +10,16 @@
         .admin-container h1 { color: #2D343C; text-align: center; }
         .admin-container h2 { color: #2D343C; text-align: left; margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px;} /* Estilo añadido para separar secciones */
         
-    
+        /* ESTILOS PARA EL DASHBOARD DE MÉTRICAS (Ya los tenías) */
         .stats-cards { display: flex; justify-content: space-around; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
         .card { background-color: #f4f4f4; padding: 20px; border-radius: 8px; text-align: center; flex: 1; min-width: 150px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); } /* Ajuste de tamaño y sombra */
         .card h3 { color: #F35200; margin: 0 0 10px; font-size: 1rem; }
         .card p { font-size: 24px; font-weight: bold; color: #2D343C; margin: 0; }
         
-       
+        /* --- ESTILOS PARA SEGUIMIENTO DE PEDIDOS (ADMIN) --- */
         .tracking-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Grid responsivo */
             gap: 20px;
             margin-bottom: 30px;
         }
@@ -69,7 +69,7 @@
             display: inline-block;
             min-width: 90px; /* Alinea los valores */
         }
-        /* --- FIN DE NUEVOS ESTILOS DE SEGUIMIENTO --- */
+        /* --- FIN DE ESTILOS DE SEGUIMIENTO --- */
 
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         table th, table td { border: 1px solid #ddd; padding: 12px; text-align: left; color: #333; }
@@ -105,43 +105,12 @@
         </div>
 
         <h2>Seguimiento de Pedidos Activos (Simulado)</h2>
-        <div class="tracking-container">
-            
-            <div class="tracking-card">
-                <div class="tracking-header">
-                    <h4>Pedido #1023 (En Reparto)</h4>
-                    <span class="platform-tag platform-uber">Uber Eats</span>
-                </div>
-                <ul class="tracking-details">
-                    <li><strong>Transportista:</strong> <strong>Juan Pérez</strong></li>
-                    <li><strong>Vehículo:</strong> Motocicleta Italika</li>
-                    <li><strong>Placas:</strong> ABC-123</li>
-                </ul>
+        <div class="tracking-container" id="tracking-container">
             </div>
 
-            <div class="tracking-card">
-                <div class="tracking-header">
-                    <h4>Pedido #1022 (Preparando)</h4>
-                    <span class="platform-tag platform-didi">DiDi Food</span>
-                </div>
-                <ul class="tracking-details">
-                    <li><strong>Transportista:</strong> <strong>Ana Gómez</strong></li>
-                    <li><strong>Vehículo:</strong> Auto Nissan Versa</li>
-                    <li><strong>Placas:</strong> XYZ-789</li>
-                </ul>
-            </div>
-
-            <div class="tracking-card">
-                <div class="tracking-header">
-                    <h4>Pedido #1021 (Nuevo)</h4>
-                    <span class="platform-tag platform-pending">Pendiente</span>
-                </div>
-                <ul class="tracking-details">
-                    <li>Asignando repartidor...</li>
-                </ul>
-            </div>
-        </div>
-        <a href="../index.html" class="btn-1" style="display: block; width: 200px; margin: 0 auto 30px; text-align: center;">Volver al Inicio</a> <div class="form-container">
+        <a href="../index.html" class="btn-1" style="display: block; width: 200px; margin: 0 auto 30px; text-align: center;">Volver al Inicio</a> 
+        
+        <div class="form-container">
             <h2>Añadir/Modificar Producto</h2>
             <form id="form-nuevo-producto">
                 <input type="hidden" id="producto-id">
@@ -164,5 +133,6 @@
             <tbody id="stock-body"></tbody>
         </table>
     </div>
-    <script src="../js/admin.js"></script> </body>
+    <script src="../js/admin.js"></script> 
+</body>
 </html>
