@@ -11,6 +11,59 @@
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         table th, table td { border: 1px solid #ddd; padding: 12px; text-align: left; color: #333; }
         table th { background-color: #4F231C; color: #FFFFFF; }
+
+        /* --- NUEVOS ESTILOS --- */
+        
+        /* Estilo para el nuevo botón de seguimiento */
+        .btn-ver-seguimiento { background-color: #f39c12; }
+        .btn-ver-seguimiento:hover { background-color: #d68910; }
+
+        /* Estilos para el flujo de seguimiento visual */
+        .tracker-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+        .tracker-list li {
+            position: relative;
+            padding: 10px 10px 10px 40px; /* Espacio para el ícono */
+            border-bottom: 1px solid #eee;
+            font-size: 16px;
+        }
+        .tracker-list li:last-child {
+            border-bottom: none;
+        }
+        /* Círculo e ícono */
+        .tracker-list li::before {
+            content: '✔';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+        
+        /* Estilo para pasos completados */
+        .tracker-list li.step-completed {
+            color: #333;
+        }
+        .tracker-list li.step-completed::before {
+            background-color: #16a085; /* Verde (mismo que .btn-ver-detalles) */
+            color: white;
+        }
+        .tracker-list li.step-completed .step-time {
+            font-size: 0.9em;
+            color: #777;
+        }
+        /* --- FIN DE NUEVOS ESTILOS --- */
+
     </style>
 </head>
 <body>
@@ -46,6 +99,32 @@
                 <tbody>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <div id="seguimiento-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">×</span>
+            <h3 id="seguimiento-titulo">Seguimiento del Pedido</h3>
+            
+            <ul class="tracker-list">
+                <li class="step-completed">
+                    <div><strong>Pedido Recibido</strong></div>
+                    <div class="step-time">08/10/2025, 10:30 AM</div>
+                </li>
+                <li class="step-completed">
+                    <div><strong>Pedido en Preparación</strong></div>
+                    <div class="step-time">08/10/2025, 10:45 AM</div>
+                </li>
+                <li class="step-completed">
+                    <div><strong>En Reparto</strong></div>
+                    <div class="step-time">08/10/2025, 11:15 AM</div>
+                </li>
+                <li class="step-completed">
+                    <div><strong>Entregado</strong></div>
+                    <div class="step-time">08/10/2025, 11:40 AM</div>
+                </li>
+            </ul>
         </div>
     </div>
 
