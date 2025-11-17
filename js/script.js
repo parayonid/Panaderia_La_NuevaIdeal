@@ -1,4 +1,26 @@
-// script.js (Versión Definitiva)
+// --- 1. GESTOR DE CONSENTIMIENTO ---
+document.addEventListener('DOMContentLoaded', () => {
+    const banner = document.getElementById('cookie-banner');
+    const acceptBtn = document.getElementById('cookie-accept');
+    
+    // Revisar si el usuario ya ha dado su consentimiento
+    const consentimiento = localStorage.getItem('cookieConsent');
+
+    if (consentimiento !== 'true') {
+        // Si no ha aceptado, mostramos el banner
+        banner.style.display = 'flex';
+    }
+
+    // Manejador para el botón de ACEPTAR
+    acceptBtn.addEventListener('click', () => {
+        localStorage.setItem('cookieConsent', 'true');
+        banner.style.display = 'none';
+    });
+});
+
+
+// --- 2. FUNCIONES PRINCIPALES DEL CARRITO ---
+// (Estas funciones se cargan siempre)
 
 const carrito = document.getElementById('carrito');
 const elementos1 = document.getElementById('lista-1');
@@ -7,6 +29,8 @@ const lista = document.querySelector('#lista-carrito tbody');
 const vaciarCarritoBtn = document.getElementById('vaciar-carrito');
 const total = document.getElementById('total');
 const finalizarCompraBtn = document.getElementById('finalizar-compra');
+
+cargarEventListeners(); // Llamamos a las funciones del carrito al cargar la página
 
 function cargarEventListeners() {
     elementos1.addEventListener('click', comprarElemento);
@@ -104,7 +128,7 @@ function finalizarCompra(e) {
         fecha: new Date().toLocaleDateString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit' }),
         total: totalCompra,
         estado: 'Entregado',
-        items: itemsComprados // Esta es la información clave que debe guardarse
+        items: itemsComprados
     };
 
     pedidosHistorial.push(nuevoPedido);
@@ -112,6 +136,3 @@ function finalizarCompra(e) {
     alert(`Gracias por tu compra. Total pagado: $${totalCompra.toFixed(2)}`);
     vaciarCarrito();
 }
-
-// Iniciar los listeners
-cargarEventListeners();
