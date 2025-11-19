@@ -1,20 +1,20 @@
-// --- 1. GESTOR DE CONSENTIMIENTO ---
+// --- 1. GESTOR DE CONSENTIMIENTO (MODO DEMOSTRACIÓN) ---
 document.addEventListener('DOMContentLoaded', () => {
     const banner = document.getElementById('cookie-banner');
     const acceptBtn = document.getElementById('cookie-accept');
     
-    // Revisar si el usuario ya ha dado su consentimiento
-    const consentimiento = localStorage.getItem('cookieConsent');
-
-    if (consentimiento !== 'true') {
-        // Si no ha aceptado, mostramos el banner
-        banner.style.display = 'flex';
-    }
+    // AL SER UNA SIMULACIÓN:
+    // Forzamos que el banner se muestre SIEMPRE al cargar la página,
+    // ignorando si el usuario ya aceptó anteriormente.
+    banner.style.display = 'flex';
 
     // Manejador para el botón de ACEPTAR
     acceptBtn.addEventListener('click', () => {
-        localStorage.setItem('cookieConsent', 'true');
+       
         banner.style.display = 'none';
+        
+       
+        localStorage.setItem('cookieConsent', 'true');
     });
 });
 
