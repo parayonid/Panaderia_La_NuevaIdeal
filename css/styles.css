@@ -80,7 +80,7 @@ hr { width: 100px; border: 2px solid #F35200; margin-left: 0; }
 .contact-form input[type="text"], .contact-form input[type="email"], .contact-form textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: 'Poppins', sans-serif; font-size: 14px; }
 .contact-form input[type="submit"] { border: none; cursor: pointer; width: 100%; }
 
-/* --- NUEVO: Estilos para el BANNER de Cookies (Estilo Oscuro) --- */
+/* --- ESTILOS PARA EL BANNER DE COOKIES (OSCURO) --- */
 .cookie-banner-dark {
     position: fixed;
     bottom: 0;
@@ -124,7 +124,71 @@ hr { width: 100px; border: 2px solid #F35200; margin-left: 0; }
 .btn-cookie-accept-dark:hover {
     background-color: #e0e0e0; /* Un gris claro al pasar el mouse */
 }
-/* --- FIN: Estilos de BANNER de Cookies --- */
+
+/* --- ESTILOS CHECKOUT AVANZADO --- */
+.checkout-content {
+    width: 90%;
+    max-width: 900px;
+    background: #fff;
+    color: #333;
+}
+.checkout-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+}
+.checkout-section {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    margin-bottom: 15px;
+}
+.checkout-section h3 {
+    margin-top: 0;
+    color: #4F231C;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+}
+.payment-option {
+    display: block;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    cursor: pointer;
+    background: #fff;
+}
+.payment-option:hover {
+    background: #f0f0f0;
+}
+.payment-details {
+    padding: 10px;
+    background: #eef;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+.qr-placeholder {
+    text-align: center;
+    margin-top: 5px;
+}
+.badge-wallet {
+    background: #27ae60;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    margin-left: 10px;
+}
+.checkout-right {
+    background: #4F231C;
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    height: fit-content;
+}
 
 @media(max-width: 991px) {
     .menu { padding: 20px; } .menu label { display: initial; } .menu .navbar { position: absolute; top: 100%; left: 0; right: 0; background-color: #2D343C; display: none; } .menu .navbar ul li { width: 100%; }
@@ -132,10 +196,13 @@ hr { width: 100px; border: 2px solid #F35200; margin-left: 0; }
     .products-content { grid-template-columns: 1fr; } .services { padding: 30px; margin: 0; } .services-content { grid-template-columns: 1fr; }
     .footer-content { flex-direction: column; text-align: center; } .link ul { padding-left: 0; } .contact-info a { justify-content: center; }
     
-    /* --- Ajuste responsivo del banner --- */
+    /* --- Ajustes responsivos --- */
     .cookie-banner-dark {
         flex-direction: column;
         text-align: center;
         gap: 20px;
+    }
+    .checkout-grid {
+        grid-template-columns: 1fr;
     }
 }
