@@ -121,17 +121,6 @@
                 <div class="checkout-left">
                     
                     <div class="checkout-section">
-                        <h3>❤ Donaciones</h3>
-                        <label class="row">
-                            <input type="checkbox" id="donate-check"> 
-                            Deseo donar a la fundación "Pan para Todos"
-                        </label>
-                        <div id="donation-input-container" style="display:none; margin-top:10px;">
-                            <input type="number" id="donation-amount" placeholder="Monto a donar ($)" min="1" value="10">
-                        </div>
-                    </div>
-
-                    <div class="checkout-section">
                         <h3>📄 Datos Fiscales</h3>
                         <label class="row">
                             <input type="checkbox" id="invoice-check"> 
@@ -199,24 +188,56 @@
                     <hr>
                     <p style="font-size: 1.2rem; font-weight: bold;">Total a Pagar: $<span id="checkout-total">0.00</span></p>
                     <button class="btn-1" id="btn-pay-now" style="width:100%; margin-top:20px;">Pagar Ahora</button>
+                    
+                    <div class="checkout-policies">
+                        <small>
+                            * Al confirmar, aceptas que los productos perecederos no tienen devolución. 
+                            Revisa nuestras <a href="views/devoluciones.html" target="_blank" style="color: #fff; text-decoration: underline;">políticas de venta</a>.
+                        </small>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div id="notification-modal" class="modal" style="display: none; z-index: 3000;">
-        <div class="modal-content" style="text-align: center; max-width: 400px;">
-            <h3 id="notif-title">Estado del Pago</h3>
-            <p id="notif-message">Procesando...</p>
-            
-            <div id="invoice-buttons" style="display:none; gap:10px; justify-content:center; margin-top:15px;">
-                <button class="btn-2" onclick="alert('Imprimiendo factura...')">🖨 Imprimir Factura</button>
-                <button class="btn-2" onclick="alert('Factura enviada por correo.')">✉ Enviar por Correo</button>
+            <div class="checkout-footer-donation">
+                <h3>❤ ¿Deseas apoyar nuestra causa?</h3>
+                <label class="row" style="justify-content: center;">
+                    <input type="checkbox" id="donate-check"> 
+                    Deseo donar a la fundación "Pan para Todos"
+                </label>
+                <div id="donation-input-container" style="display:none; margin-top:10px;">
+                    <input type="number" id="donation-amount" placeholder="Monto a donar ($)" min="1" value="10" style="width: 150px; text-align: center;">
+                </div>
             </div>
 
-            <button class="btn-1" id="close-notification" style="margin-top:20px;">Cerrar</button>
         </div>
     </div>
+
+    <div id="invoice-modal" class="modal" style="display: none; z-index: 3001;">
+        <div class="modal-content" style="text-align: center; max-width: 500px;">
+            <h3 style="color: #27ae60;">¡Pago Exitoso!</h3>
+            <p>Gracias por tu compra. Hemos generado tu factura.</p>
+            <p>Selecciona una opción:</p>
+            
+            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+                <button class="btn-1" id="btn-email-invoice">✉ Enviar por Correo</button>
+                <button class="btn-2" id="btn-download-invoice">⬇ Descargar PDF/XML</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="receipt-modal" class="modal" style="display: none; z-index: 3001;">
+        <div class="modal-content" style="text-align: center; max-width: 400px; border: 2px dashed #4F231C;">
+            <h3 style="color: #4F231C;">RECIBO DE COMPRA</h3>
+            <p style="font-size: 0.9rem; color: #555;">La Nueva Ideal</p>
+            <hr style="border: 0; border-top: 1px dashed #ccc; margin: 10px 0;">
+            <p><strong>Fecha:</strong> <span id="receipt-date"></span></p>
+            <p><strong>Folio:</strong> #<span id="receipt-id"></span></p>
+            <p style="font-size: 1.2rem; margin: 15px 0;"><strong>Total Pagado: $<span id="receipt-total"></span></strong></p>
+            <p style="font-size: 0.8rem;">Gracias por su preferencia.<br>Este no es un comprobante fiscal.</p>
+            <button class="btn-1" id="close-receipt" style="margin-top: 15px;">Cerrar</button>
+        </div>
+    </div>
+
     <footer class="footer container" id="footer">
         <div class="footer-content">
             <div class="link">

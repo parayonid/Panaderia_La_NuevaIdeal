@@ -169,13 +169,20 @@ function actualizarTotalCheckout() {
     checkoutTotal.textContent = (subtotal + donation).toFixed(2);
 }
 
-// --- 4. PROCESAMIENTO DEL PAGO (CON EXCEPCIONES Y MODALES) ---
+// --- 4. PROCESAMIENTO DEL PAGO (CON NUEVOS MODALES DE FACTURA/RECIBO) ---
 
-const notifModal = document.getElementById('notification-modal');
-const notifTitle = document.getElementById('notif-title');
-const notifMessage = document.getElementById('notif-message');
-const invoiceButtons = document.getElementById('invoice-buttons');
-const closeNotif = document.getElementById('close-notification');
+const invoiceModal = document.getElementById('invoice-modal');
+const receiptModal = document.getElementById('receipt-modal');
+const btnEmailInvoice = document.getElementById('btn-email-invoice');
+const btnDownloadInvoice = document.getElementById('btn-download-invoice');
+const btnCloseReceipt = document.getElementById('close-receipt');
+
+// Botones de acción Factura
+btnEmailInvoice.addEventListener('click', () => { alert('¡Factura enviada a tu correo con éxito!'); invoiceModal.style.display = 'none'; });
+btnDownloadInvoice.addEventListener('click', () => { alert('Descargando factura en PDF...'); invoiceModal.style.display = 'none'; });
+// Botón cerrar Recibo
+btnCloseReceipt.addEventListener('click', () => { receiptModal.style.display = 'none'; });
+
 
 btnPayNow.addEventListener('click', () => {
     const metodoPago = document.querySelector('input[name="payment-method"]:checked').value;
@@ -184,7 +191,7 @@ btnPayNow.addEventListener('click', () => {
     // Validación Monedero
     if (metodoPago === 'wallet') {
         if (saldoMonedero < totalPagar) {
-            mostrarNotificacion("Error de Pago", "Saldo insuficiente en monedero.", false, false);
+            alert("Error: Saldo insuficiente en monedero.");
             return;
         }
     }
@@ -207,28 +214,32 @@ btnPayNow.addEventListener('click', () => {
         const exito = Math.random() > 0.2; 
 
         if (exito) {
-            // ÉXITO
+            // ÉXITO - Guardamos datos
             if (metodoPago === 'wallet') {
                 saldoMonedero -= totalPagar;
                 localStorage.setItem('saldoMonedero', saldoMonedero);
                 document.getElementById('wallet-balance').textContent = saldoMonedero.toFixed(2);
             }
-            
-            guardarPedido(totalPagar);
-            
-            // Mostrar modal de éxito con botones de factura si aplica
-            const msg = invoiceCheck.checked 
-                ? "¡Pago exitoso! Tu factura está lista." 
-                : "¡Pago exitoso! Gracias por tu compra.";
-                
-            mostrarNotificacion("Pago Aprobado", msg, true, invoiceCheck.checked);
-            
+            const nuevoId = Date.now();
+            guardarPedido(totalPagar, nuevoId);
             checkoutModal.style.display = 'none';
             vaciarCarrito();
 
+            // DECISIÓN: ¿Mostrar Factura o Recibo?
+            if (invoiceCheck.checked) {
+                // Opción A: Factura
+                invoiceModal.style.display = 'block';
+            } else {
+                // Opción B: Recibo Genérico
+                document.getElementById('receipt-date').textContent = new Date().toLocaleDateString('es-MX');
+                document.getElementById('receipt-id').textContent = nuevoId;
+                document.getElementById('receipt-total').textContent = totalPagar.toFixed(2);
+                receiptModal.style.display = 'block';
+            }
+
         } else {
             // FALLO (Simulación)
-            mostrarNotificacion("Error", "El pago no se procesó. Intente con otro método.", false, false);
+            alert("Error: El pago no se procesó. Intente con otro método.");
         }
 
         btnPayNow.textContent = "Pagar Ahora";
@@ -237,21 +248,8 @@ btnPayNow.addEventListener('click', () => {
     }, 2000); // 2 segundos de espera simulada
 });
 
-function mostrarNotificacion(titulo, mensaje, esExito, mostrarFactura) {
-    notifTitle.textContent = titulo;
-    notifMessage.textContent = mensaje;
-    
-    notifTitle.style.color = esExito ? "green" : "red";
-    invoiceButtons.style.display = mostrarFactura ? "flex" : "none";
-    
-    notifModal.style.display = 'block';
-}
 
-closeNotif.addEventListener('click', () => {
-    notifModal.style.display = 'none';
-});
-
-function guardarPedido(total) {
+function guardarPedido(total, idGenerado) {
     let pedidosHistorial = JSON.parse(localStorage.getItem('pedidosHistorial')) || [];
     const itemsComprados = [];
 
@@ -268,7 +266,7 @@ function guardarPedido(total) {
     });
 
     const nuevoPedido = {
-        id: Date.now(),
+        id: idGenerado,
         fecha: new Date().toLocaleDateString('es-MX'),
         total: total,
         estado: 'Entregado', // En un sistema real sería "Pagado/Pendiente"
