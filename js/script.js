@@ -94,19 +94,21 @@ function actualizarTotal() {
     total.textContent = totalSuma.toFixed(2);
 }
 
-// --- 3. LÓGICA DEL NUEVO CHECKOUT (DONACIONES, FISCAL, PAGO) ---
+// --- 3. LÓGICA DEL NUEVO CHECKOUT (FISCAL, PAGO Y DONACIÓN EN FOOTER) ---
 
 const checkoutModal = document.getElementById('checkout-modal');
 const closeCheckout = document.getElementById('close-checkout');
 const btnPayNow = document.getElementById('btn-pay-now');
 
 // Inputs Checkout
-const donateCheck = document.getElementById('donate-check');
-const donationInputContainer = document.getElementById('donation-input-container');
-const donationAmountInput = document.getElementById('donation-amount');
 const invoiceCheck = document.getElementById('invoice-check');
 const fiscalForm = document.getElementById('fiscal-form');
 const paymentRadios = document.getElementsByName('payment-method');
+
+// Inputs Donación (AHORA EN EL FOOTER)
+const donateCheck = document.getElementById('donate-check');
+const donationInputContainer = document.getElementById('donation-input-container');
+const donationAmountInput = document.getElementById('donation-amount');
 
 // Totales Checkout
 const checkoutSubtotal = document.getElementById('checkout-subtotal');
@@ -123,19 +125,26 @@ function abrirCheckout(e) {
     }
 
     checkoutSubtotal.textContent = subtotal.toFixed(2);
-    actualizarTotalCheckout();
+    actualizarTotalCheckout(); // Calcular donación desde el footer
     checkoutModal.style.display = 'block';
 }
 
 closeCheckout.addEventListener('click', () => { checkoutModal.style.display = 'none'; });
 
-// --- Lógica de Donaciones ---
+// --- Lógica de Donaciones (EN EL FOOTER) ---
 donateCheck.addEventListener('change', (e) => {
     donationInputContainer.style.display = e.target.checked ? 'block' : 'none';
-    actualizarTotalCheckout();
+    // Si el modal está abierto, actualizamos el total en tiempo real
+    if(checkoutModal.style.display === 'block') {
+        actualizarTotalCheckout();
+    }
 });
 
-donationAmountInput.addEventListener('input', actualizarTotalCheckout);
+donationAmountInput.addEventListener('input', () => {
+    if(checkoutModal.style.display === 'block') {
+        actualizarTotalCheckout();
+    }
+});
 
 // --- Lógica de Datos Fiscales ---
 invoiceCheck.addEventListener('change', (e) => {

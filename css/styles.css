@@ -195,14 +195,19 @@ hr { width: 100px; border: 2px solid #F35200; margin-left: 0; }
     color: #eee;
     text-align: center;
 }
-.checkout-footer-donation {
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 2px solid #eee;
+/* --- Estilos para la sección de Donaciones en Footer --- */
+.footer-donation {
     text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #6b3e31; /* Línea separadora sutil */
 }
-.checkout-footer-donation h3 {
-    color: #4F231C;
+.footer-donation h3 {
+    color: #F35200; /* Naranja para destacar */
+    margin-bottom: 5px;
+}
+.footer-donation p {
+    color: #ECEBEB;
     margin-bottom: 10px;
 }
 

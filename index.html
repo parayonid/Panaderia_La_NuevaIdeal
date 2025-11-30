@@ -197,18 +197,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="checkout-footer-donation">
-                <h3>❤ ¿Deseas apoyar nuestra causa?</h3>
-                <label class="row" style="justify-content: center;">
-                    <input type="checkbox" id="donate-check"> 
-                    Deseo donar a la fundación "Pan para Todos"
-                </label>
-                <div id="donation-input-container" style="display:none; margin-top:10px;">
-                    <input type="number" id="donation-amount" placeholder="Monto a donar ($)" min="1" value="10" style="width: 150px; text-align: center;">
-                </div>
-            </div>
-
         </div>
     </div>
 
@@ -239,6 +227,18 @@
     </div>
 
     <footer class="footer container" id="footer">
+        
+        <div class="footer-donation">
+            <h3>❤ ¿Deseas apoyar nuestra causa?</h3>
+            <p>Tu donativo ayuda a la fundación "Pan para Todos".</p>
+            <label class="row" style="justify-content: center; color: #ECEBEB; margin-top: 10px; cursor: pointer;">
+                <input type="checkbox" id="donate-check"> 
+                Quiero donar
+            </label>
+            <div id="donation-input-container" style="display:none; margin-top:10px;">
+                <input type="number" id="donation-amount" placeholder="Monto ($)" min="1" value="10" style="width: 100px; padding: 5px; text-align: center; border-radius: 5px; border: none;">
+            </div>
+        </div>
         <div class="footer-content">
             <div class="link">
                 <h3>Navegación</h3>
