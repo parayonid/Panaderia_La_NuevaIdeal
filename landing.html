@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oferta Especial - La Nueva Ideal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- ESTILOS ESPECÍFICOS DE LA LANDING PAGE --- */
+        :root {
+            --naranja: #F35200;
+            --cafe: #4F231C;
+            --crema: #EADDCA;
+            --blanco: #FFFFFF;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--crema);
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        /* NAVBAR SIMPLIFICADA (Solo logo) */
+        .lp-nav {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(0,0,0,0.8);
+            position: absolute;
+            width: 100%;
+            z-index: 10;
+        }
+        .lp-nav img {
+            height: 50px;
+        }
+
+        /* HERO SECTION (Impacto Visual) */
+        .hero {
+            height: 100vh;
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('images/images/bg2.jpg');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            color: var(--blanco);
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            font-weight: 800;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin-bottom: 40px;
+        }
+
+        /* BOTÓN DE LLAMADA A LA ACCIÓN (CTA) */
+        .cta-button {
+            background-color: var(--naranja);
+            color: var(--blanco);
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(243, 82, 0, 0.4);
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(243, 82, 0, 0.6);
+            background-color: #d64700;
+        }
+
+        /* BENEFICIOS */
+        .benefits {
+            padding: 80px 20px;
+            background: var(--blanco);
+            text-align: center;
+        }
+        
+        .benefits h2 {
+            color: var(--cafe);
+            font-size: 2.5rem;
+            margin-bottom: 50px;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .benefit-card {
+            padding: 30px;
+            border-radius: 15px;
+            background: #fff;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            border: 1px solid #eee;
+        }
+
+        .benefit-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .benefit-card h3 {
+            color: var(--naranja);
+            margin-bottom: 15px;
+        }
+
+        /* OFERTA IRRESISTIBLE */
+        .offer {
+            background-color: var(--cafe);
+            color: var(--blanco);
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .offer-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .offer-img img {
+            width: 300px;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 20px;
+            border: 5px solid var(--naranja);
+            transform: rotate(-3deg);
+        }
+
+        .offer-text {
+            max-width: 500px;
+            text-align: left;
+        }
+
+        .offer-text h2 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .price-tag {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--naranja);
+            margin: 20px 0;
+            display: block;
+        }
+
+        /* FOOTER SIMPLE */
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: #333;
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        /* RESPONSIVO */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .offer-text { text-align: center; }
+            .offer-img img { width: 100%; max-width: 300px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="lp-nav">
+        <img src="images/images/new_ideal.svg" alt="La Nueva Ideal Logo">
+    </nav>
+
+    <header class="hero">
+        <h1>El olor a pan recién hecho...<br>ahora en tu casa.</h1>
+        <p>Olvídate de salir. Pide tus conchas, bolillos y café favorito en línea y recíbelo calientito en minutos.</p>
+        <a href="index.html#lista-1" class="cta-button">¡Quiero Pedir Ahora! 👉</a>
+    </header>
+
+    <section class="benefits">
+        <h2>¿Por qué La Nueva Ideal?</h2>
+        <div class="benefits-grid">
+            <div class="benefit-card">
+                <span class="benefit-icon">🥖</span>
+                <h3>Tradición y Sabor</h3>
+                <p>Recetas familiares con más de 50 años de historia en Aguascalientes.</p>
+            </div>
+            <div class="benefit-card">
+                <span class="benefit-icon">🚀</span>
+                <h3>Envío Express</h3>
+                <p>Integración con Uber Eats y Didi para que tu pan llegue volando.</p>
+            </div>
+            <div class="benefit-card">
+                <span class="benefit-icon">💳</span>
+                <h3>Pago Fácil</h3>
+                <p>Paga con tarjeta, efectivo, monedero o transferencia de forma segura.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="offer">
+        <div class="offer-container">
+            <div class="offer-img">
+                <img src="images/images/concha.jpg" alt="Concha deliciosa">
+            </div>
+            <div class="offer-text">
+                <h2>¡Antojo de Concha?</h2>
+                <p>Nuestras conchas premium están saliendo del horno justo ahora. Suaves, dulces y perfectas para chopear.</p>
+                <span class="price-tag">Solo $10.00 c/u</span>
+                <a href="index.html#lista-1" class="cta-button">Ir a la Tienda</a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>© 2025 La Nueva Ideal. Todos los derechos reservados.</p>
+        <p>Esta es una Landing Page de promoción.</p>
+    </footer>
+
+</body>
+</html>
