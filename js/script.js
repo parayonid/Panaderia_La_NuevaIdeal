@@ -8,22 +8,17 @@ const total = document.getElementById('total');
 const finalizarCompraBtn = document.getElementById('finalizar-compra');
 
 // --- VARIABLES CHECKOUT ---
-let saldoMonedero = parseFloat(localStorage.getItem('saldoMonedero')) || 500.00; // Saldo inicial simulado
+let saldoMonedero = parseFloat(localStorage.getItem('saldoMonedero')) || 500.00; 
 
 // --- 1. GESTOR DE CONSENTIMIENTO (MODO SIMULACIÓN) ---
 document.addEventListener('DOMContentLoaded', () => {
     // Banner cookies
     const banner = document.getElementById('cookie-banner');
     const acceptBtn = document.getElementById('cookie-accept');
-    
-    // MODO SIMULACIÓN: Siempre mostrar el banner al cargar
     banner.style.display = 'flex'; 
-    
-    acceptBtn.addEventListener('click', () => { 
-        banner.style.display = 'none'; 
-    });
+    acceptBtn.addEventListener('click', () => { banner.style.display = 'none'; });
 
-    // Actualizar saldo visual en el modal
+    // Actualizar saldo visual
     const walletBalanceDisplay = document.getElementById('wallet-balance');
     if(walletBalanceDisplay) walletBalanceDisplay.textContent = saldoMonedero.toFixed(2);
 
@@ -36,7 +31,6 @@ function cargarEventListeners() {
     elementos2.addEventListener('click', comprarElemento);
     carrito.addEventListener('click', eliminarElemento);
     vaciarCarritoBtn.addEventListener('click', vaciarCarrito);
-    // Cambiamos la función del botón finalizar
     finalizarCompraBtn.addEventListener('click', abrirCheckout); 
 }
 
@@ -94,23 +88,23 @@ function actualizarTotal() {
     total.textContent = totalSuma.toFixed(2);
 }
 
-// --- 3. LÓGICA DEL NUEVO CHECKOUT (FISCAL, PAGO Y DONACIÓN EN FOOTER) ---
+// --- 3. LÓGICA DEL CHECKOUT ---
 
 const checkoutModal = document.getElementById('checkout-modal');
 const closeCheckout = document.getElementById('close-checkout');
 const btnPayNow = document.getElementById('btn-pay-now');
 
-// Inputs Checkout
+// Inputs
 const invoiceCheck = document.getElementById('invoice-check');
 const fiscalForm = document.getElementById('fiscal-form');
 const paymentRadios = document.getElementsByName('payment-method');
 
-// Inputs Donación (AHORA EN EL FOOTER)
+// Donación (Footer)
 const donateCheck = document.getElementById('donate-check');
 const donationInputContainer = document.getElementById('donation-input-container');
 const donationAmountInput = document.getElementById('donation-amount');
 
-// Totales Checkout
+// Totales
 const checkoutSubtotal = document.getElementById('checkout-subtotal');
 const checkoutDonation = document.getElementById('checkout-donation');
 const checkoutTotal = document.getElementById('checkout-total');
@@ -125,105 +119,81 @@ function abrirCheckout(e) {
     }
 
     checkoutSubtotal.textContent = subtotal.toFixed(2);
-    actualizarTotalCheckout(); // Calcular donación desde el footer
+    actualizarTotalCheckout(); 
     checkoutModal.style.display = 'block';
 }
 
 closeCheckout.addEventListener('click', () => { checkoutModal.style.display = 'none'; });
 
-// --- Lógica de Donaciones (EN EL FOOTER) ---
+// Donaciones
 donateCheck.addEventListener('change', (e) => {
     donationInputContainer.style.display = e.target.checked ? 'block' : 'none';
-    // Si el modal está abierto, actualizamos el total en tiempo real
-    if(checkoutModal.style.display === 'block') {
-        actualizarTotalCheckout();
-    }
+    if(checkoutModal.style.display === 'block') actualizarTotalCheckout();
 });
-
 donationAmountInput.addEventListener('input', () => {
-    if(checkoutModal.style.display === 'block') {
-        actualizarTotalCheckout();
-    }
+    if(checkoutModal.style.display === 'block') actualizarTotalCheckout();
 });
 
-// --- Lógica de Datos Fiscales ---
+// Fiscal
 invoiceCheck.addEventListener('change', (e) => {
     fiscalForm.style.display = e.target.checked ? 'block' : 'none';
 });
 
-// --- Lógica de Métodos de Pago (Mostrar QR/Info) ---
+// Métodos Pago
 paymentRadios.forEach(radio => {
     radio.addEventListener('change', (e) => {
-        // Ocultar todos primero
         document.getElementById('qr-info').style.display = 'none';
         document.getElementById('deposit-info').style.display = 'none';
-
-        if (e.target.value === 'qr') {
-            document.getElementById('qr-info').style.display = 'block';
-        } else if (e.target.value === 'deposit') {
-            document.getElementById('deposit-info').style.display = 'block';
-        }
+        if (e.target.value === 'qr') document.getElementById('qr-info').style.display = 'block';
+        else if (e.target.value === 'deposit') document.getElementById('deposit-info').style.display = 'block';
     });
 });
 
 function actualizarTotalCheckout() {
     const subtotal = parseFloat(checkoutSubtotal.textContent);
     let donation = 0;
-
-    if (donateCheck.checked) {
-        donation = parseFloat(donationAmountInput.value) || 0;
-    }
-
+    if (donateCheck.checked) donation = parseFloat(donationAmountInput.value) || 0;
     checkoutDonation.textContent = donation.toFixed(2);
     checkoutTotal.textContent = (subtotal + donation).toFixed(2);
 }
 
-// --- 4. PROCESAMIENTO DEL PAGO (CON NUEVOS MODALES DE FACTURA/RECIBO) ---
+// --- 4. PROCESAMIENTO Y NUEVOS MODALES ---
 
-const invoiceModal = document.getElementById('invoice-modal');
+const cfdiModal = document.getElementById('cfdi-modal');
 const receiptModal = document.getElementById('receipt-modal');
-const btnEmailInvoice = document.getElementById('btn-email-invoice');
-const btnDownloadInvoice = document.getElementById('btn-download-invoice');
-const btnCloseReceipt = document.getElementById('close-receipt');
+const closeCfdi = document.getElementById('close-cfdi');
+const closeReceipt = document.getElementById('close-receipt');
+const btnCloseReceiptAction = document.getElementById('btn-close-receipt-action');
 
-// Botones de acción Factura
-btnEmailInvoice.addEventListener('click', () => { alert('¡Factura enviada a tu correo con éxito!'); invoiceModal.style.display = 'none'; });
-btnDownloadInvoice.addEventListener('click', () => { alert('Descargando factura en PDF...'); invoiceModal.style.display = 'none'; });
-// Botón cerrar Recibo
-btnCloseReceipt.addEventListener('click', () => { receiptModal.style.display = 'none'; });
+// Botones Acciones Finales
+document.getElementById('btn-email-cfdi').addEventListener('click', () => { alert('XML y PDF enviados al correo.'); cfdiModal.style.display='none'; });
+document.getElementById('btn-download-cfdi').addEventListener('click', () => { alert('Descargando archivos...'); cfdiModal.style.display='none'; });
+document.getElementById('btn-email-receipt').addEventListener('click', () => { alert('Recibo enviado al correo.'); receiptModal.style.display='none'; });
 
+closeCfdi.addEventListener('click', () => cfdiModal.style.display = 'none');
+closeReceipt.addEventListener('click', () => receiptModal.style.display = 'none');
+btnCloseReceiptAction.addEventListener('click', () => receiptModal.style.display = 'none');
 
 btnPayNow.addEventListener('click', () => {
     const metodoPago = document.querySelector('input[name="payment-method"]:checked').value;
     const totalPagar = parseFloat(checkoutTotal.textContent);
 
-    // Validación Monedero
-    if (metodoPago === 'wallet') {
-        if (saldoMonedero < totalPagar) {
-            alert("Error: Saldo insuficiente en monedero.");
-            return;
-        }
+    if (metodoPago === 'wallet' && saldoMonedero < totalPagar) {
+        alert("Error: Saldo insuficiente en monedero.");
+        return;
+    }
+    if (invoiceCheck.checked && document.getElementById('fiscal-rfc').value.trim() === '') {
+        alert("Ingresa tu RFC.");
+        return;
     }
 
-    // Validación Datos Fiscales
-    if (invoiceCheck.checked) {
-        const rfc = document.getElementById('fiscal-rfc').value;
-        if (rfc.trim() === '') {
-            alert("Por favor ingresa tu RFC para la factura.");
-            return;
-        }
-    }
-
-    // SIMULACIÓN DE PROCESO (Loading)
     btnPayNow.textContent = "Procesando...";
     btnPayNow.disabled = true;
 
     setTimeout(() => {
-        // --- SIMULACIÓN DE EXCEPCIÓN (20% de probabilidad de fallo) ---
         const exito = Math.random() > 0.2; 
 
         if (exito) {
-            // ÉXITO - Guardamos datos
             if (metodoPago === 'wallet') {
                 saldoMonedero -= totalPagar;
                 localStorage.setItem('saldoMonedero', saldoMonedero);
@@ -234,12 +204,30 @@ btnPayNow.addEventListener('click', () => {
             checkoutModal.style.display = 'none';
             vaciarCarrito();
 
-            // DECISIÓN: ¿Mostrar Factura o Recibo?
             if (invoiceCheck.checked) {
-                // Opción A: Factura
-                invoiceModal.style.display = 'block';
+                // Llenar datos de la FACTURA
+                document.getElementById('cfdi-client-name').textContent = document.getElementById('fiscal-name').value || "PUBLICO EN GENERAL";
+                document.getElementById('cfdi-client-rfc').textContent = document.getElementById('fiscal-rfc').value || "XAXX010101000";
+                
+                // Llenar tabla items factura
+                const cfdiItems = document.getElementById('cfdi-items');
+                cfdiItems.innerHTML = '';
+                // Recuperar items del pedido reciente (simulado)
+                // En este caso simple, usamos el total ya que el carrito se vació.
+                // Para una demo visual agregamos una fila genérica "Consumo de Alimentos"
+                const row = document.createElement('tr');
+                const sub = (totalPagar / 1.16).toFixed(2);
+                const iva = (totalPagar - sub).toFixed(2);
+                row.innerHTML = `<td>1</td><td>Consumo de Alimentos y Bebidas (Folio ${nuevoId})</td><td>$${sub}</td><td>$${sub}</td>`;
+                cfdiItems.appendChild(row);
+                
+                document.getElementById('cfdi-subtotal').textContent = sub;
+                document.getElementById('cfdi-tax').textContent = iva;
+                document.getElementById('cfdi-total').textContent = totalPagar.toFixed(2);
+
+                cfdiModal.style.display = 'block';
             } else {
-                // Opción B: Recibo Genérico
+                // Llenar RECIBO
                 document.getElementById('receipt-date').textContent = new Date().toLocaleDateString('es-MX');
                 document.getElementById('receipt-id').textContent = nuevoId;
                 document.getElementById('receipt-total').textContent = totalPagar.toFixed(2);
@@ -247,41 +235,29 @@ btnPayNow.addEventListener('click', () => {
             }
 
         } else {
-            // FALLO (Simulación)
             alert("Error: El pago no se procesó. Intente con otro método.");
         }
 
         btnPayNow.textContent = "Pagar Ahora";
         btnPayNow.disabled = false;
 
-    }, 2000); // 2 segundos de espera simulada
+    }, 2000); 
 });
-
 
 function guardarPedido(total, idGenerado) {
     let pedidosHistorial = JSON.parse(localStorage.getItem('pedidosHistorial')) || [];
     const itemsComprados = [];
-
     lista.querySelectorAll('tr').forEach(fila => {
         const celdas = fila.querySelectorAll('td');
         if (celdas.length === 4) {
-            const item = {
+            itemsComprados.push({
                 imagen: celdas[0].querySelector('img').src,
                 titulo: celdas[1].textContent,
                 precio: celdas[2].textContent
-            };
-            itemsComprados.push(item);
+            });
         }
     });
-
-    const nuevoPedido = {
-        id: idGenerado,
-        fecha: new Date().toLocaleDateString('es-MX'),
-        total: total,
-        estado: 'Entregado', // En un sistema real sería "Pagado/Pendiente"
-        items: itemsComprados
-    };
-
+    const nuevoPedido = { id: idGenerado, fecha: new Date().toLocaleDateString('es-MX'), total: total, estado: 'Entregado', items: itemsComprados };
     pedidosHistorial.push(nuevoPedido);
     localStorage.setItem('pedidosHistorial', JSON.stringify(pedidosHistorial));
 }

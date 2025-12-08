@@ -197,32 +197,93 @@
                     </div>
                 </div>
             </div>
-        </div>
+
+            <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span style="font-size: 1.1rem;">🔒</span>
+                <p style="margin: 0;">Este sitio implementa <strong>certificación digital simulada</strong> para reforzar la confianza en el usuario.</p>
+            </div>
+            </div>
     </div>
 
-    <div id="invoice-modal" class="modal" style="display: none; z-index: 3001;">
-        <div class="modal-content" style="text-align: center; max-width: 500px;">
-            <h3 style="color: #27ae60;">¡Pago Exitoso!</h3>
-            <p>Gracias por tu compra. Hemos generado tu factura.</p>
-            <p>Selecciona una opción:</p>
+    <div id="cfdi-modal" class="modal" style="display: none; z-index: 3001;">
+        <div class="modal-content cfdi-content">
+            <span class="close-button" id="close-cfdi">×</span>
             
-            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
-                <button class="btn-1" id="btn-email-invoice">✉ Enviar por Correo</button>
-                <button class="btn-2" id="btn-download-invoice">⬇ Descargar PDF/XML</button>
+            <div class="cfdi-header">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h2 style="margin:0; color:#333;">LA NUEVA IDEAL</h2>
+                        <small>RFC: <strong>IDE800101XYZ</strong></small><br>
+                        <small>Régimen Fiscal: 601 - General de Ley Personas Morales</small>
+                    </div>
+                    <div style="text-align:right;">
+                        <h3 style="margin:0; color:#4F231C;">FACTURA</h3>
+                        <p style="margin:0; font-size:0.8rem;">Folio Fiscal (UUID):</p>
+                        <p style="margin:0; font-family:monospace; font-size:0.8rem;">A1B2C3D4-E5F6-7890-1234-567890ABCDEF</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cfdi-body">
+                <p><strong>Receptor:</strong> <span id="cfdi-client-name">PUBLICO EN GENERAL</span></p>
+                <p><strong>RFC:</strong> <span id="cfdi-client-rfc">XAXX010101000</span></p>
+                <p><strong>Uso CFDI:</strong> G03 - Gastos en general</p>
+                
+                <table class="cfdi-table">
+                    <thead>
+                        <tr>
+                            <th>Cant.</th>
+                            <th>Concepto</th>
+                            <th>Precio Unit.</th>
+                            <th>Importe</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cfdi-items">
+                        </tbody>
+                </table>
+
+                <div style="text-align:right; margin-top:10px;">
+                    <p>Subtotal: $<span id="cfdi-subtotal">0.00</span></p>
+                    <p>IVA (16%): $<span id="cfdi-tax">0.00</span></p>
+                    <p style="font-weight:bold; font-size:1.1rem;">Total: $<span id="cfdi-total">0.00</span></p>
+                </div>
+            </div>
+
+            <div class="cfdi-footer">
+                <div class="cfdi-qr">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://verificacfdi.facturaelectronica.sat.gob.mx" alt="QR SAT">
+                </div>
+                <div class="cfdi-stamps">
+                    <p><strong>Sello Digital del CFDI:</strong></p>
+                    <p class="stamp-text">k8Js9Lq2WzX4cR5vB7nM1...[Firma Digital Simulada]...aB3cD4eF5g</p>
+                    <p><strong>Sello del SAT:</strong></p>
+                    <p class="stamp-text">XyZ1aB2cD3eF4gH5...[Sello SAT Simulado]...9iJ8kL7mN6</p>
+                    <p>Este documento es una representación impresa de un CFDI.</p>
+                </div>
+            </div>
+
+            <div class="cfdi-actions">
+                <button class="btn-1" id="btn-email-cfdi">✉ Enviar por Correo</button>
+                <button class="btn-2" id="btn-download-cfdi">⬇ Descargar XML/PDF</button>
             </div>
         </div>
     </div>
 
     <div id="receipt-modal" class="modal" style="display: none; z-index: 3001;">
         <div class="modal-content" style="text-align: center; max-width: 400px; border: 2px dashed #4F231C;">
+            <span class="close-button" id="close-receipt">×</span>
             <h3 style="color: #4F231C;">RECIBO DE COMPRA</h3>
             <p style="font-size: 0.9rem; color: #555;">La Nueva Ideal</p>
             <hr style="border: 0; border-top: 1px dashed #ccc; margin: 10px 0;">
             <p><strong>Fecha:</strong> <span id="receipt-date"></span></p>
             <p><strong>Folio:</strong> #<span id="receipt-id"></span></p>
             <p style="font-size: 1.2rem; margin: 15px 0;"><strong>Total Pagado: $<span id="receipt-total"></span></strong></p>
-            <p style="font-size: 0.8rem;">Gracias por su preferencia.<br>Este no es un comprobante fiscal.</p>
-            <button class="btn-1" id="close-receipt" style="margin-top: 15px;">Cerrar</button>
+            <p style="font-size: 0.8rem;">Gracias por su preferencia.</p>
+            
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                <button class="btn-1" id="btn-email-receipt">✉ Enviar por Correo</button>
+                <button class="btn-2" id="btn-close-receipt-action">Cerrar</button>
+            </div>
         </div>
     </div>
 
@@ -272,7 +333,7 @@
                     </a>
                     <a href="https://www.instagram.com/lanuevaideal_ags/" target="_blank">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-instagram" viewBox="0 0 16 16">
-                            <path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.917 3.917 0 0 0-1.417.923A3.917 3.917 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.703.01 5.556 0 5.829 0 8s.01 2.444.048 3.297c.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.556 15.99 5.829 16 8 16s2.444-.01 3.297-.048c.852-.04 1.433-.174 1.942-.372.526-.205.972-.478 1.417-.923.445-.444.719-.89 1.923-1.416.198-.51.333-1.09.372-1.942C15.99 10.444 16 10.171 16 8s-.01-2.444-.048-3.297c-.04-.852-.174-1.433-.372-1.942C15.38 2.23 15.108 1.783 14.66.923 14.217.478 13.77.205 13.297.048 12.444.01 12.171 0 8 0zM8 1.44c.489 0 .691.002 1.028.015.326.013.56.058.745.127.217.08.363.16.52.32.158.158.24.304.32.52.069.185.114.419.127.745.013.337.015.539.015 1.028 0 .489-.002.691-.015 1.028-.013.326-.058.56-.127.745-.08.217-.16.363-.32.52-.158.158-.304.24-.52.32-.185.069-.419.114-.745.127-.337.013-.539.015-1.028.015-.489 0-.691-.002-1.028-.015-.326-.013-.56-.058-.745-.127-.217-.08-.363.16-.52-.32-.158-.158-.24-.304-.32-.52-.069-.185-.114.419-.127.745-.013.337-.015-.539-.015-1.028 0-.489.002.691.015-1.028.013.326.058.56.127.745.08.217.16.363.32.52.158.158.304.24.52.32.185.069.419.114.745.127.337.013.539.015 1.028.015zm0 2.88c-1.95 0-3.52 1.57-3.52 3.52s1.57 3.52 3.52 3.52 3.52-1.57 3.52-3.52S9.95 4.32 8 4.32zm0 5.68c-1.21 0-2.16-.95-2.16-2.16S6.79 5.84 8 5.84s2.16.95 2.16 2.16S9.21 10 8 10zm6.405-6.55c-.41 0-.745.335-.745.745s.335.745.745.745.745-.335.745-.745-.335-.745-.745-.745z"/>
+                            <path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.917 3.917 0 0 0-1.417.923A3.917 3.917 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.703.01 5.556 0 5.829 0 8s.01 2.444.048 3.297c.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.556 15.99 5.829 16 8 16s2.444-.01 3.297-.048c.852-.04 1.433-.174 1.942-.372.526-.205.972-.478 1.417-.923.445-.444.719-.89 1.923-1.416.198-.51.333-1.09.372-1.942C15.99 10.444 16 10.171 16 8s-.01-2.444-.048-3.297c-.04-.852-.174-1.433-.372-1.942C15.38 2.23 15.108 1.783 14.66.923 14.217.478 13.77.205 13.297.048 12.444.01 12.171 0 8 0zM8 1.44c.489 0 .691.002 1.028.015.326.013.56.058.745.127.217.08.363.16.52.32.158.158.24.304.32.52.069.185.114.419.127.745.013.337.015.539.015 1.028 0 .489-.002.691-.015 1.028-.013.326-.058.56-.127.745-.08.217-.16.363-.32.52-.158.158-.304.24-.52.32-.185.069.419.114.745.127.337.013.539.015 1.028.015zm0 2.88c-1.95 0-3.52 1.57-3.52 3.52s1.57 3.52 3.52 3.52 3.52-1.57 3.52-3.52S9.95 4.32 8 4.32zm0 5.68c-1.21 0-2.16-.95-2.16-2.16S6.79 5.84 8 5.84s2.16.95 2.16 2.16S9.21 10 8 10zm6.405-6.55c-.41 0-.745.335-.745.745s.335.745.745.745.745-.335.745-.745-.335-.745-.745-.745z"/>
                         </svg>
                         <span>lanuevaideal_ags</span>
                     </a>
