@@ -33,7 +33,7 @@
                 <a href="views/admin.html" class="nav-icon" title="Panel de Administración">
                     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-gear-fill" viewBox="0 0 16 16"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311a1.464 1.464 0 0 1-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413-1.4-2.397 0-2.81l.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" /></svg>
                 </a>
-                <a href="views/user.html" class="nav-icon" title="Mi Perfil e Historial">
+                <a href="views/user.html" class="nav-icon" id="nav-profile" title="Mi Perfil e Historial">
                     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-person-fill" viewBox="0 0 16 16"><path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" /></svg>
                 </a>
                 <ul>
@@ -112,6 +112,23 @@
         </p>
         <button class="btn-cookie-accept-dark" id="cookie-accept">Aceptar</button>
     </div>
+    <div id="login-modal" class="modal" style="display: none; z-index: 4000;">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <span class="close-button" id="close-login">×</span>
+            <h2 style="color: #4F231C; margin-bottom: 20px;">Iniciar Sesión</h2>
+            <p style="color: #666; margin-bottom: 20px;">Ingresa a tu cuenta para continuar</p>
+            
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Correo Electrónico" required style="width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px;">
+                <input type="password" id="login-password" placeholder="Contraseña" required style="width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 5px;">
+                <button type="submit" class="btn-1" style="width: 100%;">Entrar</button>
+            </form>
+            
+            <p style="margin-top: 15px; font-size: 0.9rem;">
+                ¿No tienes cuenta? <a href="#" style="color: #F35200; text-decoration: underline;">Regístrate aquí</a>
+            </p>
+        </div>
+    </div>
     <div id="checkout-modal" class="modal" style="display: none;">
         <div class="modal-content checkout-content">
             <span class="close-button" id="close-checkout">×</span>
@@ -172,6 +189,15 @@
                         </label>
                         <div id="deposit-info" class="payment-details" style="display:none;">
                             <p>Banco: BBVA<br>Cuenta: 0123456789<br>CLABE: 012001001234567890<br>Ref: Tu Pedido</p>
+                        </div>
+
+                        <label class="payment-option">
+                            <input type="radio" name="payment-method" value="cheque">
+                            <strong>Cheque (Contraentrega)</strong>
+                        </label>
+                        <div id="cheque-info" class="payment-details" style="display:none;">
+                            <p>Prepara tu cheque a nombre de: <strong>La Nueva Ideal S.A. de C.V.</strong></p>
+                            <p style="font-size:0.8rem;">* Se validará al momento de la entrega.</p>
                         </div>
 
                         <label class="payment-option">

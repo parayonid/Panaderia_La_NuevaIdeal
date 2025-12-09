@@ -23,7 +23,63 @@ document.addEventListener('DOMContentLoaded', () => {
     if(walletBalanceDisplay) walletBalanceDisplay.textContent = saldoMonedero.toFixed(2);
 
     cargarEventListeners();
+    setupLoginProtection();
 });
+
+// --- FUNCIONES DE LOGIN Y PROTECCIÓN ---
+const loginModal = document.getElementById('login-modal');
+const closeLogin = document.getElementById('close-login');
+const loginForm = document.getElementById('login-form');
+let pendingAction = null; // Para guardar qué quería hacer el usuario antes de login
+
+function setupLoginProtection() {
+    const navProfile = document.getElementById('nav-profile');
+
+    // Proteger "Mi Perfil"
+    navProfile.addEventListener('click', (e) => {
+        e.preventDefault();
+        checkLogin(() => {
+            window.location.href = navProfile.getAttribute('href');
+        });
+    });
+
+    // Cerrar modal login
+    closeLogin.addEventListener('click', () => {
+        loginModal.style.display = 'none';
+        pendingAction = null;
+    });
+
+    // Manejar envío del formulario de login
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        // Simulación: Aceptamos cualquier credencial no vacía
+        const email = document.getElementById('login-email').value;
+        const pass = document.getElementById('login-password').value;
+
+        if (email && pass) {
+            localStorage.setItem('isLoggedIn', 'true');
+            loginModal.style.display = 'none';
+            alert(`¡Bienvenido de nuevo, ${email}!`);
+            
+            // Ejecutar la acción pendiente si existe
+            if (pendingAction) {
+                pendingAction();
+                pendingAction = null;
+            }
+        }
+    });
+}
+
+function checkLogin(callback) {
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    if (isLoggedIn) {
+        callback();
+    } else {
+        pendingAction = callback;
+        loginModal.style.display = 'block';
+    }
+}
+
 
 // --- 2. FUNCIONES DEL CARRITO (CORE) ---
 function cargarEventListeners() {
@@ -31,7 +87,13 @@ function cargarEventListeners() {
     elementos2.addEventListener('click', comprarElemento);
     carrito.addEventListener('click', eliminarElemento);
     vaciarCarritoBtn.addEventListener('click', vaciarCarrito);
-    finalizarCompraBtn.addEventListener('click', abrirCheckout); 
+    // Cambiamos la función del botón finalizar para incluir chequeo de login
+    finalizarCompraBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        checkLogin(() => {
+            abrirCheckout(e);
+        });
+    }); 
 }
 
 function comprarElemento(e) {
@@ -110,7 +172,7 @@ const checkoutDonation = document.getElementById('checkout-donation');
 const checkoutTotal = document.getElementById('checkout-total');
 
 function abrirCheckout(e) {
-    e.preventDefault();
+    // e.preventDefault() ya fue llamado en el listener
     const subtotal = parseFloat(total.textContent);
     
     if (subtotal <= 0) {
@@ -144,12 +206,15 @@ const cardFormContainer = document.getElementById('card-form-container');
 
 paymentRadios.forEach(radio => {
     radio.addEventListener('change', (e) => {
+        // Reset visibility
         document.getElementById('qr-info').style.display = 'none';
         document.getElementById('deposit-info').style.display = 'none';
+        document.getElementById('cheque-info').style.display = 'none';
         cardFormContainer.style.display = 'none';
 
         if (e.target.value === 'qr') document.getElementById('qr-info').style.display = 'block';
         else if (e.target.value === 'deposit') document.getElementById('deposit-info').style.display = 'block';
+        else if (e.target.value === 'cheque') document.getElementById('cheque-info').style.display = 'block';
         else if (e.target.value === 'card') cardFormContainer.style.display = 'block';
     });
 });
@@ -162,19 +227,18 @@ function actualizarTotalCheckout() {
     checkoutTotal.textContent = (subtotal + donation).toFixed(2);
 }
 
-// --- 4. PROCESAMIENTO, MODALES Y ERRORES ---
+// --- 4. PROCESAMIENTO Y NUEVOS MODALES ---
 
 const cfdiModal = document.getElementById('cfdi-modal');
 const receiptModal = document.getElementById('receipt-modal');
-const errorModal = document.getElementById('error-modal'); // Nuevo selector
-const errorMessage = document.getElementById('error-message'); // Nuevo selector
+const errorModal = document.getElementById('error-modal');
+const errorMessage = document.getElementById('error-message');
 const closeCfdi = document.getElementById('close-cfdi');
 const closeReceipt = document.getElementById('close-receipt');
 const closeError = document.getElementById('close-error');
 const btnRetry = document.getElementById('btn-retry');
 const btnCloseReceiptAction = document.getElementById('btn-close-receipt-action');
 
-// Función para mostrar el modal de error
 function mostrarError(mensaje) {
     errorMessage.textContent = mensaje;
     errorModal.style.display = 'block';
@@ -196,13 +260,11 @@ btnPayNow.addEventListener('click', () => {
     const metodoPago = document.querySelector('input[name="payment-method"]:checked').value;
     const totalPagar = parseFloat(checkoutTotal.textContent);
 
-    // Validación Monedero
     if (metodoPago === 'wallet' && saldoMonedero < totalPagar) {
         mostrarError("Saldo insuficiente en monedero.");
         return;
     }
     
-    // Validación Tarjeta
     if (metodoPago === 'card') {
         const cardNum = document.getElementById('card-number').value;
         const cardName = document.getElementById('card-name').value;
@@ -214,7 +276,6 @@ btnPayNow.addEventListener('click', () => {
         }
     }
 
-    // Validación Factura
     if (invoiceCheck.checked && document.getElementById('fiscal-rfc').value.trim() === '') {
         mostrarError("El RFC es obligatorio para facturar.");
         return;
@@ -238,7 +299,7 @@ btnPayNow.addEventListener('click', () => {
             vaciarCarrito();
 
             if (invoiceCheck.checked) {
-                // Llenar datos de la FACTURA
+                // Llenar FACTURA
                 document.getElementById('cfdi-client-name').textContent = document.getElementById('fiscal-name').value || "PUBLICO EN GENERAL";
                 document.getElementById('cfdi-client-rfc').textContent = document.getElementById('fiscal-rfc').value || "XAXX010101000";
                 
