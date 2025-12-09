@@ -146,15 +146,11 @@ paymentRadios.forEach(radio => {
     radio.addEventListener('change', (e) => {
         document.getElementById('qr-info').style.display = 'none';
         document.getElementById('deposit-info').style.display = 'none';
-        cardFormContainer.style.display = 'none'; // Ocultar por defecto
+        cardFormContainer.style.display = 'none';
 
-        if (e.target.value === 'qr') {
-            document.getElementById('qr-info').style.display = 'block';
-        } else if (e.target.value === 'deposit') {
-            document.getElementById('deposit-info').style.display = 'block';
-        } else if (e.target.value === 'card') {
-            cardFormContainer.style.display = 'block';
-        }
+        if (e.target.value === 'qr') document.getElementById('qr-info').style.display = 'block';
+        else if (e.target.value === 'deposit') document.getElementById('deposit-info').style.display = 'block';
+        else if (e.target.value === 'card') cardFormContainer.style.display = 'block';
     });
 });
 
@@ -166,29 +162,43 @@ function actualizarTotalCheckout() {
     checkoutTotal.textContent = (subtotal + donation).toFixed(2);
 }
 
-// --- 4. PROCESAMIENTO Y NUEVOS MODALES ---
+// --- 4. PROCESAMIENTO, MODALES Y ERRORES ---
 
 const cfdiModal = document.getElementById('cfdi-modal');
 const receiptModal = document.getElementById('receipt-modal');
+const errorModal = document.getElementById('error-modal'); // Nuevo selector
+const errorMessage = document.getElementById('error-message'); // Nuevo selector
 const closeCfdi = document.getElementById('close-cfdi');
 const closeReceipt = document.getElementById('close-receipt');
+const closeError = document.getElementById('close-error');
+const btnRetry = document.getElementById('btn-retry');
 const btnCloseReceiptAction = document.getElementById('btn-close-receipt-action');
 
-// Botones Acciones Finales
+// Función para mostrar el modal de error
+function mostrarError(mensaje) {
+    errorMessage.textContent = mensaje;
+    errorModal.style.display = 'block';
+}
+
+// Botones Acciones
 document.getElementById('btn-email-cfdi').addEventListener('click', () => { alert('XML y PDF enviados al correo.'); cfdiModal.style.display='none'; });
 document.getElementById('btn-download-cfdi').addEventListener('click', () => { alert('Descargando archivos...'); cfdiModal.style.display='none'; });
 document.getElementById('btn-email-receipt').addEventListener('click', () => { alert('Recibo enviado al correo.'); receiptModal.style.display='none'; });
 
+// Cerrar modales
 closeCfdi.addEventListener('click', () => cfdiModal.style.display = 'none');
 closeReceipt.addEventListener('click', () => receiptModal.style.display = 'none');
 btnCloseReceiptAction.addEventListener('click', () => receiptModal.style.display = 'none');
+closeError.addEventListener('click', () => errorModal.style.display = 'none');
+btnRetry.addEventListener('click', () => errorModal.style.display = 'none');
 
 btnPayNow.addEventListener('click', () => {
     const metodoPago = document.querySelector('input[name="payment-method"]:checked').value;
     const totalPagar = parseFloat(checkoutTotal.textContent);
 
+    // Validación Monedero
     if (metodoPago === 'wallet' && saldoMonedero < totalPagar) {
-        alert("Error: Saldo insuficiente en monedero.");
+        mostrarError("Saldo insuficiente en monedero.");
         return;
     }
     
@@ -199,13 +209,14 @@ btnPayNow.addEventListener('click', () => {
         const cardCvv = document.getElementById('card-cvv').value;
         
         if(cardNum.length < 16 || cardName === '' || cardCvv.length < 3) {
-            alert("Por favor completa los datos de la tarjeta correctamente.");
+            mostrarError("Datos de tarjeta incompletos o inválidos.");
             return;
         }
     }
 
+    // Validación Factura
     if (invoiceCheck.checked && document.getElementById('fiscal-rfc').value.trim() === '') {
-        alert("Ingresa tu RFC.");
+        mostrarError("El RFC es obligatorio para facturar.");
         return;
     }
 
@@ -231,7 +242,6 @@ btnPayNow.addEventListener('click', () => {
                 document.getElementById('cfdi-client-name').textContent = document.getElementById('fiscal-name').value || "PUBLICO EN GENERAL";
                 document.getElementById('cfdi-client-rfc').textContent = document.getElementById('fiscal-rfc').value || "XAXX010101000";
                 
-                // Llenar tabla items factura
                 const cfdiItems = document.getElementById('cfdi-items');
                 cfdiItems.innerHTML = '';
                 const row = document.createElement('tr');
@@ -254,7 +264,7 @@ btnPayNow.addEventListener('click', () => {
             }
 
         } else {
-            alert("Error: El pago no se procesó. Intente con otro método.");
+            mostrarError("El banco rechazó la transacción. Intente con otro método.");
         }
 
         btnPayNow.textContent = "Pagar Ahora";
