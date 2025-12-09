@@ -140,12 +140,21 @@ invoiceCheck.addEventListener('change', (e) => {
 });
 
 // Métodos Pago
+const cardFormContainer = document.getElementById('card-form-container');
+
 paymentRadios.forEach(radio => {
     radio.addEventListener('change', (e) => {
         document.getElementById('qr-info').style.display = 'none';
         document.getElementById('deposit-info').style.display = 'none';
-        if (e.target.value === 'qr') document.getElementById('qr-info').style.display = 'block';
-        else if (e.target.value === 'deposit') document.getElementById('deposit-info').style.display = 'block';
+        cardFormContainer.style.display = 'none'; // Ocultar por defecto
+
+        if (e.target.value === 'qr') {
+            document.getElementById('qr-info').style.display = 'block';
+        } else if (e.target.value === 'deposit') {
+            document.getElementById('deposit-info').style.display = 'block';
+        } else if (e.target.value === 'card') {
+            cardFormContainer.style.display = 'block';
+        }
     });
 });
 
@@ -182,6 +191,19 @@ btnPayNow.addEventListener('click', () => {
         alert("Error: Saldo insuficiente en monedero.");
         return;
     }
+    
+    // Validación Tarjeta
+    if (metodoPago === 'card') {
+        const cardNum = document.getElementById('card-number').value;
+        const cardName = document.getElementById('card-name').value;
+        const cardCvv = document.getElementById('card-cvv').value;
+        
+        if(cardNum.length < 16 || cardName === '' || cardCvv.length < 3) {
+            alert("Por favor completa los datos de la tarjeta correctamente.");
+            return;
+        }
+    }
+
     if (invoiceCheck.checked && document.getElementById('fiscal-rfc').value.trim() === '') {
         alert("Ingresa tu RFC.");
         return;
@@ -212,9 +234,6 @@ btnPayNow.addEventListener('click', () => {
                 // Llenar tabla items factura
                 const cfdiItems = document.getElementById('cfdi-items');
                 cfdiItems.innerHTML = '';
-                // Recuperar items del pedido reciente (simulado)
-                // En este caso simple, usamos el total ya que el carrito se vació.
-                // Para una demo visual agregamos una fila genérica "Consumo de Alimentos"
                 const row = document.createElement('tr');
                 const sub = (totalPagar / 1.16).toFixed(2);
                 const iva = (totalPagar - sub).toFixed(2);
