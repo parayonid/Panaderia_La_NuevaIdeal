@@ -163,11 +163,11 @@ const paymentRadios = document.getElementsByName('payment-method');
 
 // Donación (Footer)
 const donateCheck = document.getElementById('donate-check');
+// Totales
+const checkoutSubtotal = document.getElementById('checkout-subtotal');
 const donationInputContainer = document.getElementById('donation-input-container');
 const donationAmountInput = document.getElementById('donation-amount');
 
-// Totales
-const checkoutSubtotal = document.getElementById('checkout-subtotal');
 const checkoutDonation = document.getElementById('checkout-donation');
 const checkoutTotal = document.getElementById('checkout-total');
 
