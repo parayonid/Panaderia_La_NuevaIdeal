@@ -3,136 +3,284 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Administración</title>
-    <link rel="stylesheet" href="../css/styles.css"> <style>
-        body { padding: 40px 20px; }
-        .admin-container { max-width: 900px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
-        .admin-container h1 { color: #2D343C; text-align: center; }
-        .admin-container h2 { color: #2D343C; text-align: left; margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px;} /* Estilo añadido para separar secciones */
-        
-        /* ESTILOS PARA EL DASHBOARD DE MÉTRICAS (Ya los tenías) */
-        .stats-cards { display: flex; justify-content: space-around; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
-        .card { background-color: #f4f4f4; padding: 20px; border-radius: 8px; text-align: center; flex: 1; min-width: 150px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); } /* Ajuste de tamaño y sombra */
-        .card h3 { color: #F35200; margin: 0 0 10px; font-size: 1rem; }
-        .card p { font-size: 24px; font-weight: bold; color: #2D343C; margin: 0; }
-        
-        /* --- ESTILOS PARA SEGUIMIENTO DE PEDIDOS (ADMIN) --- */
-        .tracking-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Grid responsivo */
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .tracking-card {
-            background-color: #f9f9f9;
+    <title>Dashboard CRM - La Nueva Ideal</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Librería para las gráficas del Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .form-group textarea, .form-group select {
+            padding: 10px;
             border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 16px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-radius: 5px;
+            font-family: inherit;
         }
-        .tracking-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 8px;
-        }
-        .tracking-header h4 {
-            margin: 0;
-            color: #333;
-        }
-        .platform-tag {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            color: white;
-        }
-        .platform-uber { background-color: #06C167; } /* Verde Uber */
-        .platform-didi { background-color: #F07300; } /* Naranja DiDi */
-        .platform-pending { background-color: #777; } /* Gris */
-        
-        .tracking-details {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            font-size: 0.9rem;
-            color: #555;
-        }
-        .tracking-details li {
-            margin-bottom: 5px;
-            padding: 4px 0;
-        }
-        .tracking-details li strong {
-            color: #000;
-            display: inline-block;
-            min-width: 90px; /* Alinea los valores */
-        }
-        /* --- FIN DE ESTILOS DE SEGUIMIENTO --- */
-
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        table th, table td { border: 1px solid #ddd; padding: 12px; text-align: left; color: #333; }
-        table th { background-color: #4F231C; color: #FFFFFF; }
     </style>
 </head>
-<body>
-    <div class="admin-container">
-        <h1>Panel de Administración</h1>
-
-        <h2>Métricas de Campaña "Pan de muerto para los vivos"</h2>
-        <div class="stats-cards">
-            <div class="card">
-                <h3>Clics Totales</h3>
-                <p>12,450</p>
-            </div>
-            <div class="card">
-                <h3>Interacciones</h3>
-                <p>4,820</p>
-            </div>
-            <div class="card">
-                <h3>Likes</h3>
-                <p>3,910</p>
-            </div>
-            <div class="card">
-                <h3>Compartidos</h3>
-                <p>910</p>
-            </div>
-            <div class="card">
-                <h3>Tráfico al Sitio</h3>
-                <p>+25%</p>
-            </div>
+<body class="dashboard-body">
+    
+    <!-- MENÚ LATERAL -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <img src="../images/images/new_ideal.svg" alt="Logo" class="sidebar-logo">
+            <h2>CRM Admin</h2>
         </div>
+        <ul class="sidebar-menu">
+            <li class="active"><a href="#"><i class="bi bi-grid-1x2"></i> Dashboard</a></li>
+            <li><a href="#seccion-productos"><i class="bi bi-box-seam"></i> Productos</a></li>
+            <li><a href="#seccion-pedidos"><i class="bi bi-truck"></i> Pedidos</a></li>
+            <li><a href="#seccion-interacciones"><i class="bi bi-chat-left-text"></i> Interacciones</a></li>
+            <li><a href="#seccion-usuarios"><i class="bi bi-people"></i> Usuarios</a></li>
+            <li><a href="../index.html"><i class="bi bi-house-door"></i> Volver a Tienda</a></li>
+        </ul>
+    </aside>
 
-        <h2>Seguimiento de Pedidos Activos </h2>
-        <div class="tracking-container" id="tracking-container">
+    <!-- ÁREA PRINCIPAL -->
+    <main class="main-content">
+        <!-- HEADER SUPERIOR -->
+        <header class="top-header">
+            <div class="search-bar">
+                <i class="bi bi-search"></i>
+                <input type="text" id="global-search" placeholder="Buscar en la sección actual...">
             </div>
+            <div class="user-profile">
+                <span>Administrador</span>
+                <i class="bi bi-person-circle"></i>
+            </div>
+        </header>
 
-        <a href="../index.html" class="btn-1" style="display: block; width: 200px; margin: 0 auto 30px; text-align: center;">Volver al Inicio</a> 
-        
-        <div class="form-container">
-            <h2>Añadir/Modificar Producto</h2>
-            <form id="form-nuevo-producto">
-                <input type="hidden" id="producto-id">
-                <input type="text" id="nombre-producto" placeholder="Nombre del producto" required>
-                <input type="number" id="cantidad-producto" placeholder="Cantidad en stock" required min="0">
-                <button type="submit" class="btn-1">Guardar Producto</button>
+        <!-- CONTENEDOR DE SECCIONES -->
+        <div class="dashboard-container">
+            
+            <!-- SECCIÓN: DASHBOARD (MÉTRICAS) -->
+            <section class="metrics-section">
+                <div class="card-metric">
+                    <h3>Productos en Catálogo</h3>
+                    <p class="number" id="metric-productos">0</p>
+                    <span class="trend up"><i class="bi bi-arrow-up-short"></i> Sincronizado en la nube</span>
+                </div>
+                <div class="card-metric">
+                    <h3>Pedidos Activos</h3>
+                    <p class="number" id="metric-pedidos">0</p>
+                    <span class="trend up"><i class="bi bi-arrow-up-short"></i> En preparación / Reparto</span>
+                </div>
+                <div class="card-metric">
+                    <h3>Usuarios Registrados</h3>
+                    <p class="number" id="metric-usuarios">0</p>
+                    <span class="trend up"><i class="bi bi-person-check"></i> Clientes y Admins</span>
+                </div>
+            </section>
+
+            <!-- SECCIÓN: DASHBOARD (GRÁFICA DE INTERACCIONES) -->
+            <section class="charts-section" id="seccion-graficas" style="margin-top: 30px;">
+                <div class="chart-card" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; max-width: 380px;">
+                    <h3 style="color: #4F231C; text-align: center; margin-bottom: 15px; font-size: 1.1rem;">Interacciones por Canal</h3>
+                    <!-- Contenedor estricto para evitar que la gráfica crezca de más -->
+                    <div style="position: relative; height: 250px; width: 100%; display: flex; justify-content: center;">
+                        <canvas id="interaccionesChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN: PRODUCTOS -->
+            <section id="seccion-productos" class="crud-section seccion-oculta">
+                <div class="section-header">
+                    <h2>Catálogo de Productos (Nube)</h2>
+                    <button id="btn-abrir-modal-producto" class="btn-crm"><i class="bi bi-plus-lg"></i> Nuevo Producto</button>
+                </div>
+                <div class="table-container">
+                    <table class="crm-table">
+                        <thead>
+                            <tr>
+                                <th>Imagen</th>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stock-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- SECCIÓN: PEDIDOS -->
+            <section id="seccion-pedidos" class="tracking-section seccion-oculta">
+                <h2>Seguimiento de Pedidos Activos</h2>
+                <div class="tracking-container" id="tracking-container"></div>
+            </section>
+
+            <!-- SECCIÓN: INTERACCIONES -->
+            <section id="seccion-interacciones" class="crud-section seccion-oculta">
+                <div class="section-header">
+                    <h2>Historial de Interacciones</h2>
+                    <button id="btn-abrir-modal-interaccion" class="btn-crm" style="background-color: #16a085;"><i class="bi bi-plus-lg"></i> Nueva Interacción</button>
+                </div>
+                <div class="table-container">
+                    <table class="crm-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Cliente</th>
+                                <th>Tipo</th>
+                                <th>Descripción</th>
+                                <th>Responsable</th>
+                            </tr>
+                        </thead>
+                        <tbody id="interacciones-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- SECCIÓN: USUARIOS -->
+            <section id="seccion-usuarios" class="crud-section seccion-oculta">
+                <div class="section-header">
+                    <h2>Gestión de Usuarios (Firestore)</h2>
+                </div>
+                <div class="table-container">
+                    <table class="crm-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre y Correo</th>
+                                <th>Rol</th>
+                                <th>Teléfono</th>
+                                <th>Registro</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usuarios-body"></tbody>
+                    </table>
+                </div>
+            </section>
+            
+        </div> <!-- Fin dashboard-container -->
+    </main> <!-- Fin main-content -->
+
+
+    <!-- ========================================== -->
+    <!-- ZONA DE MODALES (FLOTAN SOBRE LA PANTALLA) -->
+    <!-- ========================================== -->
+
+    <!-- MODAL PARA EDITAR USUARIOS -->
+    <div id="modal-usuario" class="modal-crm">
+        <div class="modal-crm-content">
+            <div class="modal-crm-header">
+                <h3>Editar Rol de Usuario</h3>
+                <span class="close-crm" id="cerrar-modal-usuario">&times;</span>
+            </div>
+            <form id="form-editar-usuario">
+                <input type="hidden" id="usuario-id">
+                
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" id="usuario-correo" readonly disabled style="background-color: #eee; color: #888;">
+                </div>
+                
+                <div class="form-group">
+                    <label>Asignar Rol</label>
+                    <select id="usuario-rol" required>
+                        <option value="cliente">Cliente Regular</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+
+                <div class="modal-crm-actions">
+                    <button type="button" class="btn-cancelar" id="btn-cancelar-usuario">Cancelar</button>
+                    <button type="submit" class="btn-guardar" style="background-color: #4F231C;">Guardar Cambios</button>
+                </div>
             </form>
         </div>
-        
-        <h2>Stock de Productos</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Cantidad</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="stock-body"></tbody>
-        </table>
     </div>
-    <script src="../js/admin.js"></script> 
+
+    <!-- MODAL PRODUCTOS CON SUBIDA DE FOTO -->
+    <div id="modal-producto" class="modal-crm">
+        <div class="modal-crm-content">
+            <div class="modal-crm-header">
+                <h3 id="modal-titulo">Nuevo Producto</h3>
+                <span class="close-crm" id="cerrar-modal-producto">&times;</span>
+            </div>
+            <form id="form-nuevo-producto">
+                <input type="hidden" id="producto-id">
+                <input type="hidden" id="imagen-actual">
+                
+                <div class="form-group">
+                    <label>Nombre del Producto</label>
+                    <input type="text" id="nombre-producto" required placeholder="Ej: Bolillo, Concha...">
+                </div>
+                <div class="form-group">
+                    <label>Cantidad en Stock</label>
+                    <input type="number" id="cantidad-producto" required min="0" placeholder="0">
+                </div>
+                
+                <!-- CAMPOS: CATEGORÍA Y PRECIO -->
+                <div class="form-group" style="display: flex; flex-direction:row; gap: 15px;">
+                    <div style="flex: 1;">
+                        <label>Categoría</label>
+                        <select id="categoria-producto" required>
+                            <option value="Panes">🍞 Panes</option>
+                            <option value="Cafés">☕ Cafés</option>
+                            <option value="Otros">📦 Otros</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Precio ($)</label>
+                        <input type="number" id="precio-producto" required min="1" placeholder="Ej: 15">
+                    </div>
+                </div>
+                
+                <!-- BOTÓN DE SUBIDA DE IMAGEN -->
+                <div class="form-group">
+                    <label>Imagen del Producto</label>
+                    <input type="file" id="imagen-archivo" accept="image/*" style="padding: 5px;">
+                    <small style="color: #888; margin-top: 5px;">* Si editas y no eliges foto, se conservará la anterior.</small>
+                </div>
+
+                <div class="modal-crm-actions">
+                    <button type="button" class="btn-cancelar" id="btn-cancelar-producto">Cancelar</button>
+                    <button type="submit" class="btn-guardar" id="btn-guardar-producto">Guardar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL INTERACCIONES -->
+    <div id="modal-interaccion" class="modal-crm">
+        <div class="modal-crm-content">
+            <div class="modal-crm-header">
+                <h3>Nueva Interacción</h3>
+                <span class="close-crm" id="cerrar-modal-interaccion">&times;</span>
+            </div>
+            <form id="form-nueva-interaccion">
+                <div class="form-group">
+                    <label>Cliente / Empresa</label>
+                    <input type="text" id="int-cliente" required placeholder="Ej. María López">
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Interacción</label>
+                    <select id="int-tipo" required>
+                        <option value="Llamada">Llamada</option>
+                        <option value="Correo">Correo</option>
+                        <option value="Reunión">Reunión</option>
+                        <option value="WhatsApp">WhatsApp</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="int-desc" rows="3" required placeholder="Detalles de lo que se habló..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Responsable</label>
+                    <input type="text" id="int-resp" required value="Admin">
+                </div>
+                <div class="modal-crm-actions">
+                    <button type="button" class="btn-cancelar" id="btn-cancelar-interaccion">Cancelar</button>
+                    <button type="submit" class="btn-guardar" style="background-color: #16a085;">Guardar Interacción</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script type="module" src="../js/admin.js"></script>
 </body>
 </html>
