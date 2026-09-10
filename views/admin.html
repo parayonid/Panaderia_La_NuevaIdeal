@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard CRM - La Nueva Ideal</title>
+    <link rel="stylesheet" href="../css/styles.css?v=1.2">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .form-group textarea, .form-group select, .form-group input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: inherit;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .detalle-card {
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body class="dashboard-body">
+ <aside class="sidebar">
+        <div class="sidebar-header">
+            <img src="../images/images/new_ideal.svg" alt="Logo" class="sidebar-logo">
+            <h2>Admin</h2>
+        </div>
+        <ul class="sidebar-menu">
+            <li class="menu-divider" style="color: #f39c12; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; padding: 15px 20px 5px; letter-spacing: 1px;"> Módulo CRM</li>
+            <li class="active"><a href="#"><i class="bi bi-grid-1x2"></i> Dashboard</a></li>
+            <li><a href="#seccion-reportes"><i class="bi bi-bar-chart-line-fill"></i> Reportes</a></li>
+            <li><a href="#seccion-clientes"><i class="bi bi-person-lines-fill"></i> Clientes</a></li>
+            <li><a href="#seccion-interacciones"><i class="bi bi-chat-left-text"></i> Interacciones</a></li>
+            <li><a href="#seccion-usuarios"><i class="bi bi-people"></i> Staff (Usuarios)</a></li>
+            
+            <li class="menu-divider" style="color: #f39c12; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; padding: 25px 20px 5px; letter-spacing: 1px;"> Operaciones Tienda</li>
+            <li><a href="#seccion-productos"><i class="bi bi-box-seam"></i> Catálogo</a></li>
+            <li><a href="#seccion-pedidos"><i class="bi bi-truck"></i> Pedidos</a></li>
+            
+            <li style="margin-top: 20px;"><a href="../index.html"><i class="bi bi-house-door"></i> Volver a Tienda</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-header">
+            <div class="search-bar">
+                <i class="bi bi-search"></i>
+                <input type="text" id="global-search" placeholder="Buscar en la sección actual...">
+            </div>
+            <div class="user-profile">
+                <span>Administrador</span>
+                <i class="bi bi-person-circle"></i>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            
+            <section class="metrics-section">
+                <div class="card-metric">
+                    <h3>Total de Clientes</h3>
+                    <p class="number" id="metric-clientes">0</p>
+                    <span class="trend up"><i class="bi bi-arrow-up-short"></i> Registrados en API</span>
+                </div>
+                <div class="card-metric">
+                    <h3>Interacciones</h3>
+                    <p class="number" id="metric-interacciones">0</p>
+                    <span class="trend up"><i class="bi bi-chat-dots"></i> Llamadas y correos</span>
+                </div>
+                <div class="card-metric">
+                    <h3>Staff (Usuarios)</h3>
+                    <p class="number" id="metric-usuarios">0</p>
+                    <span class="trend up"><i class="bi bi-person-check"></i> Administradores</span>
+                </div>
+            </section>
+
+            <section class="charts-section" id="seccion-graficas" style="margin-top: 30px;">
+                <div class="chart-card" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; max-width: 380px;">
+                    <h3 style="color: #4F231C; text-align: center; margin-bottom: 15px; font-size: 1.1rem;">Interacciones por Canal</h3>
+                    <div style="position: relative; height: 250px; width: 100%; display: flex; justify-content: center;">
+                        <canvas id="interaccionesChart"></canvas>
+                    </div>
+                </div>
+            </section>
+            <!-- ========================================== -->
+            <!-- NUEVA SECCIÓN: REPORTES Y MÉTRICAS         -->
+            <!-- ========================================== -->
+            <section id="seccion-reportes" class="crud-section seccion-oculta" style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                <div style="margin-bottom: 25px;">
+                    <h2 style="color:#4F231C">Reportes y métricas</h2>
+                    <p style="color: #666; font-size: 0.9rem;">Indicadores para evaluar el desempeño del CRM.</p>
+                </div>
+
+                <!-- 4 Tarjetas de Métricas -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+                    <div class="detalle-card" style="padding: 15px;">
+                        <h4 style="margin: 0; font-size: 0.85rem; color: #666;">Total de clientes</h4>
+                        <p id="rep-total-cli" style="font-size: 1.8rem; font-weight: bold; margin: 10px 0; color: #16a085;">0</p>
+                        <small style="color: #888;">Clientes registrados</small>
+                    </div>
+                    <div class="detalle-card" style="padding: 15px;">
+                        <h4 style="margin: 0; font-size: 0.85rem; color: #666;">Clientes activos</h4>
+                        <p id="rep-activos-cli" style="font-size: 1.8rem; font-weight: bold; margin: 10px 0; color: #0d6efd;">0</p>
+                        <small id="rep-activos-pct" style="color: #888;">0% del total</small>
+                    </div>
+                    <div class="detalle-card" style="padding: 15px;">
+                        <h4 style="margin: 0; font-size: 0.85rem; color: #666;">Interacciones este mes</h4>
+                        <p id="rep-int-mes" style="font-size: 1.8rem; font-weight: bold; margin: 10px 0; color: #212529;">0</p>
+                        <small style="color: #888;">Registradas en CRM</small>
+                    </div>
+                    <div class="detalle-card" style="padding: 15px;">
+                        <h4 style="margin: 0; font-size: 0.85rem; color: #666;">Clientes sin interacción</h4>
+                        <p id="rep-sin-int" style="font-size: 1.8rem; font-weight: bold; margin: 10px 0; color: #e74c3c;">0</p>
+                        <small id="rep-sin-int-pct" style="color: #888;">0% del total</small>
+                    </div>
+                </div>
+
+                <!-- Gráficas de Reportes -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="detalle-card">
+                        <h4 style="margin-top: 0; font-size: 1rem; color: #333; margin-bottom: 20px;">Interacciones por tipo</h4>
+                        <canvas id="repBarChart"></canvas>
+                    </div>
+                    <div class="detalle-card">
+                        <h4 style="margin-top: 0; font-size: 1rem; color: #333; margin-bottom: 20px;">Clientes por etapa CRM</h4>
+                        <div style="position: relative; height: 250px; display: flex; justify-content: center;">
+                            <canvas id="repPieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+
+            <section id="seccion-clientes" class="crud-section seccion-oculta">
+                <div class="section-header">
+                    <h2>Directorio de Clientes</h2>
+                    <button id="btn-abrir-modal-cliente" class="btn-crm"><i class="bi bi-plus-lg"></i> Nuevo Cliente</button>
+                </div>
+                <div class="table-container">
+                    <table class="crm-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Empresa</th>
+                                <th>Correo / Teléfono</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientes-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="seccion-detalle-cliente" class="crud-section seccion-oculta">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                    <h2>Detalle del Cliente</h2>
+                    <button id="btn-volver-clientes" class="btn-cancelar" style="border: none; background: transparent; color: #555; cursor: pointer; font-size: 0.95rem;">
+                        <i class="bi bi-arrow-left"></i> Volver a Clientes
+                    </button>
+                </div>
+            
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
+                    
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div class="detalle-card">
+                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                                <div style="width: 55px; height: 55px; border-radius: 50%; background: #4F231C; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: bold;" id="detalle-inicial">
+                                    C
+                                </div>
+                                <div>
+                                    <h4 id="detalle-nombre" style="margin: 0; font-size: 1.15rem;">Cargando...</h4>
+                                    <small style="color: #888;" id="detalle-registro">Registrado en API</small>
+                                </div>
+                            </div>
+                            <p style="margin-bottom: 15px; font-size: 0.9rem; color: #555;"><i class="bi bi-envelope"></i> <span id="detalle-correo">...</span></p>
+                            <p style="margin-bottom: 20px; font-size: 0.9rem; color: #555;"><i class="bi bi-telephone"></i> <span id="detalle-telefono">...</span></p>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="btn-detalle-correo" class="btn-cancelar" style="flex: 1; padding: 10px; font-size: 0.85rem;"><i class="bi bi-envelope-paper"></i> Correo</button>
+                                <button id="btn-detalle-editar" class="btn-guardar" style="flex: 1; background: #16a085; padding: 10px; font-size: 0.85rem;"><i class="bi bi-pencil"></i> Editar</button>
+                            </div>
+                        </div>
+            
+                        <div class="detalle-card">
+                            <h4 style="margin-top: 0; margin-bottom: 15px; font-size: 1.05rem; color: #333;">Clasificación CRM</h4>
+                            <label style="font-size: 0.8rem; color: #666; display: block; margin-bottom: 8px;">Etapa actual del cliente</label>
+                            <select id="detalle-etapa" style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px;">
+                                <option value="Prospecto">🔵 Prospecto (Sin compras recientes)</option>
+                                <option value="Activo">🟢 Activo (Cliente frecuente)</option>
+                                <option value="Inactivo">🔴 Inactivo (Requiere seguimiento)</option>
+                            </select>
+                            <button id="btn-detalle-actualizar-etapa" class="btn-guardar" style="width: 100%; background: #4F231C; padding: 10px;">Actualizar Etapa</button>
+                        </div>
+                    </div>
+            
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div class="detalle-card">
+                            <h4 style="margin-top: 0; margin-bottom: 15px; font-size: 1.05rem; color: #333;"><i class="bi bi-bag-check"></i> Historial de Pedidos</h4>
+                            <table class="crm-table" style="width: 100%; font-size: 0.9rem;">
+                                <thead>
+                                    <tr>
+                                        <th>ID PEDIDO</th>
+                                        <th>FECHA</th>
+                                        <th>ESTADO</th>
+                                        <th>TOTAL</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detalle-pedidos-body">
+                                    <tr><td colspan="4" style="text-align: center; color: #888; padding: 15px;">No hay pedidos registrados en la plataforma.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+            
+                        <div class="detalle-card">
+                            <h4 style="margin-top: 0; margin-bottom: 15px; font-size: 1.05rem; color: #333;"><i class="bi bi-journal-text"></i> Interacciones y Notas</h4>
+                            <form id="form-detalle-interaccion" style="display: flex; gap: 15px; align-items: flex-start; margin-bottom: 25px; padding-bottom: 25px; border-bottom: 1px solid #eee;">
+                                <div style="flex: 1;">
+                                    <label style="font-size: 0.8rem; color: #666; display: block; margin-bottom: 5px;">Tipo</label>
+                                    <select id="detalle-int-tipo" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                                        <option value="Nota interna">Nota interna</option>
+                                        <option value="Llamada">Llamada</option>
+                                        <option value="Correo">Correo</option>
+                                        <option value="WhatsApp">WhatsApp</option>
+                                        <option value="reunion">Reunión</option>
+                                    </select>
+                                </div>
+                                <div style="flex: 3;">
+                                    <label style="font-size: 0.8rem; color: #666; display: block; margin-bottom: 5px;">Descripción / Detalles</label>
+                                    <input type="text" id="detalle-int-desc" placeholder="Ej: Se envió cotización..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" required>
+                                </div>
+                                <div style="flex: 1; margin-top: 25px;">
+                                    <button type="submit" class="btn-guardar" style="width: 100%; padding: 10px; background-color: #212529;">Registrar</button>
+                                </div>
+                            </form>
+            
+                            <div id="detalle-timeline" style="display: flex; flex-direction: column; gap: 15px;">
+                                <p style="text-align: center; color: #888; font-size: 0.9rem;">Cargando historial...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="seccion-interacciones" class="crud-section seccion-oculta">
+                <div class="section-header">
+                    <h2>Historial Global de Interacciones</h2>
+                    <button id="btn-abrir-modal-interaccion" class="btn-crm" style="background-color: #16a085;"><i class="bi bi-plus-lg"></i> Nueva Interacción</button>
+                </div>
+                <div class="table-container">
+                    <table class="crm-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Cliente Asignado</th>
+                                <th>Tipo</th>
+                                <th>Descripción</th>
+                                <th>Admin (Staff)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="interacciones-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="seccion-usuarios" class="crud-section seccion-oculta">
+                <div class="section-header">
+                    <h2>Gestión de Staff / Usuarios</h2>
+                </div>
+                <div class="table-container">
+                    <table class="crm-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre y Correo</th>
+                                <th>Rol</th>
+                                <th>Teléfono</th>
+                                <th>Registro</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usuarios-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="seccion-productos" class="crud-section seccion-oculta">
+                <div class="section-header">
+                    <h2>Catálogo de Productos</h2>
+                    <button id="btn-abrir-modal-producto" class="btn-crm"><i class="bi bi-plus-lg"></i> Nuevo Producto</button>
+                </div>
+                <div class="table-container">
+                    <table class="crm-table">
+                        <thead>
+                            <tr>
+                                <th>Imagen</th>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stock-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="seccion-pedidos" class="tracking-section seccion-oculta">
+                <h2>Seguimiento de Pedidos Activos</h2>
+                <div class="tracking-container" id="tracking-container"></div>
+            </section>
+        </div>
+    </main>
+
+    <!-- MODAL NUEVO CLIENTE -->
+    <div id="modal-cliente" class="modal-crm">
+        <div class="modal-crm-content">
+            <div class="modal-crm-header">
+                <h3>Registrar Nuevo Cliente</h3>
+                <span class="close-crm" id="cerrar-modal-cliente">&times;</span>
+            </div>
+            <form id="form-nuevo-cliente">
+                <input type="hidden" id="cliente-id">
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="cli-nombre" required placeholder="Ej: Santiago Aguirre">
+                </div>
+                <div class="form-group" style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <label>Correo Electrónico</label>
+                        <input type="email" id="cli-correo" required placeholder="correo@empresa.com">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Teléfono</label>
+                        <input type="text" id="cli-telefono" required placeholder="449...">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Empresa (Opcional)</label>
+                    <input type="text" id="cli-empresa" placeholder="Ej. Restaurante El Sol">
+                </div>
+                <div class="modal-crm-actions">
+                    <button type="button" class="btn-cancelar" id="btn-cancelar-cliente">Cancelar</button>
+                    <button type="submit" class="btn-guardar" style="background-color: #4F231C;">Guardar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL INTERACCIONES -->
+    <div id="modal-interaccion" class="modal-crm">
+        <div class="modal-crm-content">
+            <div class="modal-crm-header">
+                <h3>Registrar Interacción</h3>
+                <span class="close-crm" id="cerrar-modal-interaccion">&times;</span>
+            </div>
+            <form id="form-nueva-interaccion">
+                <div class="form-group">
+                    <label>Seleccionar Cliente</label>
+                    <select id="int-cliente-id" required>
+                        <option value="">Cargando clientes...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Interacción</label>
+                    <select id="int-tipo" required>
+                        <option value="Llamada">Llamada</option>
+                        <option value="Correo">Correo</option>
+                        <option value="Reunión">Reunión</option>
+                        <option value="WhatsApp">WhatsApp</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Descripción / Acuerdos</label>
+                    <textarea id="int-desc" rows="3" required placeholder="Detalles de lo que se habló..."></textarea>
+                </div>
+                <div class="modal-crm-actions">
+                    <button type="button" class="btn-cancelar" id="btn-cancelar-interaccion">Cancelar</button>
+                    <button type="submit" class="btn-guardar" style="background-color: #16a085;">Guardar Interacción</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL USUARIOS -->
+    <!-- MODAL USUARIOS (STAFF) -->
+    <div id="modal-usuario" class="modal-crm">
+        <div class="modal-crm-content">
+            <div class="modal-crm-header">
+                <h3>Editar Perfil de Usuario</h3>
+                <span class="close-crm" id="cerrar-modal-usuario">&times;</span>
+            </div>
+            <form id="form-editar-usuario">
+                <input type="hidden" id="usuario-id">
+                <div class="form-group">
+                    <label>Correo Electrónico (No editable)</label>
+                    <input type="email" id="usuario-correo" readonly disabled style="background-color: #eee; color: #888;">
+                </div>
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="usuario-nombre" required placeholder="Nombre del usuario">
+                </div>
+                <div class="form-group" style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <label>Teléfono</label>
+                        <input type="text" id="usuario-telefono" required placeholder="Ej: 449...">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Asignar Rol</label>
+                        <select id="usuario-rol" required>
+                            <option value="cliente">Cliente Regular</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-crm-actions">
+                    <button type="button" class="btn-cancelar" id="btn-cancelar-usuario">Cancelar</button>
+                    <button type="submit" class="btn-guardar" style="background-color: #4F231C;">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL PRODUCTOS -->
+    <div id="modal-producto" class="modal-crm">
+        <div class="modal-crm-content">
+            <div class="modal-crm-header">
+                <h3 id="modal-titulo">Nuevo Producto</h3>
+                <span class="close-crm" id="cerrar-modal-producto">&times;</span>
+            </div>
+            <form id="form-nuevo-producto">
+                <input type="hidden" id="producto-id">
+                <input type="hidden" id="imagen-actual">
+                <div class="form-group">
+                    <label>Nombre del Producto</label>
+                    <input type="text" id="nombre-producto" required placeholder="Ej: Bolillo, Concha...">
+                </div>
+                <div class="form-group">
+                    <label>Cantidad en Stock</label>
+                    <input type="number" id="cantidad-producto" required min="0" placeholder="0">
+                </div>
+                <div class="form-group" style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <label>Categoría</label>
+                        <select id="categoria-producto" required>
+                            <option value="Panes">🍞 Panes</option>
+                            <option value="Cafés">☕ Cafés</option>
+                            <option value="Otros">📦 Otros</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Precio ($)</label>
+                        <input type="number" id="precio-producto" required min="1" placeholder="Ej: 15">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Imagen del Producto</label>
+                    <input type="file" id="imagen-archivo" accept="image/*" style="padding: 5px;">
+                    <small style="color: #888; margin-top: 5px;">* Si editas y no eliges foto, se conservará la anterior.</small>
+                </div>
+                <div class="modal-crm-actions">
+                    <button type="button" class="btn-cancelar" id="btn-cancelar-producto">Cancelar</button>
+                    <button type="submit" class="btn-guardar" id="btn-guardar-producto">Guardar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="../js/admin.js?v=1.2"></script>
+</body>   
+</html>

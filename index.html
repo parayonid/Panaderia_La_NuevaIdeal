@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Nueva Ideal</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <header class="header">
+        <div class="menu container">
+            <a href="index.html" class="logo">
+                <img src="images/images/new_ideal.svg" alt="Logo de la panadería">
+            </a>
+
+            <input type="checkbox" id="menu" />
+            <label for="menu">
+                <img src="images/images/menu.png" class="menu-icono" alt="">
+            </label>
+
+            <nav class="navbar">
+                <ul>
+                    <li><a href="#">Inicio</a></li>
+                    <li><a href="#servicios">Servicios</a></li>
+                    <li><a href="#lista-1">Productos</a></li>
+                    <li><a href="#footer">Contacto</a></li>
+                </ul>
+            </nav>
+
+            <div class="header-icons">
+                <a href="views/admin.html" class="nav-icon" id="nav-admin" title="Panel de Administración">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-gear-fill" viewBox="0 0 16 16"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311a1.464 1.464 0 0 1-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413-1.4-2.397 0-2.81l.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" /></svg>
+                </a>
+                
+                <a href="views/user.html" class="nav-icon" id="nav-profile" title="Mi Perfil e Historial">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-person-fill" viewBox="0 0 16 16"><path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" /></svg>
+                </a>
+                
+                <ul>
+                    <li class="submenu">
+                        <img src="images/images/car.svg" id="ig-carrito" alt="Carrito de compras">
+                        <div id="carrito">
+                            <table id="lista-carrito">
+                                <thead><tr><th>Imagen</th><th>Nombre</th><th>Precio</th><th></th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                            <a href="#" id="vaciar-carrito" class="btn-2">Vaciar carrito</a>
+                            <div id="checkout"><p>Total: $<span id="total">0</span></p><a href="#" id="finalizar-compra" class="btn-2">Finalizar compra</a></div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="header-content container">
+            <div class="header-txt"><h1>La nueva ideal</h1><p>Pan calientito las 24 horas del día...</p><a href="#lista-1" class="btn-1">Sección menú</a></div>
+        </div>
+    </header>
+
+    <main>
+        <section class="icons">
+            <div class="icon"><img src="images/images/i1.svg" alt=""></div><div class="icon"><img src="images/images/i2.svg" alt=""></div><div class="icon"><img src="images/images/i3.svg" alt=""></div><div class="icon"><img src="images/images/i4.svg" alt=""></div><div class="icon"><img src="images/images/i5.svg" alt=""></div><div class="icon"><img src="images/images/i6.svg" alt=""></div><div class="icon"><img src="images/images/i7.svg" alt=""></div><div class="icon"><img src="images/images/i8.svg" alt=""></div><div class="icon"><img src="images/images/i9.svg" alt=""></div><div class="icon"><img src="images/images/i10.svg" alt=""></div>
+        </section>
+
+   <section class="products container" id="lista-1">
+            <h2>Panes</h2>
+            <!-- Dejamos este contenedor vacío para que Firebase lo llene -->
+            <div class="products-content" id="contenedor-panes"></div>
+        </section>
+
+        <section class="products container" id="lista-2">
+            <h2>Cafés</h2>
+            <!-- Dejamos este contenedor vacío para que Firebase lo llene -->
+            <div class="products-content" id="contenedor-cafes"></div>
+        </section>
+
+        <section class="services" id="servicios">
+            <div class="services-content container">
+                <div class="service">
+                    <h3>Eventos Especiales</h3><hr>
+                    <p>Celebra con nosotros. Ofrecemos catering de pan dulce, pasteles y café para tus reuniones, bodas o eventos corporativos.</p>
+                </div>
+                <div class="service">
+                    <h3>Pedidos Personalizados</h3><hr>
+                    <p>¿Tienes un antojo especial? Hacemos pasteles y panes sobre pedido. Contáctanos para cotizar esa idea que tienes en mente.</p>
+                </div>
+                <div class="service">
+                    <h3>Café de Especialidad</h3><hr>
+                    <p>Trabajamos con granos de café de la más alta calidad, tostados localmente para garantizar una taza fresca y llena de sabor.</p>
+                </div>
+                <div class="service">
+                    <h3>Entregas a Domicilio</h3><hr>
+                    <p>Disfruta de nuestro pan calientito sin salir de casa. Consulta nuestras zonas de reparto y haz tu pedido en línea.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="cookie-banner" class="cookie-banner-dark" style="display: none;"> <p>
+            Al hacer clic en “Aceptar”, aceptas que las cookies se guarden en tu dispositivo para mejorar la navegación del sitio.
+            Usamos almacenamiento local (similar a "cookies") para guardar tu carrito e historial.
+            <a href="views/cookies.html" target="_blank">Leer más</a>
+        </p>
+        <button class="btn-cookie-accept-dark" id="cookie-accept">Aceptar</button>
+    </div>
+   <!-- MODAL DE LOGIN / REGISTRO / RECUPERACIÓN -->
+    <div id="login-modal" class="modal" style="display: none; z-index: 4000;">
+        <div class="modal-content auth-modal-content">
+            <span class="close-button" id="close-login">&times;</span>
+            
+            <!-- Contenedor de pestañas (se oculta al recuperar contraseña) -->
+            <div class="auth-tabs" id="auth-tabs-container">
+                <button type="button" class="auth-tab active" id="tab-login">Iniciar Sesión</button>
+                <button type="button" class="auth-tab" id="tab-register">Registrarse</button>
+            </div>
+
+            <!-- FORMULARIO: INICIAR SESIÓN -->
+            <form id="login-form" class="auth-form" autocomplete="off">
+                <h2 style="color: #4F231C; margin-bottom: 20px;">Bienvenido de nuevo</h2>
+                <input type="email" id="login-email" placeholder="Correo Electrónico" required class="input-auth" autocomplete="off">
+                <input type="password" id="login-password" placeholder="Contraseña" required class="input-auth" autocomplete="new-password">
+                
+                <!-- Enlace de Olvidaste tu contraseña -->
+                <div style="text-align: right; margin-bottom: 15px;">
+                    <a href="#" id="link-forgot-pwd" class="forgot-link">¿Olvidaste tu contraseña?</a>
+                </div>
+
+                <p id="login-error" class="error-msg" style="display: none;"></p>
+                <button type="submit" class="btn-1" style="width: 100%;">Entrar</button>
+            </form>
+            
+            <!-- FORMULARIO: REGISTRO -->
+            <form id="register-form" class="auth-form" style="display: none;" autocomplete="off">
+                <h2 style="color: #4F231C; margin-bottom: 20px;">Crea tu cuenta</h2>
+                <input type="text" id="reg-name" placeholder="Nombre Completo" required class="input-auth" autocomplete="off">
+                <input type="tel" id="reg-phone" placeholder="Número de Teléfono" required class="input-auth" autocomplete="off">
+                <input type="email" id="reg-email" placeholder="Correo Electrónico" required class="input-auth" autocomplete="off">
+                <input type="password" id="reg-password" placeholder="Contraseña" required class="input-auth" autocomplete="new-password">
+                
+                <ul class="pwd-rules">
+                    <li id="rule-length" class="invalid"><i class="bi bi-x-circle"></i> Mínimo 8 caracteres</li>
+                    <li id="rule-upper" class="invalid"><i class="bi bi-x-circle"></i> Al menos 1 mayúscula</li>
+                    <li id="rule-number" class="invalid"><i class="bi bi-x-circle"></i> Al menos 1 número</li>
+                    <li id="rule-special" class="invalid"><i class="bi bi-x-circle"></i> 1 carácter especial (@$!%*?&)</li>
+                </ul>
+
+                <p id="reg-error" class="error-msg" style="display: none;"></p>
+                <button type="submit" class="btn-1" id="btn-submit-reg" style="width: 100%; margin-top: 10px;" disabled>Registrarme</button>
+            </form>
+
+            <!-- FORMULARIO: RECUPERAR CONTRASEÑA (NUEVO) -->
+            <form id="forgot-pwd-form" class="auth-form" style="display: none;" autocomplete="off">
+                <h2 style="color: #4F231C; margin-bottom: 10px;">Recuperar Contraseña</h2>
+                <p style="font-size: 13px; color: #555; margin-bottom: 20px;">Ingresa tu correo y te enviaremos un enlace para restablecerla.</p>
+                
+                <input type="email" id="forgot-email" placeholder="Correo Electrónico" required class="input-auth" autocomplete="off">
+                
+                <p id="forgot-error" class="error-msg" style="display: none;"></p>
+                <p id="forgot-success" style="color: #16a085; font-size: 13px; font-weight: 600; margin-bottom: 15px; display: none;">¡Enlace enviado! Revisa tu bandeja de entrada o spam.</p>
+                
+                <button type="submit" class="btn-1" id="btn-submit-forgot" style="width: 100%; margin-bottom: 15px;">Enviar Enlace</button>
+                <a href="#" id="link-back-login" class="forgot-link" style="display: block; text-align: center;">← Volver a Iniciar Sesión</a>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="js/auth.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
+    <div id="checkout-modal" class="modal" style="display: none;">
+        <div class="modal-content checkout-content">
+            <span class="close-button" id="close-checkout">×</span>
+            <h2>Finalizar Compra</h2>
+            
+            <div class="checkout-grid">
+                <div class="checkout-left">
+                    
+                    <div class="checkout-section">
+                        <h3>📄 Datos Fiscales</h3>
+                        <label class="row">
+                            <input type="checkbox" id="invoice-check"> 
+                            Requiero Factura (CFDI)
+                        </label>
+                        
+                        <div id="fiscal-form" style="display:none; margin-top:15px;">
+                            <label>Tipo de Persona:</label>
+                            <select id="fiscal-type" style="width:100%; padding:8px; margin-bottom:10px;">
+                                <option value="fisica">Persona Física</option>
+                                <option value="moral">Persona Moral</option>
+                            </select>
+
+                            <input type="text" id="fiscal-rfc" placeholder="RFC" style="width:100%; margin-bottom:10px;">
+                            <input type="text" id="fiscal-name" placeholder="Razón Social / Nombre Completo" style="width:100%; margin-bottom:10px;">
+                            <select id="fiscal-regime" style="width:100%; padding:8px; margin-bottom:10px;">
+                                <option value="">Selecciona Régimen Fiscal...</option>
+                                <option value="601">General de Ley Personas Morales</option>
+                                <option value="605">Sueldos y Salarios</option>
+                                <option value="626">Régimen Simplificado de Confianza</option>
+                            </select>
+                            <input type="text" id="fiscal-cp" placeholder="Código Postal Fiscal" style="width:100%;">
+                        </div>
+                    </div>
+
+                    <div class="checkout-section">
+                        <h3>💳 Método de Pago</h3>
+                        
+                        <label class="payment-option">
+                            <input type="radio" name="payment-method" value="wallet">
+                            <strong>Monedero Electrónico</strong>
+                            <span class="badge-wallet">Saldo: $<span id="wallet-balance">500.00</span></span>
+                        </label>
+
+                        <label class="payment-option">
+                            <input type="radio" name="payment-method" value="qr">
+                            <strong>Pago con QR (Efectivo)</strong>
+                        </label>
+                        <div id="qr-info" class="payment-details" style="display:none;">
+                            <p>Escanea este código en caja o con tu app bancaria:</p>
+                            <div class="qr-placeholder">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PagoLaNuevaIdeal" alt="QR Pago">
+                            </div>
+                        </div>
+
+                        <label class="payment-option">
+                            <input type="radio" name="payment-method" value="deposit">
+                            <strong>Depósito / Transferencia</strong>
+                        </label>
+                        <div id="deposit-info" class="payment-details" style="display:none;">
+                            <p>Banco: BBVA<br>Cuenta: 0123456789<br>CLABE: 012001001234567890<br>Ref: Tu Pedido</p>
+                        </div>
+
+                        <label class="payment-option">
+                            <input type="radio" name="payment-method" value="cheque">
+                            <strong>Cheque (Contraentrega)</strong>
+                        </label>
+                        <div id="cheque-info" class="payment-details" style="display:none;">
+                            <p>Prepara tu cheque a nombre de: <strong>La Nueva Ideal S.A. de C.V.</strong></p>
+                            <p style="font-size:0.8rem;">* Se validará al momento de la entrega.</p>
+                        </div>
+
+                        <label class="payment-option">
+                            <input type="radio" name="payment-method" value="card" checked>
+                            <strong>Tarjeta de Crédito/Débito</strong>
+                        </label>
+                        
+                        <div id="card-form-container" class="payment-details" style="display:block;"> 
+                            <input type="text" id="card-number" placeholder="Número de Tarjeta (16 dígitos)" maxlength="16" style="width:100%; padding:8px; margin-bottom:10px; border:1px solid #ccc; border-radius:4px;">
+                            <div class="card-row" style="display:flex; gap:10px; margin-bottom:10px;">
+                                <input type="text" id="card-expiry" placeholder="MM/AA" maxlength="5" style="width:50%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                                <input type="password" id="card-cvv" placeholder="CVV" maxlength="4" style="width:50%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                            </div>
+                            <input type="text" id="card-name" placeholder="Nombre del Titular" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="checkout-right">
+                    <h3>Resumen</h3>
+                    <p>Subtotal: $<span id="checkout-subtotal">0.00</span></p>
+                    <p>Donación: $<span id="checkout-donation">0.00</span></p>
+                    <hr>
+                    <p style="font-size: 1.2rem; font-weight: bold;">Total a Pagar: $<span id="checkout-total">0.00</span></p>
+                    <button class="btn-1" id="btn-pay-now" style="width:100%; margin-top:20px;">Pagar Ahora</button>
+                    
+                    <div class="checkout-policies">
+                        <small>
+                            * Al confirmar, aceptas que los productos perecederos no tienen devolución. 
+                            Revisa nuestras <a href="views/devoluciones.html" target="_blank" style="color: #fff; text-decoration: underline;">políticas de venta</a>.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span style="font-size: 1.1rem;">🔒</span>
+                <p style="margin: 0;">Este sitio implementa <strong>certificación digital simulada</strong> para reforzar la confianza en el usuario.</p>
+            </div>
+            </div>
+    </div>
+
+    <div id="cfdi-modal" class="modal" style="display: none; z-index: 3001;">
+        <div class="modal-content cfdi-content">
+            <span class="close-button" id="close-cfdi">×</span>
+            
+            <div class="cfdi-header">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h2 style="margin:0; color:#333;">LA NUEVA IDEAL</h2>
+                        <small>RFC: <strong>IDE800101XYZ</strong></small><br>
+                        <small>Régimen Fiscal: 601 - General de Ley Personas Morales</small>
+                    </div>
+                    <div style="text-align:right;">
+                        <h3 style="margin:0; color:#4F231C;">FACTURA</h3>
+                        <p style="margin:0; font-size:0.8rem;">Folio Fiscal (UUID):</p>
+                        <p style="margin:0; font-family:monospace; font-size:0.8rem;">A1B2C3D4-E5F6-7890-1234-567890ABCDEF</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cfdi-body">
+                <p><strong>Receptor:</strong> <span id="cfdi-client-name">PUBLICO EN GENERAL</span></p>
+                <p><strong>RFC:</strong> <span id="cfdi-client-rfc">XAXX010101000</span></p>
+                <p><strong>Uso CFDI:</strong> G03 - Gastos en general</p>
+                
+                <table class="cfdi-table">
+                    <thead>
+                        <tr>
+                            <th>Cant.</th>
+                            <th>Concepto</th>
+                            <th>Precio Unit.</th>
+                            <th>Importe</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cfdi-items">
+                        </tbody>
+                </table>
+
+                <div style="text-align:right; margin-top:10px;">
+                    <p>Subtotal: $<span id="cfdi-subtotal">0.00</span></p>
+                    <p>IVA (16%): $<span id="cfdi-tax">0.00</span></p>
+                    <p style="font-weight:bold; font-size:1.1rem;">Total: $<span id="cfdi-total">0.00</span></p>
+                </div>
+            </div>
+
+            <div class="cfdi-footer">
+                <div class="cfdi-qr">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://verificacfdi.facturaelectronica.sat.gob.mx" alt="QR SAT">
+                </div>
+                <div class="cfdi-stamps">
+                    <p><strong>Sello Digital del CFDI:</strong></p>
+                    <p class="stamp-text">k8Js9Lq2WzX4cR5vB7nM1...[Firma Digital Simulada]...aB3cD4eF5g</p>
+                    <p><strong>Sello del SAT:</strong></p>
+                    <p class="stamp-text">XyZ1aB2cD3eF4gH5...[Sello SAT Simulado]...9iJ8kL7mN6</p>
+                    <p>Este documento es una representación impresa de un CFDI.</p>
+                </div>
+            </div>
+
+            <div class="cfdi-actions">
+                <button class="btn-1" id="btn-email-cfdi">✉ Enviar por Correo</button>
+                <button class="btn-2" id="btn-download-cfdi">⬇ Descargar XML/PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="receipt-modal" class="modal" style="display: none; z-index: 3001;">
+        <div class="modal-content" style="text-align: center; max-width: 400px; border: 2px dashed #4F231C;">
+            <span class="close-button" id="close-receipt">×</span>
+            <h3 style="color: #4F231C;">RECIBO DE COMPRA</h3>
+            <p style="font-size: 0.9rem; color: #555;">La Nueva Ideal</p>
+            <hr style="border: 0; border-top: 1px dashed #ccc; margin: 10px 0;">
+            <p><strong>Fecha:</strong> <span id="receipt-date"></span></p>
+            <p><strong>Folio:</strong> #<span id="receipt-id"></span></p>
+            <p style="font-size: 1.2rem; margin: 15px 0;"><strong>Total Pagado: $<span id="receipt-total"></span></strong></p>
+            <p style="font-size: 0.8rem;">Gracias por su preferencia.</p>
+            
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                <button class="btn-1" id="btn-email-receipt">✉ Enviar por Correo</button>
+                <button class="btn-2" id="btn-close-receipt-action">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="error-modal" class="modal" style="display: none; z-index: 3002;">
+        <div class="modal-content" style="text-align: center; max-width: 400px; border-top: 5px solid #ef4444;">
+            <span class="close-button" id="close-error">×</span>
+            <div style="font-size: 3rem; margin-bottom: 10px;">❌</div>
+            <h3 style="color: #ef4444; margin-top: 0;">¡Error en el Pago!</h3>
+            <p id="error-message" style="color: #555; margin-bottom: 20px;">Ocurrió un problema con tu solicitud.</p>
+            <button class="btn-1" id="btn-retry" style="background-color: #ef4444;">Intentar de nuevo</button>
+        </div>
+    </div>
+
+    <footer class="footer-ideal" id="footer">
+    
+    <!-- SECCIÓN DE DONATIVOS (Integrada al nuevo diseño) -->
+    <div class="footer-donation" style="text-align: center; margin-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 30px;">
+        <h3 style="color: #F35200; margin-bottom: 10px;">❤ ¿Deseas apoyar nuestra causa?</h3>
+        <p style="color: #ccc;">Tu donativo ayuda a la fundación "Pan para Todos".</p>
+        <label style="justify-content: center; color: #ECEBEB; margin-top: 15px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: bold;">
+            <input type="checkbox" id="donate-check" style="transform: scale(1.2);"> 
+            Quiero donar
+        </label>
+        <div id="donation-input-container" style="display:none; margin-top:15px;">
+            <input type="number" id="donation-amount" placeholder="Monto ($)" min="1" value="10" style="width: 120px; padding: 10px; text-align: center; border-radius: 5px; border: none; font-size: 16px; font-weight: bold; color: #4F231C;">
+        </div>
+    </div>
+
+    <!-- COLUMNAS PRINCIPALES -->
+    <div class="footer-container">
+        <!-- Columna 1 -->
+        <div class="footer-col">
+            <h4>Navegación</h4>
+            <ul>
+                <li><a href="#">Inicio</a></li>
+                <li><a href="#servicios">Servicios</a></li>
+                <li><a href="#lista-1">Productos</a></li>
+                <li><a href="views/user.html">Mi Perfil</a></li>
+            </ul>
+        </div>
+
+        <!-- Columna 2 -->
+        <div class="footer-col">
+            <h4>Sobre Nosotros</h4>
+            <ul>
+                <li><a href="#">Nuestra Historia</a></li>
+                <li><a href="#">Trabaja con Nosotros</a></li>
+                <li><a href="views/terminos.html">Términos y Condiciones</a></li>
+                <li><a href="views/privacidad.html">Aviso de Privacidad</a></li>
+                <li><a href="views/devoluciones.html">Políticas de Devolución</a></li>
+                <li><a href="views/cancelacion.html">Políticas de Cancelación</a></li>
+                <li><a href="views/cookies.html">Políticas de Cookies</a></li>
+            </ul>
+        </div>
+
+        <!-- Columna 3 -->
+        <div class="footer-col">
+            <h4>Contáctanos</h4>
+            <div class="contacto-info">
+                <a href="https://wa.me/524491725935" target="_blank" style="color: #ccc; text-decoration: none; display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <!-- Tu icono original de WhatsApp -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#F35200" class="bi bi-whatsapp" viewBox="0 0 16 16">
+                        <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
+                    </svg>
+                    <span>449 172 5935</span>
+                </a>
+                <a href="https://www.instagram.com/lanuevaideal_ags/" target="_blank" style="color: #ccc; text-decoration: none; display: flex; align-items: center; gap: 10px;">
+                    <!-- Tu icono original de Instagram -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#F35200" class="bi bi-instagram" viewBox="0 0 16 16">
+                        <path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.917 3.917 0 0 0-1.417.923A3.917 3.917 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.703.01 5.556 0 5.829 0 8s.01 2.444.048 3.297c.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.556 15.99 5.829 16 8 16s2.444-.01 3.297-.048c.852-.04 1.433-.174 1.942-.372.526-.205.972-.478 1.417-.923.445-.444.719-.89 1.923-1.416.198-.51.333-1.09.372-1.942C15.99 10.444 16 10.171 16 8s-.01-2.444-.048-3.297c-.04-.852-.174-1.433-.372-1.942C15.38 2.23 15.108 1.783 14.66.923 14.217.478 13.77.205 13.297.048 12.444.01 12.171 0 8 0zM8 1.44c.489 0 .691.002 1.028.015.326.013.56.058.745.127.217.08.363.16.52.32.158.158.24.304.32.52.069.185.114.419.127.745.013.337.015.539.015 1.028 0 .489-.002.691-.015 1.028-.013.326-.058.56-.127.745-.08.217-.16.363-.32.52-.158.158-.304.24-.52.32-.185.069-.419.114-.745.127-.337.013-.539.015-1.028.015-.489 0-.691-.002-1.028-.015-.326-.013-.56-.058-.745-.127-.217-.08-.363.16-.52-.32-.158-.158-.24-.304-.32-.52-.069-.185-.114.419-.127.745-.013.337-.015-.539-.015-1.028 0-.489.002.691.015-1.028.013.326.058.56.127.745.08.217.16.363.32.52.158.158.304.24.52.32.185.069.419.114.745.127.337.013.539.015 1.028.015zm0 2.88c-1.95 0-3.52 1.57-3.52 3.52s1.57 3.52 3.52 3.52 3.52-1.57 3.52-3.52S9.95 4.32 8 4.32zm0 5.68c-1.21 0-2.16-.95-2.16-2.16S6.79 5.84 8 5.84s2.16.95 2.16 2.16S9.21 10 8 10zm6.405-6.55c-.41 0-.745.335-.745.745s.335.745.745.745.745-.335.745-.745-.335-.745-.745-.745z"/>
+                    </svg>
+                    <span>lanuevaideal_ags</span>
+                </a>
+            </div>
+            
+            <!-- Tu formulario con tu alerta original -->
+            <form class="footer-form" onsubmit="event.preventDefault(); alert('¡Gracias por tu mensaje!'); this.reset();">
+                <input type="text" name="name" placeholder="Tu Nombre" required>
+                <input type="email" name="email" placeholder="Tu Correo Electrónico" required>
+                <textarea name="message" rows="3" placeholder="Escribe tu mensaje aquí..." required></textarea>
+                <button type="submit">Enviar Mensaje</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAPA INTERACTIVO (Centrado en Aguascalientes) -->
+    <div class="footer-mapa">
+        <h4>Nuestra Ubicación</h4>
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d119430.73977322964!2d-102.3789498177579!3d21.8833075217525!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8429ee6ce92a3511%3A0x67db23a54b9f1a23!2sAguascalientes%2C%20Ags.!5e0!3m2!1ses-419!2smx!4v1700000000000!5m2!1ses-419!2smx" width="100%" height="300" style="border:0; border-radius: 12px; margin-top: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.3);" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+</footer>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
