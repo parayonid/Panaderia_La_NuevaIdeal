@@ -129,5 +129,14 @@ async def crear_interaccion(interaccion: Interaccion):
 
 @app.get("/clientes")
 def obtener_clientes():
-    print("ALGUIEN ENTRO A /CLIENTES")
-    return [{"id": "test_1", "nombre": "Cliente de Prueba", "correo": "test@ideal.com", "telefono": "4491234567", "empresa": "Prueba", "estado": "activo"}]
+    try:
+        # Intentamos traer los documentos con un límite de seguridad
+        docs = db.collection("clientes").limit(20).get()
+        clientes = []
+        for doc in docs:
+            d = doc.to_dict()
+            d["id"] = doc.id
+            clientes.append(d)
+        return clientes
+    except Exception as e:
+        return {"error": str(e)}
