@@ -124,15 +124,16 @@ async def crear_interaccion(interaccion: Interaccion):
     doc_ref.set(nueva_int)
     return {"id": doc_ref.id, "mensaje": "Interacción registrada"}
 
-@app.get("/clientes/{id}/interacciones")
-def obtener_interacciones_cliente(id: str):
+@app.get("/clientes")
+def obtener_clientes():
     try:
-        interacciones_ref = db.collection("interacciones").where("cliente_id", "==", id).stream()
-        interacciones = []
-        for doc in interacciones_ref:
+        # Usamos .get() en lugar de .stream() para evitar bloqueos de gRPC colgados
+        docs = db.collection("clientes").get()
+        clientes = []
+        for doc in docs:
             datos = doc.to_dict()
             datos["id"] = doc.id
-            interacciones.append(datos)
-        return interacciones
+            clientes.append(datos)
+        return clientes
     except Exception as e:
-        return {"error_firebase": str(e)}
+        return {"error_conexion_firestore": str(e)}
