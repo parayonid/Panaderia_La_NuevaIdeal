@@ -3,11 +3,15 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import firebase_admin
+import os
 from firebase_admin import credentials, firestore, auth
 from datetime import datetime
 
 # 1. Inicializar Firebase Admin con tu llave privada
-cred = credentials.Certificate("serviceAccountKey.json")
+ruta_llave = "serviceAccountKey.json"
+if not os.path.exists(ruta_llave):
+    ruta_llave = "../serviceAccountKey.json"
+cred = credentials.Certificate("ruta_llave")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
