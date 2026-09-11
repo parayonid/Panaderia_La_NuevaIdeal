@@ -11,7 +11,7 @@ from datetime import datetime
 ruta_llave = "serviceAccountKey.json"
 if not os.path.exists(ruta_llave):
     ruta_llave = "../serviceAccountKey.json"
-cred = credentials.Certificate("ruta_llave")
+cred = credentials.Certificate(ruta_llave)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
