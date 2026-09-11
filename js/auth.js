@@ -172,7 +172,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const userCredential = await signInWithEmailAndPassword(auth, email, pass);
                 const user = userCredential.user;
                 
-                // 2. Buscar el documento de este usuario en Firestore para leer su "rol"
+               
+              // 2. Buscar el documento de este usuario en Firestore para leer su "rol"
                 const userDoc = await getDoc(doc(db, "usuarios", user.uid));
                 let userRole = "cliente"; // Rol por defecto si algo falla
 
@@ -180,7 +181,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     userRole = userDoc.data().rol; // Aquí lee el "admin" que le pusiste en la base de datos
                 }
 
+                // --- AGREGAR ESTAS LÍNEAS PARA GUARDAR LA SESIÓN EN EL NAVEGADOR ---
                 localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('usuarioActual', JSON.stringify({
+                    correo: user.email,
+                    rol: userRole
+                }));
+                // -----------------------------------------------------------------
+
                 if (loginModal) loginModal.style.display = 'none';
                 
                 // 3. Redirección condicional según el rol REAL de la base de datos

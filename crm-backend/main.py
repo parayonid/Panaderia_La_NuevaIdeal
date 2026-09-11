@@ -1,8 +1,9 @@
-from fastapi import FastAPI, HTTPException, Header, Depends
+from fastapi import FastAPI, HTTPException, Header, Depends, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth
 from datetime import datetime
 
 # 1. Inicializar Firebase Admin con tu llave privada
@@ -42,14 +43,23 @@ class Interaccion(BaseModel):
 
 
 
-# Token secreto simulado para el Administrador (en producción iría en variables de entorno)
-ADMIN_SECRET_TOKEN = "ideal_admin_token_2026"
+security = HTTPBearer()
 
-async def verificar_token_admin(x_admin_token: str = Header(...)):
-    if x_admin_token != ADMIN_SECRET_TOKEN:
-        raise HTTPException(status_code=403, detail="Acceso denegado: Token de Administrador inválido o ausente")
-    return x_admin_token
-
+async def verificar_token_admin(credenciales: HTTPAuthorizationCredentials = Security(security)):
+    token = credenciales.credentials
+    try:
+        # 1. Firebase verifica que el JWT sea legítimo y no esté expirado
+        usuario_jwt = auth.verify_id_token(token)
+        uid = usuario_jwt.get("uid")
+        
+        # 2. Consultamos Firestore para garantizar que tenga el rol de admin
+        user_doc = db.collection("usuarios").document(uid).get()
+        if not user_doc.exists or user_doc.to_dict().get("rol") != "admin":
+            raise HTTPException(status_code=403, detail="Acceso denegado: Privilegios insuficientes")
+            
+        return usuario_jwt
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Token inválido o expirado")
 
 # ==========================================
 # ENDPOINTS: CLIENTES

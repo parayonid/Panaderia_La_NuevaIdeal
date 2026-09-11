@@ -1,6 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import { 
-    getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot 
+    getFirestore, collection, query, where, getDocs, 
+    addDoc, updateDoc, deleteDoc, doc, onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -22,6 +24,44 @@ const API_URL = "http://127.0.0.1:8000";
 
 document.addEventListener('DOMContentLoaded', () => {
     
+    // Validación de seguridad por rol en frontend
+    // Validación estricta y en tiempo real con Firebase
+    
+    
+    // Validación estricta y segura con Firebase Auth
+    const authInstance = getAuth();
+    onAuthStateChanged(authInstance, async (user) => {
+        if (!user) {
+            window.location.href = "../index.html";
+            return;
+        }
+
+        try {
+            // Buscar en la colección "usuarios" el documento que coincida con el correo del usuario logueado
+            const q = query(collection(db, "usuarios"), where("correo", "==", user.email));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                alert("Acceso no autorizado: Usuario no registrado en la base de datos.");
+                window.location.href = "../index.html";
+                return;
+            }
+
+            let esAdmin = false;
+            querySnapshot.forEach((docSnap) => {
+                if (docSnap.data().rol === 'admin') {
+                    esAdmin = true;
+                }
+            });
+
+            if (!esAdmin) {
+                alert("Acceso no autorizado. Tu cuenta no tiene permisos de administrador.");
+                window.location.href = "../index.html";
+            }
+        } catch (error) {
+            window.location.href = "../index.html";
+        }
+    });
     const trackingContainer = document.getElementById('tracking-container');
     const pedidos = JSON.parse(localStorage.getItem('pedidosHistorial')) || [];
 
@@ -209,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const mesActual = new Date().getMonth();
             const anioActual = new Date().getFullYear();
 
-            for (let cli of clientes) {
+           for (let cli of clientes) {
                 totalClientes++;
                 mapIntCliente[cli.id] = 0; 
                 
@@ -218,22 +258,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (estadoActual.includes('inactivo')) etapas.Inactivo++;
                 else { etapas.Activo++; clientesActivos++; }
 
-                if (estadoActual !== 'inactivo') {
-                    if (clientesBody) {
-                        clientesBody.innerHTML += `
-                            <tr>
-                                <td><strong>${cli.nombre}</strong></td>
-                                <td>${cli.empresa || 'N/A'}</td>
-                                <td>${cli.correo}<br><small>${cli.telefono}</small></td>
-                                <td><span class="badge" style="background:#16a085; color:white;">Activo</span></td>
-                                <td class="acciones-iconos">
-                                    <i class="bi bi-eye icon-ver-detalle" data-id="${cli.id}" title="Ver Detalles" style="color:#0d6efd; cursor:pointer; font-size: 1.1rem; margin-right:10px;"></i>
-                                    <i class="bi bi-trash icon-delete-cliente" data-id="${cli.id}" title="Dar de baja" style="color:#e74c3c; cursor:pointer; font-size: 1.1rem;"></i>
-                                </td>
-                            </tr>`;
-                    }
-                    if (selectClientes) selectClientes.innerHTML += `<option value="${cli.id}">${cli.nombre} (${cli.empresa || 'Sin empresa'})</option>`;
+                // Definir color y texto dinámico del badge según el estado real del cliente
+                let colorBadge = '#16a085'; // Verde para activo por defecto
+                let textoEstado = cli.estado || 'Activo';
+                if (estadoActual.includes('prospecto')) {
+                    colorBadge = '#0d6efd'; // Azul para prospecto
+                } else if (estadoActual.includes('inactivo')) {
+                    colorBadge = '#e74c3c'; // Rojo para inactivo
                 }
+
+                // Quitamos el filtro restrictivo para que TODOS aparezcan en la tabla
+                if (clientesBody) {
+                    clientesBody.innerHTML += `
+                        <tr>
+                            <td><strong>${cli.nombre}</strong></td>
+                            <td>${cli.empresa || 'N/A'}</td>
+                            <td>${cli.correo}<br><small>${cli.telefono}</small></td>
+                            <td><span class="badge" style="background:${colorBadge}; color:white;">${textoEstado}</span></td>
+                            <td class="acciones-iconos">
+                                <i class="bi bi-eye icon-ver-detalle" data-id="${cli.id}" title="Ver Detalles" style="color:#0d6efd; cursor:pointer; font-size: 1.1rem; margin-right:10px;"></i>
+                                <i class="bi bi-trash icon-delete-cliente" data-id="${cli.id}" title="Dar de baja" style="color:#e74c3c; cursor:pointer; font-size: 1.1rem;"></i>
+                            </td>
+                        </tr>`;
+                }
+                if (selectClientes) selectClientes.innerHTML += `<option value="${cli.id}">${cli.nombre} (${cli.empresa || 'Sin empresa'})</option>`;
 
                 try {
                     const resInt = await fetch(`${API_URL}/clientes/${cli.id}/interacciones`);
@@ -251,6 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } catch(e) {}
             }
+            
 
             let clientesSinInteraccion = Object.values(mapIntCliente).filter(v => v === 0).length;
 
