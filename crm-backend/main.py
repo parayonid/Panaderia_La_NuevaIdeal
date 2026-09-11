@@ -65,6 +65,9 @@ async def verificar_token_admin(credenciales: HTTPAuthorizationCredentials = Sec
 # ==========================================
 # ENDPOINTS: CLIENTES
 # ==========================================
+@app.get("/")
+def raiz():
+    return {"mensaje": "API de La Nueva Ideal funcionando al 100%"}
 
 @app.post("/clientes", status_code=201, dependencies=[Depends(verificar_token_admin)])
 async def crear_cliente(cliente: Cliente):
@@ -126,4 +129,5 @@ async def crear_interaccion(interaccion: Interaccion):
 
 @app.get("/clientes")
 def obtener_clientes():
+    print("ALGUIEN ENTRO A /CLIENTES")
     return [{"id": "test_1", "nombre": "Cliente de Prueba", "correo": "test@ideal.com", "telefono": "4491234567", "empresa": "Prueba", "estado": "activo"}]
