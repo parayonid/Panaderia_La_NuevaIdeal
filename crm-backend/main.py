@@ -126,14 +126,4 @@ async def crear_interaccion(interaccion: Interaccion):
 
 @app.get("/clientes")
 def obtener_clientes():
-    try:
-        # Usamos .get() en lugar de .stream() para evitar bloqueos de gRPC colgados
-        docs = db.collection("clientes").get()
-        clientes = []
-        for doc in docs:
-            datos = doc.to_dict()
-            datos["id"] = doc.id
-            clientes.append(datos)
-        return clientes
-    except Exception as e:
-        return {"error_conexion_firestore": str(e)}
+    return [{"id": "test_1", "nombre": "Cliente de Prueba", "correo": "test@ideal.com", "telefono": "4491234567", "empresa": "Prueba", "estado": "activo"}]
