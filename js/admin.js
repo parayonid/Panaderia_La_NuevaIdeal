@@ -20,10 +20,11 @@ const db = getFirestore(app);
 const productosRef = collection(db, "productos");
 const usuariosRef = collection(db,"usuarios");
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "https://panaderia-la-nuevaideal.onrender.com";
 
 document.addEventListener('DOMContentLoaded', () => {
     
+    console.log("DOM cargado correctamente. URL de la API:", API_URL);
     // Validación de seguridad por rol en frontend
     // Validación estricta y en tiempo real con Firebase
     
@@ -32,9 +33,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const authInstance = getAuth();
     onAuthStateChanged(authInstance, async (user) => {
         if (!user) {
+            console.log("No hay usuario autenticado, redirigiendo..."); // <--- Chivato
             window.location.href = "../index.html";
             return;
         }
+        console.log("Usuario autenticado con éxito:", user.email); // <--- Chivato
 
         try {
             // Buscar en la colección "usuarios" el documento que coincida con el correo del usuario logueado
@@ -234,8 +237,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function recargarDatosCRM() {
+        console.log("Intentando conectar con la API en:", `${API_URL}/clientes`); // <--- Chivato 3
         try {
             const resClientes = await fetch(`${API_URL}/clientes`);
+            console.log("Respuesta de clientes recibida, status:", resClientes.status); // <--- Chivato 4
             if(!resClientes.ok) return;
             const clientes = await resClientes.json();
             
@@ -350,7 +355,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (repBarChart) { repBarChart.data.datasets[0].data = [cLlamada, cCorreo, cWhatsapp, cReunion, cNota]; repBarChart.update(); }
             if (repPieChart) { repPieChart.data.datasets[0].data = [etapas.Prospecto, etapas.Activo, etapas.Inactivo]; repPieChart.update(); }
 
-        } catch (error) {}
+        } catch (error) {console.error("Error crítico al conectar con la API:", error);
+        }
     }
 
     recargarDatosCRM();

@@ -17,7 +17,7 @@ db = firestore.client()
 
 app = FastAPI(title="API CRM La Nueva Ideal")
 
-# 2. Configurar CORS (Permite que el front-end local haga peticiones)
+# 2. Configurar CORS (Permite que el front-end local y de producción hagan peticiones)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://weblanuevaideal.web.app", "http://127.0.0.1:5500", "http://localhost:5500"],
@@ -26,7 +26,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- MODELOS PYDANTIC (Rúbrica de la Maestra) ---
+# --- MODELOS PYDANTIC ---
 class Cliente(BaseModel):
     nombre: str
     correo: str
@@ -38,14 +38,11 @@ class Interaccion(BaseModel):
     cliente_id: str
     tipo: str # llamada, correo, reunión
     descripcion: str
-    usuario_id: str # El ID del Admin (empleado) que la registró
-    
+    usuario_id: str # El ID del Admin que la registró
     
 # ==========================================
 # VALIDACIONES: SEGURIDAD
 # ==========================================
-
-
 
 security = HTTPBearer()
 
@@ -69,9 +66,6 @@ async def verificar_token_admin(credenciales: HTTPAuthorizationCredentials = Sec
 # ENDPOINTS: CLIENTES
 # ==========================================
 
-
-
-
 @app.post("/clientes", status_code=201, dependencies=[Depends(verificar_token_admin)])
 async def crear_cliente(cliente: Cliente):
     nuevo_cliente = cliente.model_dump()
@@ -81,14 +75,17 @@ async def crear_cliente(cliente: Cliente):
     return {"id": doc_ref.id, "mensaje": "Cliente creado exitosamente"}
 
 @app.get("/clientes")
-async def obtener_clientes():
-    clientes_ref = db.collection("clientes").stream()
-    clientes = []
-    for doc in clientes_ref:
-        datos = doc.to_dict()
-        datos["id"] = doc.id
-        clientes.append(datos)
-    return clientes
+def obtener_clientes():
+    try:
+        clientes_ref = db.collection("clientes").stream()
+        clientes = []
+        for doc in clientes_ref:
+            datos = doc.to_dict()
+            datos["id"] = doc.id
+            clientes.append(datos)
+        return clientes
+    except Exception as e:
+        return {"error_firebase": str(e)}
 
 @app.get("/clientes/{id}")
 async def obtener_cliente(id: str):
@@ -114,10 +111,6 @@ async def eliminar_cliente(id: str):
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     doc_ref.update({"estado": "inactivo"})
     return {"mensaje": "Cliente marcado como inactivo"}
-    
-    # Soft Delete: En lugar de borrarlo, lo marcamos como inactivo
-    doc_ref.update({"estado": "inactivo"})
-    return {"mensaje": "Cliente marcado como inactivo"}
 
 # ==========================================
 # ENDPOINTS: INTERACCIONES
@@ -132,12 +125,14 @@ async def crear_interaccion(interaccion: Interaccion):
     return {"id": doc_ref.id, "mensaje": "Interacción registrada"}
 
 @app.get("/clientes/{id}/interacciones")
-async def obtener_interacciones_cliente(id: str):
-    # Consulta a Firestore filtrando por el ID del cliente
-    interacciones_ref = db.collection("interacciones").where("cliente_id", "==", id).stream()
-    interacciones = []
-    for doc in interacciones_ref:
-        datos = doc.to_dict()
-        datos["id"] = doc.id
-        interacciones.append(datos)
-    return interacciones
+def obtener_interacciones_cliente(id: str):
+    try:
+        interacciones_ref = db.collection("interacciones").where("cliente_id", "==", id).stream()
+        interacciones = []
+        for doc in interacciones_ref:
+            datos = doc.to_dict()
+            datos["id"] = doc.id
+            interacciones.append(datos)
+        return interacciones
+    except Exception as e:
+        return {"error_firebase": str(e)}
