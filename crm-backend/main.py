@@ -4,20 +4,28 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import firebase_admin
 import os
+import json
 from firebase_admin import credentials, firestore, auth
 from datetime import datetime
 
-# 1. Inicializar Firebase Admin con tu llave privada
-ruta_llave = "serviceAccountKey.json"
-if not os.path.exists(ruta_llave):
-    ruta_llave = "../serviceAccountKey.json"
-cred = credentials.Certificate(ruta_llave)
+# 1. Inicializar Firebase Admin mediante variable de entorno o archivo local
+firebase_key_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+
+if firebase_key_json:
+    cred_dict = json.loads(firebase_key_json)
+    cred = credentials.Certificate(cred_dict)
+else:
+    ruta_llave = "serviceAccountKey.json"
+    if not os.path.exists(ruta_llave):
+        ruta_llave = "../serviceAccountKey.json"
+    cred = credentials.Certificate(ruta_llave)
+
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 app = FastAPI(title="API CRM La Nueva Ideal")
 
-# 2. Configurar CORS (Permite que el front-end local y de producción hagan peticiones)
+# 2. Configurar CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://weblanuevaideal.web.app", "http://127.0.0.1:5500", "http://localhost:5500"],
@@ -32,13 +40,13 @@ class Cliente(BaseModel):
     correo: str
     telefono: str
     empresa: str
-    estado: str = "activo" # activo o inactivo
+    estado: str = "activo"
 
 class Interaccion(BaseModel):
     cliente_id: str
-    tipo: str # llamada, correo, reunión
+    tipo: str
     descripcion: str
-    usuario_id: str # El ID del Admin que la registró
+    usuario_id: str
     
 # ==========================================
 # VALIDACIONES: SEGURIDAD
@@ -49,11 +57,9 @@ security = HTTPBearer()
 async def verificar_token_admin(credenciales: HTTPAuthorizationCredentials = Security(security)):
     token = credenciales.credentials
     try:
-        # 1. Firebase verifica que el JWT sea legítimo y no esté expirado
         usuario_jwt = auth.verify_id_token(token)
         uid = usuario_jwt.get("uid")
         
-        # 2. Consultamos Firestore para garantizar que tenga el rol de admin
         user_doc = db.collection("usuarios").document(uid).get()
         if not user_doc.exists or user_doc.to_dict().get("rol") != "admin":
             raise HTTPException(status_code=403, detail="Acceso denegado: Privilegios insuficientes")
@@ -80,9 +86,9 @@ async def crear_cliente(cliente: Cliente):
 @app.get("/clientes")
 def obtener_clientes():
     try:
-        clientes_ref = db.collection("clientes").stream()
+        docs = db.collection("clientes").limit(20).get()
         clientes = []
-        for doc in clientes_ref:
+        for doc in docs:
             datos = doc.to_dict()
             datos["id"] = doc.id
             clientes.append(datos)
@@ -126,17 +132,3 @@ async def crear_interaccion(interaccion: Interaccion):
     doc_ref = db.collection("interacciones").document()
     doc_ref.set(nueva_int)
     return {"id": doc_ref.id, "mensaje": "Interacción registrada"}
-
-@app.get("/clientes")
-def obtener_clientes():
-    try:
-        # Intentamos traer los documentos con un límite de seguridad
-        docs = db.collection("clientes").limit(20).get()
-        clientes = []
-        for doc in docs:
-            d = doc.to_dict()
-            d["id"] = doc.id
-            clientes.append(d)
-        return clientes
-    except Exception as e:
-        return {"error": str(e)}
