@@ -125,6 +125,19 @@ async def eliminar_cliente(id: str):
 # ENDPOINTS: INTERACCIONES
 # ==========================================
 
+@app.get("/interacciones")
+def obtener_interacciones():
+    try:
+        docs = db.collection("interacciones").limit(20).get()
+        interacciones = []
+        for doc in docs:
+            datos = doc.to_dict()
+            datos["id"] = doc.id
+            interacciones.append(datos)
+        return interacciones
+    except Exception as e:
+        return {"error_firebase": str(e)}
+
 @app.post("/interacciones", status_code=201, dependencies=[Depends(verificar_token_admin)])
 async def crear_interaccion(interaccion: Interaccion):
     nueva_int = interaccion.model_dump()
