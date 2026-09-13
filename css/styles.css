@@ -894,4 +894,35 @@ input[type="file"]::file-selector-button:hover {
     div[style*="grid-template-columns"] {
         grid-template-columns: 1fr !important;
     }
+
+    body {
+        padding: 5px;
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+}
+
+
+/* Hace que cualquier tabla sea responsiva en pantallas chicas */
+.table-responsive, table {
+    width: 100%;
+    overflow-x: auto;
+    display: block;
+    -webkit-overflow-scrolling: touch;
+}
+
+
+/* Para las tarjetas del dashboard y reportes */
+.metrics-section, .charts-container, .grid-tarjetas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.card-metric, .chart-card {
+    flex: 1 1 250px; /* Se encogen y estiran según el espacio, con un mínimo de 250px */
+    min-width: 0;
 }
