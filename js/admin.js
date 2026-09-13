@@ -237,10 +237,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function recargarDatosCRM() {
-        console.log("Intentando conectar con la API en:", `${API_URL}/clientes`); // <--- Chivato 3
+      
         try {
             const resClientes = await fetch(`${API_URL}/clientes`);
-            console.log("Respuesta de clientes recibida, status:", resClientes.status); // <--- Chivato 4
+            
             if(!resClientes.ok) return;
             const clientes = await resClientes.json();
             

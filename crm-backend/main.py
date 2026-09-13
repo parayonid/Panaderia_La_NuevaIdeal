@@ -145,3 +145,17 @@ async def crear_interaccion(interaccion: Interaccion):
     doc_ref = db.collection("interacciones").document()
     doc_ref.set(nueva_int)
     return {"id": doc_ref.id, "mensaje": "Interacción registrada"}
+
+
+@app.get("/clientes/{cliente_id}/interacciones")
+def obtener_interacciones_por_cliente(cliente_id: str):
+    try:
+        docs = db.collection("interacciones").where("cliente_id", "==", cliente_id).get()
+        interacciones = []
+        for doc in docs:
+            datos = doc.to_dict()
+            datos["id"] = doc.id
+            interacciones.append(datos)
+        return interacciones
+    except Exception as e:
+        return {"error_firebase": str(e)}
