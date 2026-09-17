@@ -8,6 +8,7 @@ import json
 from firebase_admin import credentials, firestore, auth
 from datetime import datetime
 
+os.environ["GRPC_DNS_RESOLVER"] = "native"
 # 1. Inicializar Firebase Admin mediante variable de entorno o archivo local
 firebase_key_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
 
