@@ -25,19 +25,16 @@ const API_URL = "https://panaderia-la-nuevaideal.onrender.com";
 document.addEventListener('DOMContentLoaded', () => {
     
     console.log("DOM cargado correctamente. URL de la API:", API_URL);
-    // Validación de seguridad por rol en frontend
-    // Validación estricta y en tiempo real con Firebase
-    
     
     // Validación estricta y segura con Firebase Auth
     const authInstance = getAuth();
     onAuthStateChanged(authInstance, async (user) => {
         if (!user) {
-            console.log("No hay usuario autenticado, redirigiendo..."); // <--- Chivato
+            console.log("No hay usuario autenticado, redirigiendo..."); 
             window.location.href = "../index.html";
             return;
         }
-        console.log("Usuario autenticado con éxito:", user.email); // <--- Chivato
+        console.log("Usuario autenticado con éxito:", user.email); 
 
         try {
             // Buscar en la colección "usuarios" el documento que coincida con el correo del usuario logueado
@@ -65,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = "../index.html";
         }
     });
+    
     const trackingContainer = document.getElementById('tracking-container');
     const pedidos = JSON.parse(localStorage.getItem('pedidosHistorial')) || [];
 
@@ -263,16 +261,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (estadoActual.includes('inactivo')) etapas.Inactivo++;
                 else { etapas.Activo++; clientesActivos++; }
 
-                // Definir color y texto dinámico del badge según el estado real del cliente
-                let colorBadge = '#16a085'; // Verde para activo por defecto
+                let colorBadge = '#16a085'; 
                 let textoEstado = cli.estado || 'Activo';
                 if (estadoActual.includes('prospecto')) {
-                    colorBadge = '#0d6efd'; // Azul para prospecto
+                    colorBadge = '#0d6efd'; 
                 } else if (estadoActual.includes('inactivo')) {
-                    colorBadge = '#e74c3c'; // Rojo para inactivo
+                    colorBadge = '#e74c3c'; 
                 }
 
-                // Quitamos el filtro restrictivo para que TODOS aparezcan en la tabla
                 if (clientesBody) {
                     clientesBody.innerHTML += `
                         <tr>
@@ -364,9 +360,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (clientesBody) {
         clientesBody.addEventListener('click', async (e) => {
             if (e.target.classList.contains('icon-delete-cliente') && confirm("¿Dar de baja a este cliente?")) {
+                const user = getAuth().currentUser;
+                if (!user) return alert("Sesión expirada");
+                const token = await user.getIdToken();
+
                 await fetch(`${API_URL}/clientes/${e.target.dataset.id}`, { 
                     method: 'DELETE',
-                    headers: { 'x-admin-token': 'ideal_admin_token_2026' }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
                 recargarDatosCRM();
             }
@@ -447,13 +447,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const nuevaEtapa = document.getElementById('detalle-etapa').value;
         if (!clienteId) return;
         
+        const user = getAuth().currentUser;
+        if (!user) return alert("Sesión expirada");
+        const token = await user.getIdToken();
+
         btnActEtapa.textContent = "...";
         try {
             await fetch(`${API_URL}/clientes/${clienteId}`, {
                 method: 'PUT', 
                 headers: { 
                     'Content-Type': 'application/json',
-                    'x-admin-token': 'ideal_admin_token_2026'
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ 
                     nombre: document.getElementById('detalle-nombre').textContent,
@@ -474,6 +478,11 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const clienteId = formDetalleInt.dataset.clienteId;
             if (!clienteId) return;
+
+            const user = getAuth().currentUser;
+            if (!user) return alert("Sesión expirada");
+            const token = await user.getIdToken();
+
             const btnSub = formDetalleInt.querySelector('button');
             btnSub.textContent = "..."; btnSub.disabled = true;
 
@@ -482,18 +491,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST', 
                     headers: { 
                         'Content-Type': 'application/json', 
-                        'x-admin-token': 'ideal_admin_token_2026' 
+                        'Authorization': `Bearer ${token}` 
                     },
                     body: JSON.stringify({
                         cliente_id: clienteId,
                         tipo: document.getElementById('detalle-int-tipo').value,
                         descripcion: document.getElementById('detalle-int-desc').value,
-                        usuario_id: "Admin" 
+                        usuario_id: user.email 
                     })
                 });
                 formDetalleInt.reset();
                 abrirDetalleCliente(clienteId); 
-            } catch (error) { } 
+            } catch (error) { console.error("Error al registrar:", error); } 
             finally { btnSub.textContent = "Registrar"; btnSub.disabled = false; }
         });
     }
@@ -522,6 +531,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 estado: idCliente ? (document.getElementById('detalle-etapa') ? document.getElementById('detalle-etapa').value : "activo") : "activo"
             };
 
+            const user = getAuth().currentUser;
+            if (!user) return alert("Sesión expirada");
+            const token = await user.getIdToken();
+
             const btnSub = formCliente.querySelector('.btn-guardar');
             btnSub.textContent = "Guardando..."; btnSub.disabled = true;
 
@@ -531,7 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         method: 'PUT', 
                         headers: { 
                             'Content-Type': 'application/json',
-                            'x-admin-token': 'ideal_admin_token_2026'
+                            'Authorization': `Bearer ${token}`
                         }, 
                         body: JSON.stringify(datosCliente) 
                     });
@@ -541,7 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         method: 'POST', 
                         headers: { 
                             'Content-Type': 'application/json',
-                            'x-admin-token': 'ideal_admin_token_2026'
+                            'Authorization': `Bearer ${token}`
                         }, 
                         body: JSON.stringify(datosCliente) 
                     });
@@ -570,6 +583,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const clienteSeleccionado = document.getElementById('int-cliente-id').value;
             if (!clienteSeleccionado) return alert("Selecciona un cliente.");
             
+            const user = getAuth().currentUser;
+            if (!user) return alert("Sesión expirada");
+            const token = await user.getIdToken();
+
             const btnSub = formInteraccion.querySelector('.btn-guardar');
             btnSub.textContent = "Guardando..."; btnSub.disabled = true;
             try {
@@ -577,13 +594,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST', 
                     headers: { 
                         'Content-Type': 'application/json',
-                        'x-admin-token': 'ideal_admin_token_2026'
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
                         cliente_id: clienteSeleccionado,
                         tipo: document.getElementById('int-tipo').value,
                         descripcion: document.getElementById('int-desc').value,
-                        usuario_id: "Admin" 
+                        usuario_id: user.email 
                     })
                 });
                 modalInteraccion.style.display = 'none';
