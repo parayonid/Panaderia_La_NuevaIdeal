@@ -20,6 +20,14 @@ const API_URL = "https://panaderia-la-nuevaideal.onrender.com";
 let globalToken = null;
 let globalUserEmail = null;
 
+// Variables Globales para Gráficas
+let interaccionesChart = null;
+let repBarChart = null;
+let repPieChart = null;
+let chartSalud = null;
+let chartMov = null;
+let productosGlobal = [];
+
 document.addEventListener('DOMContentLoaded', () => {
     
     // ==========================================
@@ -27,136 +35,277 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     const authInstance = getAuth();
     onAuthStateChanged(authInstance, async (user) => {
-        if (!user) return window.location.href = "../index.html";
+        if (!user) {
+            window.location.href = "../index.html";
+            return;
+        }
         try {
             const q = query(collection(db, "usuarios"), where("correo", "==", user.email));
             const querySnapshot = await getDocs(q);
-            if (querySnapshot.empty) return window.location.href = "../index.html";
+            if (querySnapshot.empty) {
+                return window.location.href = "../index.html";
+            }
+            
             let esAdmin = false;
-            querySnapshot.forEach((docSnap) => { if (docSnap.data().rol === 'admin') esAdmin = true; });
-            if (!esAdmin) { alert("Acceso no autorizado."); window.location.href = "../index.html"; }
+            querySnapshot.forEach((docSnap) => { 
+                if (docSnap.data().rol === 'admin') esAdmin = true; 
+            });
+            
+            if (!esAdmin) { 
+                alert("Acceso no autorizado."); 
+                window.location.href = "../index.html"; 
+            }
             
             globalToken = await user.getIdToken();
             globalUserEmail = user.email;
+            
+            inicializarGraficasCRM();
             cargarTodoSCM(); 
             recargarDatosCRM();
-        } catch (error) { window.location.href = "../index.html"; }
+            
+        } catch (error) { 
+            window.location.href = "../index.html"; 
+        }
     });
 
     const pedidos = JSON.parse(localStorage.getItem('pedidosHistorial')) || [];
 
     // ==========================================
-    // GRÁFICAS CRM DASHBOARD
+    // INICIALIZACIÓN GRÁFICAS CRM
     // ==========================================
-    const ctxChart = document.getElementById('interaccionesChart');
-    let interaccionesChart = null;
-    if (ctxChart) interaccionesChart = new Chart(ctxChart, { type: 'doughnut', data: { labels: ['Llamada', 'Correo', 'WhatsApp', 'Nota', 'Reunión'], datasets: [{ data: [0, 0, 0, 0, 0], backgroundColor: ['#F35200', '#6c757d', '#25D366', '#4F231C', '#0d6efd'], borderWidth: 0 }] }, options: { responsive: true, plugins: { legend: { position: 'bottom' } } }});
+    function inicializarGraficasCRM() {
+        const ctxChart = document.getElementById('interaccionesChart');
+        if (ctxChart) {
+            interaccionesChart = new Chart(ctxChart, { 
+                type: 'doughnut', 
+                data: { 
+                    labels: ['Llamada', 'Correo', 'WhatsApp', 'Nota', 'Reunión'], 
+                    datasets: [{ 
+                        data: [0, 0, 0, 0, 0], 
+                        backgroundColor: ['#F35200', '#6c757d', '#25D366', '#4F231C', '#0d6efd'], 
+                        borderWidth: 0 
+                    }] 
+                }, 
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
 
-    const ctxRepBar = document.getElementById('repBarChart');
-    let repBarChart = null;
-    if (ctxRepBar) repBarChart = new Chart(ctxRepBar, { type: 'bar', data: { labels: ['Llamada', 'Correo', 'WhatsApp', 'Reunión', 'Nota'], datasets: [{ label: 'Cantidad', data: [0, 0, 0, 0, 0], backgroundColor: ['#F35200', '#6c757d', '#25D366', '#0d6efd', '#4F231C'] }] }, options: { responsive: true, plugins: { legend: { display: false } } }});
+        const ctxRepBar = document.getElementById('repBarChart');
+        if (ctxRepBar) {
+            repBarChart = new Chart(ctxRepBar, { 
+                type: 'bar', 
+                data: { 
+                    labels: ['Llamada', 'Correo', 'WhatsApp', 'Reunión', 'Nota'], 
+                    datasets: [{ 
+                        label: 'Cantidad', 
+                        data: [0, 0, 0, 0, 0], 
+                        backgroundColor: ['#F35200', '#6c757d', '#25D366', '#0d6efd', '#4F231C'] 
+                    }] 
+                }, 
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        }
 
-    const ctxRepPie = document.getElementById('repPieChart');
-    let repPieChart = null;
-    if (ctxRepPie) repPieChart = new Chart(ctxRepPie, { type: 'doughnut', data: { labels: ['Prospecto', 'Activo', 'Inactivo'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#0d6efd', '#16a085', '#e74c3c'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }});
+        const ctxRepPie = document.getElementById('repPieChart');
+        if (ctxRepPie) {
+            repPieChart = new Chart(ctxRepPie, { 
+                type: 'doughnut', 
+                data: { 
+                    labels: ['Prospecto', 'Activo', 'Inactivo'], 
+                    datasets: [{ 
+                        data: [0, 0, 0], 
+                        backgroundColor: ['#0d6efd', '#16a085', '#e74c3c'], 
+                        borderWidth: 0 
+                    }] 
+                }, 
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+            });
+        }
+    }
 
     // ==========================================
     // MÓDULO SCM (DASHBOARD, KARDEX, PROVEEDORES)
     // ==========================================
-    let chartSalud, chartMov;
-    let productosGlobal = [];
-
     async function cargarTodoSCM() {
         if (!globalToken) return;
         try {
-            // PROVEEDORES
+            // 1. CARGAR PROVEEDORES
             const resProv = await fetch(`${API_URL}/proveedores`);
             const proveedores = await resProv.json();
+            
             document.getElementById('scm-total-prov').textContent = proveedores.length;
-            document.getElementById('proveedores-body').innerHTML = proveedores.map(p => `<tr><td><strong>${p.nombre}</strong></td><td>${p.contacto}</td><td>${p.correo}<br><small>${p.telefono}</small></td></tr>`).join('');
-            document.getElementById('proveedor-producto').innerHTML = '<option value="">Selecciona proveedor...</option>' + proveedores.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+            const proveedoresBody = document.getElementById('proveedores-body');
+            const selectProveedorProd = document.getElementById('proveedor-producto');
+            
+            if (proveedoresBody) {
+                proveedoresBody.innerHTML = proveedores.map(p => `
+                    <tr>
+                        <td><strong>${p.nombre}</strong></td>
+                        <td>${p.contacto}</td>
+                        <td>${p.correo}<br><small>${p.telefono}</small></td>
+                        <td><span class="badge" style="background:#16a085; color:white;">Activo</span></td>
+                    </tr>`).join('');
+            }
+            if (selectProveedorProd) {
+                selectProveedorProd.innerHTML = '<option value="">Selecciona proveedor...</option>' + 
+                    proveedores.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+            }
 
-            // PRODUCTOS Y ALMACÉN SCM
+            // 2. CARGAR PRODUCTOS Y ALMACÉN SCM
             const resProd = await fetch(`${API_URL}/productos`);
             productosGlobal = await resProd.json();
             
             let stockCritico = 0, stockNormal = 0, valorInventario = 0;
-            document.getElementById('stock-body').innerHTML = '';
-            document.getElementById('mov-producto').innerHTML = '<option value="">Selecciona un producto</option>';
+            const stockBody = document.getElementById('stock-body');
+            const movProductoSelect = document.getElementById('mov-producto');
+            
+            if (stockBody) stockBody.innerHTML = '';
+            if (movProductoSelect) movProductoSelect.innerHTML = '<option value="">Selecciona un producto</option>';
 
             productosGlobal.forEach(p => {
+                // FIX ANTI-$NaN: Leer campos viejos (cantidad/precio) si los nuevos no existen
+                const stockReal = p.stock_actual !== undefined ? p.stock_actual : (p.cantidad || 0);
+                const costoReal = p.costo_unitario !== undefined ? p.costo_unitario : (p.precio || 0);
                 const stockMinimo = p.stock_minimo || 0;
-                valorInventario += (p.stock_actual * (p.costo_unitario || 0));
-                if(p.stock_actual <= stockMinimo) stockCritico++; else stockNormal++;
                 
-                let textColor = p.stock_actual <= stockMinimo ? '#e74c3c' : '#16a085';
-                let tagColor = p.stock_actual <= stockMinimo ? 'background:#fdedec; color:#e74c3c;' : 'background:#e8f8f5; color:#16a085;';
-                let tagText = p.stock_actual <= stockMinimo ? 'Stock Bajo' : 'Normal';
+                valorInventario += (stockReal * costoReal);
                 
-                document.getElementById('stock-body').innerHTML += `
-                    <tr>
-                        <td><strong>${p.nombre}</strong><br><small style="color:#888;">${p.estrategia_logistica}</small></td>
-                        <td><span style="font-weight:bold; color:${textColor}">${p.stock_actual}</span></td>
-                        <td>${stockMinimo}</td>
-                        <td><span style="${tagColor} padding:3px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">${tagText}</span></td>
-                        <td><i class="bi bi-pencil-square icon-edit" data-id="${p.id}" style="cursor:pointer; margin-right:10px; color:#16a085;"></i><i class="bi bi-trash icon-delete" data-id="${p.id}" style="cursor:pointer; color:#e74c3c;"></i></td>
-                    </tr>`;
-                document.getElementById('mov-producto').innerHTML += `<option value="${p.id}">${p.nombre}</option>`;
+                if (stockReal <= stockMinimo) {
+                    stockCritico++;
+                } else {
+                    stockNormal++;
+                }
+                
+                let textColor = stockReal <= stockMinimo ? '#e74c3c' : '#16a085';
+                let tagColor = stockReal <= stockMinimo ? 'background:#fdedec; color:#e74c3c;' : 'background:#e8f8f5; color:#16a085;';
+                let tagText = stockReal <= stockMinimo ? 'Stock Bajo' : 'Normal';
+                
+                if (stockBody) {
+                    stockBody.innerHTML += `
+                        <tr>
+                            <td><strong>${p.nombre}</strong><br><small style="color:#888;">Logística: ${p.estrategia_logistica || 'PULL'}</small></td>
+                            <td><span style="font-weight:bold; color:${textColor}">${stockReal} pcs</span></td>
+                            <td>${stockMinimo}</td>
+                            <td><span style="${tagColor} padding:3px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">${tagText}</span></td>
+                            <td>
+                                <i class="bi bi-pencil-square icon-edit" data-id="${p.id}" style="cursor:pointer; margin-right:10px; color:#16a085;"></i>
+                                <i class="bi bi-trash icon-delete" data-id="${p.id}" style="cursor:pointer; color:#e74c3c;"></i>
+                            </td>
+                        </tr>`;
+                }
+                if (movProductoSelect) {
+                    movProductoSelect.innerHTML += `<option value="${p.id}">${p.nombre}</option>`;
+                }
             });
 
             document.getElementById('scm-stock-critico').textContent = stockCritico;
             document.getElementById('scm-valor-inv').textContent = `$${valorInventario.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
-            if(chartSalud) chartSalud.destroy();
-            chartSalud = new Chart(document.getElementById('saludInventarioChart'), { type: 'doughnut', data: { labels: ['Stock Normal', 'Stock Bajo/Crítico'], datasets: [{ data: [stockNormal, stockCritico], backgroundColor: ['#16a085', '#e74c3c'], borderWidth:0 }] }, options: { plugins: { legend: { position: 'bottom' } } }});
+            // Gráfica SCM Salud
+            const ctxSalud = document.getElementById('saludInventarioChart');
+            if (ctxSalud) {
+                if(chartSalud) chartSalud.destroy();
+                chartSalud = new Chart(ctxSalud, { 
+                    type: 'doughnut', 
+                    data: { 
+                        labels: ['Stock Normal', 'Stock Bajo/Crítico'], 
+                        datasets: [{ data: [stockNormal, stockCritico], backgroundColor: ['#16a085', '#e74c3c'], borderWidth:0 }] 
+                    }, 
+                    options: { plugins: { legend: { position: 'bottom' } } }
+                });
+            }
 
-            // KARDEX DE MOVIMIENTOS
+            // 3. CARGAR KARDEX DE MOVIMIENTOS
             const resMov = await fetch(`${API_URL}/movimientos`);
             const movimientos = await resMov.json();
             
             let entradas = 0, salidas = 0;
-            document.getElementById('movimientos-body').innerHTML = '';
+            const movimientosBody = document.getElementById('movimientos-body');
+            if (movimientosBody) movimientosBody.innerHTML = '';
             
             movimientos.forEach(m => {
                 if(m.tipo === 'Entrada') entradas++; else salidas++;
+                
                 let prod = productosGlobal.find(x => x.id === m.producto_id);
                 let tagColor = m.tipo === 'Entrada' ? 'color:#16a085; background:#e8f8f5;' : 'color:#e74c3c; background:#fdedec;';
-                document.getElementById('movimientos-body').innerHTML += `
-                    <tr>
-                        <td><small style="color:#888;">${m.fecha}</small></td>
-                        <td><strong>${prod ? prod.nombre : 'ID: '+m.producto_id}</strong></td>
-                        <td><span style="${tagColor} padding:3px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">${m.tipo}</span></td>
-                        <td><strong>${m.tipo==='Entrada'?'+':'-'}${m.cantidad}</strong></td>
-                        <td>${m.motivo}</td>
-                    </tr>`;
+                
+                if (movimientosBody) {
+                    movimientosBody.innerHTML += `
+                        <tr>
+                            <td><small style="color:#888;">${m.fecha}</small></td>
+                            <td><strong>${prod ? prod.nombre : 'ID: '+m.producto_id}</strong></td>
+                            <td><span style="${tagColor} padding:3px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">${m.tipo}</span></td>
+                            <td><strong>${m.tipo==='Entrada'?'+':'-'}${m.cantidad}</strong></td>
+                            <td>${m.motivo}</td>
+                        </tr>`;
+                }
             });
 
-            if(chartMov) chartMov.destroy();
-            chartMov = new Chart(document.getElementById('movimientosChart'), { type: 'doughnut', data: { labels: ['Entradas', 'Salidas'], datasets: [{ data: [entradas, salidas], backgroundColor: ['#0d6efd', '#f39c12'], borderWidth:0 }] }, options: { plugins: { legend: { position: 'bottom' } } }});
+            // Gráfica SCM Movimientos
+            const ctxMov = document.getElementById('movimientosChart');
+            if (ctxMov) {
+                if(chartMov) chartMov.destroy();
+                chartMov = new Chart(ctxMov, { 
+                    type: 'doughnut', 
+                    data: { 
+                        labels: ['Entradas', 'Salidas'], 
+                        datasets: [{ data: [entradas, salidas], backgroundColor: ['#0d6efd', '#f39c12'], borderWidth:0 }] 
+                    }, 
+                    options: { plugins: { legend: { position: 'bottom' } } }
+                });
+            }
 
-        } catch (e) { console.error("Error cargando SCM:", e); }
+        } catch (e) { 
+            console.error("Error cargando SCM:", e); 
+        }
     }
 
+    // ==========================================
     // FORMULARIO PROVEEDORES SCM
+    // ==========================================
     const modalProv = document.getElementById('modal-proveedor');
-    document.getElementById('btn-abrir-modal-proveedor')?.addEventListener('click', () => { document.getElementById('form-nuevo-proveedor').reset(); modalProv.style.display='flex'; });
+    document.getElementById('btn-abrir-modal-proveedor')?.addEventListener('click', () => { 
+        document.getElementById('form-nuevo-proveedor').reset(); 
+        modalProv.style.display='flex'; 
+    });
     
     document.getElementById('form-nuevo-proveedor')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const btn = e.target.querySelector('button'); btn.textContent = "..."; btn.disabled = true;
+        const btn = e.target.querySelector('button'); 
+        btn.textContent = "Guardando..."; 
+        btn.disabled = true;
+        
         try {
             await fetch(`${API_URL}/proveedores`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` },
-                body: JSON.stringify({ nombre: document.getElementById('prov-nombre').value, contacto: document.getElementById('prov-contacto').value, correo: document.getElementById('prov-correo').value, telefono: document.getElementById('prov-telefono').value })
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` },
+                body: JSON.stringify({ 
+                    nombre: document.getElementById('prov-nombre').value, 
+                    contacto: document.getElementById('prov-contacto').value, 
+                    correo: document.getElementById('prov-correo').value, 
+                    telefono: document.getElementById('prov-telefono').value 
+                })
             });
             modalProv.style.display='none';
             cargarTodoSCM();
-        } catch(e) { alert("Error al guardar proveedor"); } finally { btn.textContent = "Guardar Proveedor"; btn.disabled = false; }
+        } catch(e) { 
+            alert("Error al guardar proveedor"); 
+        } finally { 
+            btn.textContent = "Guardar Proveedor"; 
+            btn.disabled = false; 
+        }
     });
 
+    // ==========================================
     // FORMULARIO PRODUCTOS SCM
+    // ==========================================
     const modalProd = document.getElementById('modal-producto');
-    document.getElementById('btn-abrir-modal-producto')?.addEventListener('click', () => { document.getElementById('form-nuevo-producto').reset(); document.getElementById('producto-id').value=''; modalProd.style.display='flex'; });
+    
+    document.getElementById('btn-abrir-modal-producto')?.addEventListener('click', () => { 
+        document.getElementById('form-nuevo-producto').reset(); 
+        document.getElementById('producto-id').value=''; 
+        modalProd.style.display='flex'; 
+    });
     
     document.getElementById('stock-body')?.addEventListener('click', async (e) => {
         if (e.target.classList.contains('icon-edit')) {
@@ -166,23 +315,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('nombre-producto').value = p.nombre;
                 document.getElementById('categoria-producto').value = p.categoria || 'Panes';
                 document.getElementById('proveedor-producto').value = p.proveedor_id || '';
-                document.getElementById('cantidad-producto').value = p.stock_actual || 0;
+                
+                // Fallback a campos viejos si existen
+                document.getElementById('cantidad-producto').value = p.stock_actual !== undefined ? p.stock_actual : (p.cantidad || 0);
                 document.getElementById('minimo-producto').value = p.stock_minimo || 0;
-                document.getElementById('costo-producto').value = p.costo_unitario || 0;
+                document.getElementById('costo-producto').value = p.costo_unitario !== undefined ? p.costo_unitario : (p.precio || 0);
                 document.getElementById('precio-producto').value = p.precio || 0;
                 document.getElementById('estrategia-producto').value = p.estrategia_logistica || 'PULL';
+                
                 modalProd.style.display = 'flex';
             }
         }
-        if (e.target.classList.contains('icon-delete') && confirm("¿Eliminar producto?")) {
-            await fetch(`${API_URL}/productos/${e.target.dataset.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${globalToken}` } });
+        if (e.target.classList.contains('icon-delete') && confirm("¿Eliminar producto de forma permanente?")) {
+            await fetch(`${API_URL}/productos/${e.target.dataset.id}`, { 
+                method: 'DELETE', 
+                headers: { 'Authorization': `Bearer ${globalToken}` } 
+            });
             cargarTodoSCM();
         }
     });
 
     document.getElementById('form-nuevo-producto')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const btn = document.getElementById('btn-guardar-producto'); btn.textContent = "..."; btn.disabled = true;
+        const btn = document.getElementById('btn-guardar-producto'); 
+        btn.textContent = "Guardando..."; 
+        btn.disabled = true;
+        
         try {
             const datosProducto = { 
                 nombre: document.getElementById('nombre-producto').value.trim(), 
@@ -194,31 +352,69 @@ document.addEventListener('DOMContentLoaded', () => {
                 precio: parseFloat(document.getElementById('precio-producto').value),
                 estrategia_logistica: document.getElementById('estrategia-producto').value
             };
+            
             const docId = document.getElementById('producto-id').value;
-            if (docId) await fetch(`${API_URL}/productos/${docId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, body: JSON.stringify(datosProducto) });
-            else await fetch(`${API_URL}/productos`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, body: JSON.stringify(datosProducto) });
+            if (docId) {
+                await fetch(`${API_URL}/productos/${docId}`, { 
+                    method: 'PUT', 
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, 
+                    body: JSON.stringify(datosProducto) 
+                });
+            } else {
+                await fetch(`${API_URL}/productos`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, 
+                    body: JSON.stringify(datosProducto) 
+                });
+            }
             
             modalProd.style.display = 'none';
             cargarTodoSCM();
-        } catch (error) { alert("Error al guardar producto"); } finally { btn.textContent = "Guardar Producto"; btn.disabled = false; }
+            
+        } catch (error) { 
+            alert("Error al guardar producto"); 
+        } finally { 
+            btn.textContent = "Guardar Producto"; 
+            btn.disabled = false; 
+        }
     });
 
+    // ==========================================
     // FORMULARIO MOVIMIENTOS KARDEX SCM
+    // ==========================================
     const modalMov = document.getElementById('modal-movimiento');
-    document.getElementById('btn-abrir-modal-mov')?.addEventListener('click', () => { document.getElementById('form-nuevo-movimiento').reset(); modalMov.style.display='flex'; });
+    document.getElementById('btn-abrir-modal-mov')?.addEventListener('click', () => { 
+        document.getElementById('form-nuevo-movimiento').reset(); 
+        modalMov.style.display='flex'; 
+    });
 
     document.getElementById('form-nuevo-movimiento')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const btn = e.target.querySelector('button'); btn.textContent = "..."; btn.disabled = true;
+        const btn = e.target.querySelector('button'); 
+        btn.textContent = "Guardando..."; 
+        btn.disabled = true;
+        
         try {
             const tipoMov = document.querySelector('input[name="mov-tipo"]:checked').value;
             await fetch(`${API_URL}/movimientos`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` },
-                body: JSON.stringify({ producto_id: document.getElementById('mov-producto').value, tipo: tipoMov, cantidad: parseInt(document.getElementById('mov-cantidad').value), motivo: document.getElementById('mov-motivo').value, usuario_id: globalUserEmail })
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` },
+                body: JSON.stringify({ 
+                    producto_id: document.getElementById('mov-producto').value, 
+                    tipo: tipoMov, 
+                    cantidad: parseInt(document.getElementById('mov-cantidad').value), 
+                    motivo: document.getElementById('mov-motivo').value, 
+                    usuario_id: globalUserEmail 
+                })
             });
             modalMov.style.display='none';
             cargarTodoSCM();
-        } catch(e) { alert("Error registrando movimiento"); } finally { btn.textContent = "Guardar Movimiento"; btn.disabled = false; }
+        } catch(e) { 
+            alert("Error registrando movimiento"); 
+        } finally { 
+            btn.textContent = "Guardar Movimiento"; 
+            btn.disabled = false; 
+        }
     });
 
     // ==========================================
@@ -236,117 +432,318 @@ document.addEventListener('DOMContentLoaded', () => {
             const resClientes = await fetch(`${API_URL}/clientes`);
             const clientes = await resClientes.json();
             
-            clientesBody.innerHTML = ''; selectClientes.innerHTML = '<option value="">Selecciona un cliente...</option>';
-            let totalClientes = 0, clientesActivos = 0, interaccionesMes = 0, etapas = { Prospecto: 0, Activo: 0, Inactivo: 0 };
-            let mapIntCliente = {}; let todasLasInteracciones = [];
-            const mesActual = new Date().getMonth(); const anioActual = new Date().getFullYear();
+            if (clientesBody) clientesBody.innerHTML = ''; 
+            if (selectClientes) selectClientes.innerHTML = '<option value="">Selecciona un cliente...</option>';
+            
+            let totalClientes = 0, clientesActivos = 0, interaccionesMes = 0;
+            let etapas = { Prospecto: 0, Activo: 0, Inactivo: 0 };
+            let mapIntCliente = {}; 
+            let todasLasInteracciones = [];
+            const mesActual = new Date().getMonth(); 
+            const anioActual = new Date().getFullYear();
 
            for (let cli of clientes) {
-                totalClientes++; mapIntCliente[cli.id] = 0; 
+                totalClientes++; 
+                mapIntCliente[cli.id] = 0; 
+                
                 const estado = (cli.estado || 'activo').toLowerCase();
-                if (estado.includes('prospecto')) { etapas.Prospecto++; } else if (estado.includes('inactivo')) { etapas.Inactivo++; } else { etapas.Activo++; clientesActivos++; }
+                if (estado.includes('prospecto')) { 
+                    etapas.Prospecto++; 
+                } else if (estado.includes('inactivo')) { 
+                    etapas.Inactivo++; 
+                } else { 
+                    etapas.Activo++; clientesActivos++; 
+                }
                 
                 let colorBadge = estado.includes('prospecto') ? '#0d6efd' : (estado.includes('inactivo') ? '#e74c3c' : '#16a085');
-                clientesBody.innerHTML += `<tr><td><strong>${cli.nombre}</strong></td><td>${cli.empresa || 'N/A'}</td><td>${cli.correo}<br><small>${cli.telefono}</small></td><td><span class="badge" style="background:${colorBadge}; color:white;">${cli.estado || 'Activo'}</span></td><td class="acciones-iconos"><i class="bi bi-eye icon-ver-detalle" data-id="${cli.id}" style="color:#0d6efd; cursor:pointer; font-size:1.1rem; margin-right:10px;"></i><i class="bi bi-trash icon-delete-cliente" data-id="${cli.id}" style="color:#e74c3c; cursor:pointer; font-size:1.1rem;"></i></td></tr>`;
-                selectClientes.innerHTML += `<option value="${cli.id}">${cli.nombre}</option>`;
+                
+                if (clientesBody) {
+                    clientesBody.innerHTML += `
+                        <tr>
+                            <td><strong>${cli.nombre}</strong></td>
+                            <td>${cli.empresa || 'N/A'}</td>
+                            <td>${cli.correo}<br><small>${cli.telefono}</small></td>
+                            <td><span class="badge" style="background:${colorBadge}; color:white;">${cli.estado || 'Activo'}</span></td>
+                            <td class="acciones-iconos">
+                                <i class="bi bi-eye icon-ver-detalle" data-id="${cli.id}" style="color:#0d6efd; cursor:pointer; font-size:1.1rem; margin-right:10px;"></i>
+                                <i class="bi bi-trash icon-delete-cliente" data-id="${cli.id}" style="color:#e74c3c; cursor:pointer; font-size:1.1rem;"></i>
+                            </td>
+                        </tr>`;
+                }
+                
+                if (selectClientes) {
+                    selectClientes.innerHTML += `<option value="${cli.id}">${cli.nombre}</option>`;
+                }
 
                 try {
                     const resInt = await fetch(`${API_URL}/clientes/${cli.id}/interacciones`);
                     if(resInt.ok) {
-                        const ints = await resInt.json(); mapIntCliente[cli.id] = ints.length;
-                        ints.forEach(int => { int.nombreCliente = cli.nombre; if(new Date(int.fecha).getMonth() === mesActual && new Date(int.fecha).getFullYear() === anioActual) interaccionesMes++; });
+                        const ints = await resInt.json(); 
+                        mapIntCliente[cli.id] = ints.length;
+                        ints.forEach(int => { 
+                            int.nombreCliente = cli.nombre; 
+                            if(new Date(int.fecha).getMonth() === mesActual && new Date(int.fecha).getFullYear() === anioActual) interaccionesMes++; 
+                        });
                         todasLasInteracciones.push(...ints);
                     }
                 } catch(e) {}
             }
 
             let sinInt = Object.values(mapIntCliente).filter(v => v === 0).length;
-            document.getElementById('metric-clientes').textContent = clientesActivos; document.getElementById('rep-total-cli').textContent = totalClientes; document.getElementById('rep-activos-cli').textContent = clientesActivos; document.getElementById('rep-activos-pct').textContent = totalClientes > 0 ? Math.round((clientesActivos/totalClientes)*100)+"%" : "0%"; document.getElementById('rep-int-mes').textContent = interaccionesMes; document.getElementById('rep-sin-int').textContent = sinInt; document.getElementById('rep-sin-int-pct').textContent = totalClientes > 0 ? Math.round((sinInt/totalClientes)*100)+"%" : "0%";
+            
+            if (document.getElementById('metric-clientes')) document.getElementById('metric-clientes').textContent = clientesActivos; 
+            if (document.getElementById('rep-total-cli')) document.getElementById('rep-total-cli').textContent = totalClientes; 
+            if (document.getElementById('rep-activos-cli')) document.getElementById('rep-activos-cli').textContent = clientesActivos; 
+            if (document.getElementById('rep-activos-pct')) document.getElementById('rep-activos-pct').textContent = totalClientes > 0 ? Math.round((clientesActivos/totalClientes)*100)+"%" : "0%"; 
+            if (document.getElementById('rep-int-mes')) document.getElementById('rep-int-mes').textContent = interaccionesMes; 
+            if (document.getElementById('rep-sin-int')) document.getElementById('rep-sin-int').textContent = sinInt; 
+            if (document.getElementById('rep-sin-int-pct')) document.getElementById('rep-sin-int-pct').textContent = totalClientes > 0 ? Math.round((sinInt/totalClientes)*100)+"%" : "0%";
 
-            interaccionesBody.innerHTML = '';
+            if (interaccionesBody) interaccionesBody.innerHTML = '';
+            
             let cLlamada = 0, cCorreo = 0, cWhatsapp = 0, cNota = 0, cReunion = 0;
             todasLasInteracciones.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).forEach(int => {
-                if(int.tipo === 'Llamada') cLlamada++; else if(int.tipo === 'Correo') cCorreo++; else if(int.tipo === 'WhatsApp') cWhatsapp++; else if(int.tipo === 'Reunión') cReunion++; else cNota++;
+                if(int.tipo === 'Llamada') cLlamada++; 
+                else if(int.tipo === 'Correo') cCorreo++; 
+                else if(int.tipo === 'WhatsApp') cWhatsapp++; 
+                else if(int.tipo === 'Reunión') cReunion++; 
+                else cNota++;
+                
                 let icono = int.tipo === 'Llamada' ? 'bi-telephone' : (int.tipo === 'Correo' ? 'bi-envelope' : (int.tipo === 'WhatsApp' ? 'bi-whatsapp' : 'bi-journal-text'));
-                interaccionesBody.innerHTML += `<tr><td>${int.fecha || 'Reciente'}</td><td><strong>${int.nombreCliente}</strong></td><td><i class="bi ${icono}" style="margin-right:5px; color:#555;"></i> ${int.tipo}</td><td><small>${int.descripcion}</small></td><td>${int.usuario_id}</td></tr>`;
+                
+                if (interaccionesBody) {
+                    interaccionesBody.innerHTML += `
+                        <tr>
+                            <td>${int.fecha || 'Reciente'}</td>
+                            <td><strong>${int.nombreCliente}</strong></td>
+                            <td><i class="bi ${icono}" style="margin-right:5px; color:#555;"></i> ${int.tipo}</td>
+                            <td><small>${int.descripcion}</small></td>
+                            <td>${int.usuario_id}</td>
+                        </tr>`;
+                }
             });
 
-            document.getElementById('metric-interacciones').textContent = todasLasInteracciones.length;
-            if (interaccionesChart) { interaccionesChart.data.datasets[0].data = [cLlamada, cCorreo, cWhatsapp, cNota, cReunion]; interaccionesChart.update(); }
-            if (repBarChart) { repBarChart.data.datasets[0].data = [cLlamada, cCorreo, cWhatsapp, cReunion, cNota]; repBarChart.update(); }
-            if (repPieChart) { repPieChart.data.datasets[0].data = [etapas.Prospecto, etapas.Activo, etapas.Inactivo]; repPieChart.update(); }
-        } catch (error) {}
+            if (document.getElementById('metric-interacciones')) {
+                document.getElementById('metric-interacciones').textContent = todasLasInteracciones.length;
+            }
+            
+            if (interaccionesChart) { 
+                interaccionesChart.data.datasets[0].data = [cLlamada, cCorreo, cWhatsapp, cNota, cReunion]; 
+                interaccionesChart.update(); 
+            }
+            if (repBarChart) { 
+                repBarChart.data.datasets[0].data = [cLlamada, cCorreo, cWhatsapp, cReunion, cNota]; 
+                repBarChart.update(); 
+            }
+            if (repPieChart) { 
+                repPieChart.data.datasets[0].data = [etapas.Prospecto, etapas.Activo, etapas.Inactivo]; 
+                repPieChart.update(); 
+            }
+        } catch (error) {
+            console.error("Error al recargar CRM:", error);
+        }
     }
 
     if (clientesBody) {
         clientesBody.addEventListener('click', async (e) => {
             if (e.target.classList.contains('icon-delete-cliente') && confirm("¿Dar de baja a este cliente?")) {
-                await fetch(`${API_URL}/clientes/${e.target.dataset.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${globalToken}` } });
+                await fetch(`${API_URL}/clientes/${e.target.dataset.id}`, { 
+                    method: 'DELETE', 
+                    headers: { 'Authorization': `Bearer ${globalToken}` } 
+                });
                 recargarDatosCRM();
             }
-            if (e.target.classList.contains('icon-ver-detalle')) abrirDetalleCliente(e.target.dataset.id);
+            if (e.target.classList.contains('icon-ver-detalle')) {
+                abrirDetalleCliente(e.target.dataset.id);
+            }
         });
     }
 
     async function abrirDetalleCliente(id) {
-        secClientes.classList.add('seccion-oculta'); secDetalleCliente.classList.remove('seccion-oculta');
+        secClientes.classList.add('seccion-oculta'); 
+        secDetalleCliente.classList.remove('seccion-oculta');
+        
         try {
             const cliente = await (await fetch(`${API_URL}/clientes/${id}`)).json();
-            document.getElementById('detalle-inicial').textContent = cliente.nombre.charAt(0).toUpperCase(); document.getElementById('detalle-nombre').textContent = cliente.nombre; document.getElementById('detalle-correo').textContent = cliente.correo; document.getElementById('detalle-telefono').textContent = cliente.telefono; document.getElementById('detalle-registro').textContent = `ID: ${cliente.id}`; document.getElementById('detalle-etapa').value = cliente.estado; document.getElementById('form-detalle-interaccion').dataset.clienteId = id;
+            
+            document.getElementById('detalle-inicial').textContent = cliente.nombre.charAt(0).toUpperCase(); 
+            document.getElementById('detalle-nombre').textContent = cliente.nombre; 
+            document.getElementById('detalle-correo').textContent = cliente.correo; 
+            document.getElementById('detalle-telefono').textContent = cliente.telefono; 
+            document.getElementById('detalle-registro').textContent = `ID: ${cliente.id}`; 
+            document.getElementById('detalle-etapa').value = cliente.estado; 
+            document.getElementById('form-detalle-interaccion').dataset.clienteId = id;
             
             const interacciones = await (await fetch(`${API_URL}/clientes/${id}/interacciones`)).json();
-            const timeline = document.getElementById('detalle-timeline'); timeline.innerHTML = '';
-            interacciones.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).forEach(int => {
-                let icono = int.tipo === 'Llamada' ? 'bi-telephone' : (int.tipo === 'Correo' ? 'bi-envelope' : 'bi-journal-text');
-                timeline.innerHTML += `<div style="display:flex; gap:15px; border-left:2px solid #eee; padding-left:15px; margin-bottom:10px;"><div style="color:#16a085; font-size:1.1rem;"><i class="${icono}"></i></div><div><div style="font-size:0.8rem; color:#888;">${int.fecha || 'Reciente'} - <strong>${int.tipo}</strong></div><div style="font-size:0.9rem; color:#333;">${int.descripcion}</div></div></div>`;
-            });
+            const timeline = document.getElementById('detalle-timeline'); 
+            timeline.innerHTML = '';
+            
+            if (interacciones.length === 0) {
+                timeline.innerHTML = '<p style="text-align: center; color: #888;">No hay interacciones registradas.</p>';
+            } else {
+                interacciones.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).forEach(int => {
+                    let icono = int.tipo === 'Llamada' ? 'bi-telephone' : (int.tipo === 'Correo' ? 'bi-envelope' : 'bi-journal-text');
+                    timeline.innerHTML += `
+                        <div style="display:flex; gap:15px; border-left:2px solid #eee; padding-left:15px; margin-bottom:10px;">
+                            <div style="color:#16a085; font-size:1.1rem;"><i class="${icono}"></i></div>
+                            <div>
+                                <div style="font-size:0.8rem; color:#888;">${int.fecha || 'Reciente'} - <strong>${int.tipo}</strong></div>
+                                <div style="font-size:0.9rem; color:#333;">${int.descripcion}</div>
+                            </div>
+                        </div>`;
+                });
+            }
         } catch (error) {}
     }
 
-    document.getElementById('btn-volver-clientes')?.addEventListener('click', () => { secDetalleCliente.classList.add('seccion-oculta'); secClientes.classList.remove('seccion-oculta'); recargarDatosCRM(); });
+    document.getElementById('btn-volver-clientes')?.addEventListener('click', () => { 
+        secDetalleCliente.classList.add('seccion-oculta'); 
+        secClientes.classList.remove('seccion-oculta'); 
+        recargarDatosCRM(); 
+    });
 
     document.getElementById('btn-detalle-actualizar-etapa')?.addEventListener('click', async () => {
         const clienteId = document.getElementById('form-detalle-interaccion').dataset.clienteId;
         const nuevaEtapa = document.getElementById('detalle-etapa').value;
-        const btn = document.getElementById('btn-detalle-actualizar-etapa'); btn.textContent = "...";
+        const btn = document.getElementById('btn-detalle-actualizar-etapa'); 
+        
+        btn.textContent = "...";
         try {
-            await fetch(`${API_URL}/clientes/${clienteId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, body: JSON.stringify({ nombre: document.getElementById('detalle-nombre').textContent, correo: document.getElementById('detalle-correo').textContent, telefono: document.getElementById('detalle-telefono').textContent, empresa: "Desconocida", estado: nuevaEtapa }) });
-            alert(`Etapa actualizada a: ${nuevaEtapa}`); recargarDatosCRM();
-        } catch (e) {} finally { btn.textContent = "Actualizar Etapa"; }
+            await fetch(`${API_URL}/clientes/${clienteId}`, { 
+                method: 'PUT', 
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, 
+                body: JSON.stringify({ 
+                    nombre: document.getElementById('detalle-nombre').textContent, 
+                    correo: document.getElementById('detalle-correo').textContent, 
+                    telefono: document.getElementById('detalle-telefono').textContent, 
+                    empresa: "Desconocida", 
+                    estado: nuevaEtapa 
+                }) 
+            });
+            alert(`Etapa actualizada a: ${nuevaEtapa}`); 
+            recargarDatosCRM();
+        } catch (e) {
+            alert("Error al actualizar etapa.");
+        } finally { 
+            btn.textContent = "Actualizar Etapa"; 
+        }
     });
 
     document.getElementById('form-detalle-interaccion')?.addEventListener('submit', async (e) => {
-        e.preventDefault(); const clienteId = e.target.dataset.clienteId;
-        const btn = e.target.querySelector('button'); btn.textContent = "..."; btn.disabled = true;
+        e.preventDefault(); 
+        const clienteId = e.target.dataset.clienteId;
+        const btn = e.target.querySelector('button'); 
+        
+        btn.textContent = "..."; 
+        btn.disabled = true;
+        
         try {
-            await fetch(`${API_URL}/interacciones`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, body: JSON.stringify({ cliente_id: clienteId, tipo: document.getElementById('detalle-int-tipo').value, descripcion: document.getElementById('detalle-int-desc').value, usuario_id: globalUserEmail }) });
-            e.target.reset(); abrirDetalleCliente(clienteId);
-        } catch (e) {} finally { btn.textContent = "Registrar"; btn.disabled = false; }
+            await fetch(`${API_URL}/interacciones`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, 
+                body: JSON.stringify({ 
+                    cliente_id: clienteId, 
+                    tipo: document.getElementById('detalle-int-tipo').value, 
+                    descripcion: document.getElementById('detalle-int-desc').value, 
+                    usuario_id: globalUserEmail 
+                }) 
+            });
+            e.target.reset(); 
+            abrirDetalleCliente(clienteId);
+        } catch (e) {
+            console.error("Error al registrar:", e);
+        } finally { 
+            btn.textContent = "Registrar"; 
+            btn.disabled = false; 
+        }
     });
 
-    // MODAL NUEVO CLIENTE
+    // ==========================================
+    // MODALES NUEVO CLIENTE E INTERACCION CRM
+    // ==========================================
     const modalCliente = document.getElementById('modal-cliente');
-    document.getElementById('btn-abrir-modal-cliente')?.addEventListener('click', () => { document.getElementById('cliente-id').value = ''; document.getElementById('form-nuevo-cliente').reset(); modalCliente.style.display = 'flex'; });
+    
+    document.getElementById('btn-abrir-modal-cliente')?.addEventListener('click', () => { 
+        document.getElementById('cliente-id').value = ''; 
+        document.getElementById('form-nuevo-cliente').reset(); 
+        modalCliente.style.display = 'flex'; 
+    });
+    
     document.getElementById('form-nuevo-cliente')?.addEventListener('submit', async (e) => {
-        e.preventDefault(); const idCliente = document.getElementById('cliente-id').value;
-        const datosCliente = { nombre: document.getElementById('cli-nombre').value, correo: document.getElementById('cli-correo').value, telefono: document.getElementById('cli-telefono').value, empresa: document.getElementById('cli-empresa').value || 'Desconocida', estado: "activo" };
-        const btn = e.target.querySelector('button'); btn.textContent = "..."; btn.disabled = true;
+        e.preventDefault(); 
+        const idCliente = document.getElementById('cliente-id').value;
+        const datosCliente = { 
+            nombre: document.getElementById('cli-nombre').value, 
+            correo: document.getElementById('cli-correo').value, 
+            telefono: document.getElementById('cli-telefono').value, 
+            empresa: document.getElementById('cli-empresa').value || 'Desconocida', 
+            estado: "activo" 
+        };
+        const btn = e.target.querySelector('button'); 
+        
+        btn.textContent = "..."; 
+        btn.disabled = true;
+        
         try {
-            if (idCliente) { await fetch(`${API_URL}/clientes/${idCliente}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, body: JSON.stringify(datosCliente) }); abrirDetalleCliente(idCliente); }
-            else { await fetch(`${API_URL}/clientes`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, body: JSON.stringify(datosCliente) }); }
-            modalCliente.style.display = 'none'; e.target.reset(); recargarDatosCRM();
-        } catch (e) {} finally { btn.textContent = "Guardar"; btn.disabled = false; }
+            if (idCliente) { 
+                await fetch(`${API_URL}/clientes/${idCliente}`, { 
+                    method: 'PUT', 
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, 
+                    body: JSON.stringify(datosCliente) 
+                }); 
+                abrirDetalleCliente(idCliente); 
+            } else { 
+                await fetch(`${API_URL}/clientes`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, 
+                    body: JSON.stringify(datosCliente) 
+                }); 
+            }
+            modalCliente.style.display = 'none'; 
+            e.target.reset(); 
+            recargarDatosCRM();
+        } catch (e) {
+            alert("Error al guardar.");
+        } finally { 
+            btn.textContent = "Guardar Cliente"; 
+            btn.disabled = false; 
+        }
     });
 
-    // MODAL NUEVA INTERACCION
     const modalInt = document.getElementById('modal-interaccion');
-    document.getElementById('btn-abrir-modal-interaccion')?.addEventListener('click', () => { document.getElementById('form-nueva-interaccion').reset(); modalInt.style.display = 'flex'; });
+    
+    document.getElementById('btn-abrir-modal-interaccion')?.addEventListener('click', () => { 
+        document.getElementById('form-nueva-interaccion').reset(); 
+        modalInt.style.display = 'flex'; 
+    });
+    
     document.getElementById('form-nueva-interaccion')?.addEventListener('submit', async (e) => {
-        e.preventDefault(); const btn = e.target.querySelector('button'); btn.textContent = "..."; btn.disabled = true;
+        e.preventDefault(); 
+        const btn = e.target.querySelector('button'); 
+        
+        btn.textContent = "..."; 
+        btn.disabled = true;
+        
         try {
-            await fetch(`${API_URL}/interacciones`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, body: JSON.stringify({ cliente_id: document.getElementById('int-cliente-id').value, tipo: document.getElementById('int-tipo').value, descripcion: document.getElementById('int-desc').value, usuario_id: globalUserEmail }) });
-            modalInt.style.display = 'none'; e.target.reset(); recargarDatosCRM();
-        } catch (e) {} finally { btn.textContent = "Guardar"; btn.disabled = false; }
+            await fetch(`${API_URL}/interacciones`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, 
+                body: JSON.stringify({ 
+                    cliente_id: document.getElementById('int-cliente-id').value, 
+                    tipo: document.getElementById('int-tipo').value, 
+                    descripcion: document.getElementById('int-desc').value, 
+                    usuario_id: globalUserEmail 
+                }) 
+            });
+            modalInt.style.display = 'none'; 
+            e.target.reset(); 
+            recargarDatosCRM();
+        } catch (e) {
+            alert("Error conexión FastAPI.");
+        } finally { 
+            btn.textContent = "Guardar Interacción"; 
+            btn.disabled = false; 
+        }
     });
 
     // ==========================================
@@ -354,39 +751,89 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     const usuariosBody = document.getElementById('usuarios-body');
     const modalUsuario = document.getElementById('modal-usuario');
+    
     if (usuariosBody) {
         onSnapshot(usuariosRef, (snapshot) => {
-            usuariosBody.innerHTML = ''; document.getElementById('metric-usuarios').textContent = snapshot.size;
+            usuariosBody.innerHTML = ''; 
+            
+            if (document.getElementById('metric-usuarios')) {
+                document.getElementById('metric-usuarios').textContent = snapshot.size;
+            }
+            
             snapshot.forEach(docSnap => {
                 const u = { id: docSnap.id, ...docSnap.data() };
                 const rolBadge = u.rol === 'admin' ? '<span class="badge" style="background:#4F231C; color:white;">Admin</span>' : '<span class="badge" style="background:#6c757d; color:white;">Cliente</span>';
                 let fechaRegistro = u.fechaRegistro && u.fechaRegistro.toDate ? u.fechaRegistro.toDate().toLocaleDateString('es-MX') : 'Reciente';
-                usuariosBody.innerHTML += `<tr><td><strong>${u.nombre || 'Sin nombre'}</strong><br><small style="color:#888;">${u.correo}</small></td><td>${rolBadge}</td><td>${u.telefono || 'N/A'}</td><td>${fechaRegistro}</td><td class="acciones-iconos"><i class="bi bi-pencil-square icon-edit-user" data-id="${u.id}" data-correo="${u.correo}" data-rol="${u.rol || 'cliente'}" data-nombre="${encodeURIComponent(u.nombre || '')}" data-telefono="${u.telefono || ''}" style="cursor: pointer; color: #16a085;"></i></td></tr>`;
+                
+                usuariosBody.innerHTML += `
+                    <tr>
+                        <td><strong>${u.nombre || 'Sin nombre'}</strong><br><small style="color:#888;">${u.correo}</small></td>
+                        <td>${rolBadge}</td>
+                        <td>${u.telefono || 'N/A'}</td>
+                        <td>${fechaRegistro}</td>
+                        <td class="acciones-iconos">
+                            <i class="bi bi-pencil-square icon-edit-user" data-id="${u.id}" data-correo="${u.correo}" data-rol="${u.rol || 'cliente'}" data-nombre="${encodeURIComponent(u.nombre || '')}" data-telefono="${u.telefono || ''}" style="cursor: pointer; color: #16a085; font-size:1.1rem;"></i>
+                        </td>
+                    </tr>`;
             });
         });
+
         usuariosBody.addEventListener('click', (e) => {
             if (e.target.classList.contains('icon-edit-user')) {
-                document.getElementById('usuario-id').value = e.target.dataset.id; document.getElementById('usuario-correo').value = e.target.dataset.correo; document.getElementById('usuario-rol').value = e.target.dataset.rol; document.getElementById('usuario-nombre').value = decodeURIComponent(e.target.dataset.nombre); document.getElementById('usuario-telefono').value = e.target.dataset.telefono;
+                document.getElementById('usuario-id').value = e.target.dataset.id; 
+                document.getElementById('usuario-correo').value = e.target.dataset.correo; 
+                document.getElementById('usuario-rol').value = e.target.dataset.rol; 
+                document.getElementById('usuario-nombre').value = decodeURIComponent(e.target.dataset.nombre); 
+                document.getElementById('usuario-telefono').value = e.target.dataset.telefono;
+                
                 modalUsuario.style.display = 'flex';
             }
         });
     }
+
     document.getElementById('form-editar-usuario')?.addEventListener('submit', async (e) => {
-        e.preventDefault(); const btn = e.target.querySelector('button'); btn.textContent = "..."; btn.disabled = true;
+        e.preventDefault(); 
+        const btn = e.target.querySelector('button'); 
+        
+        btn.textContent = "Guardando..."; 
+        btn.disabled = true;
+        
         try {
-            await updateDoc(doc(db, "usuarios", document.getElementById('usuario-id').value), { rol: document.getElementById('usuario-rol').value, nombre: document.getElementById('usuario-nombre').value.trim(), telefono: document.getElementById('usuario-telefono').value.trim() });
+            await updateDoc(doc(db, "usuarios", document.getElementById('usuario-id').value), { 
+                rol: document.getElementById('usuario-rol').value, 
+                nombre: document.getElementById('usuario-nombre').value.trim(), 
+                telefono: document.getElementById('usuario-telefono').value.trim() 
+            });
             modalUsuario.style.display = 'none';
-        } catch (e) {} finally { btn.textContent = "Guardar"; btn.disabled = false; }
+        } catch (e) {
+            alert("Error al actualizar usuario.");
+        } finally { 
+            btn.textContent = "Guardar Cambios"; 
+            btn.disabled = false; 
+        }
     });
 
     const trackingContainer = document.getElementById('tracking-container');
     if (trackingContainer) {
         trackingContainer.innerHTML = '';
         const pedidosRecientes = pedidos.sort((a, b) => b.id - a.id).slice(0, 3);
-        if (pedidosRecientes.length === 0) trackingContainer.innerHTML = '<p style="padding:20px;">No hay pedidos activos.</p>';
+        
+        if (pedidosRecientes.length === 0) {
+            trackingContainer.innerHTML = '<p style="padding:20px; color:#888;">No hay pedidos activos.</p>';
+        }
+        
         pedidosRecientes.forEach(p => {
-            const idx = p.id % 3; const platforms = ['Uber Eats', 'DiDi Food', 'Pendiente']; const est = idx===0?'En Reparto':(idx===1?'Preparando':'Nuevo');
-            const card = document.createElement('div'); card.className = 'tracking-card'; card.innerHTML = `<div class="tracking-header"><h4>Pedido #${p.id} (${est})</h4><span class="platform-tag" style="background:#212529; color:white; padding:3px 8px; border-radius:4px;">${platforms[idx]}</span></div>`;
+            const idx = p.id % 3; 
+            const platforms = ['Uber Eats', 'DiDi Food', 'Pendiente']; 
+            const est = idx===0 ? 'En Reparto' : (idx===1 ? 'Preparando' : 'Nuevo');
+            
+            const card = document.createElement('div'); 
+            card.className = 'tracking-card'; 
+            card.innerHTML = `
+                <div class="tracking-header">
+                    <h4>Pedido #${p.id} (${est})</h4>
+                    <span class="platform-tag" style="background:#212529; color:white; padding:3px 8px; border-radius:4px;">${platforms[idx]}</span>
+                </div>`;
             trackingContainer.appendChild(card);
         });
     }
@@ -395,28 +842,53 @@ document.addEventListener('DOMContentLoaded', () => {
     // SISTEMA DE NAVEGACIÓN Y BÚSQUEDA
     // ==========================================
     const menuLinks = document.querySelectorAll('.sidebar-menu li a');
+    
     const seccionesMap = {
-        'Dashboard CRM': ['.metrics-section', '#seccion-graficas'], 'Reportes': ['#seccion-reportes'], 'Clientes': ['#seccion-clientes'], 'Interacciones': ['#seccion-interacciones'], 'Staff': ['#seccion-usuarios'],
-        'Catálogo': ['#seccion-productos'], 'Pedidos': ['#seccion-pedidos'],
-        'Dashboard SCM': ['#seccion-dashboard-scm'], 'Kardex': ['#seccion-movimientos'], 'Proveedores': ['#seccion-proveedores']
+        'Dashboard CRM': ['.metrics-section', '#seccion-graficas'], 
+        'Reportes': ['#seccion-reportes'], 
+        'Clientes': ['#seccion-clientes'], 
+        'Interacciones': ['#seccion-interacciones'], 
+        'Staff': ['#seccion-usuarios'],
+        'Catálogo': ['#seccion-productos'], 
+        'Pedidos': ['#seccion-pedidos'],
+        'Dashboard SCM': ['#seccion-dashboard-scm'], 
+        'Kardex': ['#seccion-movimientos'], 
+        'Proveedores': ['#seccion-proveedores']
     };
 
     menuLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             const txt = e.currentTarget.textContent.trim();
-            if (txt.includes('Salir')) return;
+            if (txt.includes('Volver') || txt.includes('Salir')) return;
+            
             e.preventDefault();
-            document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active')); e.currentTarget.closest('li').classList.add('active');
+            
+            document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active')); 
+            e.currentTarget.closest('li').classList.add('active');
+            
             document.querySelectorAll('.crud-section, .tracking-section, .metrics-section, .charts-section').forEach(s => s.classList.add('seccion-oculta'));
-            document.getElementById('global-search').value = '';
-            for (const [k, v] of Object.entries(seccionesMap)) { if (txt.includes(k)) v.forEach(sel => document.querySelector(sel)?.classList.remove('seccion-oculta')); }
+            
+            const searchInputObj = document.getElementById('global-search');
+            if (searchInputObj) {
+                searchInputObj.value = '';
+            }
+            
+            for (const [k, v] of Object.entries(seccionesMap)) { 
+                if (txt.includes(k)) {
+                    v.forEach(sel => document.querySelector(sel)?.classList.remove('seccion-oculta')); 
+                }
+            }
         });
     });
 
     document.getElementById('global-search')?.addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase().trim();
         const activeSection = document.querySelector('section:not(.seccion-oculta)');
+        
         if (!activeSection) return;
-        activeSection.querySelectorAll('tbody tr').forEach(fila => { fila.style.display = fila.textContent.toLowerCase().includes(term) ? '' : 'none'; });
+        
+        activeSection.querySelectorAll('tbody tr').forEach(fila => { 
+            fila.style.display = fila.textContent.toLowerCase().includes(term) ? '' : 'none'; 
+        });
     });
 });
