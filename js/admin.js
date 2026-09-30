@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebas
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import { 
     getFirestore, collection, query, where, getDocs, 
-    addDoc, updateDoc, deleteDoc, doc, onSnapshot 
+    updateDoc, doc, onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -17,180 +17,40 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const productosRef = collection(db, "productos");
 const usuariosRef = collection(db,"usuarios");
 
 const API_URL = "https://panaderia-la-nuevaideal.onrender.com";
 
 document.addEventListener('DOMContentLoaded', () => {
     
-    console.log("DOM cargado correctamente. URL de la API:", API_URL);
-    
-    // Validación estricta y segura con Firebase Auth
+    // ==========================================
+    // VALIDACIÓN DE SEGURIDAD JWT Y FIREBASE
+    // ==========================================
     const authInstance = getAuth();
     onAuthStateChanged(authInstance, async (user) => {
         if (!user) {
-            console.log("No hay usuario autenticado, redirigiendo..."); 
             window.location.href = "../index.html";
             return;
         }
-        console.log("Usuario autenticado con éxito:", user.email); 
-
         try {
-            // Buscar en la colección "usuarios" el documento que coincida con el correo del usuario logueado
             const q = query(collection(db, "usuarios"), where("correo", "==", user.email));
             const querySnapshot = await getDocs(q);
-
-            if (querySnapshot.empty) {
-                alert("Acceso no autorizado: Usuario no registrado en la base de datos.");
-                window.location.href = "../index.html";
-                return;
-            }
-
+            if (querySnapshot.empty) return window.location.href = "../index.html";
+            
             let esAdmin = false;
-            querySnapshot.forEach((docSnap) => {
-                if (docSnap.data().rol === 'admin') {
-                    esAdmin = true;
-                }
-            });
-
+            querySnapshot.forEach((docSnap) => { if (docSnap.data().rol === 'admin') esAdmin = true; });
             if (!esAdmin) {
-                alert("Acceso no autorizado. Tu cuenta no tiene permisos de administrador.");
+                alert("Acceso no autorizado.");
                 window.location.href = "../index.html";
             }
-        } catch (error) {
-            window.location.href = "../index.html";
-        }
+        } catch (error) { window.location.href = "../index.html"; }
     });
-    
-    const trackingContainer = document.getElementById('tracking-container');
+
     const pedidos = JSON.parse(localStorage.getItem('pedidosHistorial')) || [];
 
     // ==========================================
-    // 1. MÓDULO DE PRODUCTOS (FIREBASE)
+    // GRÁFICAS DEL DASHBOARD (RECUPERADAS)
     // ==========================================
-    const stockBody = document.getElementById('stock-body');
-    const modalProducto = document.getElementById('modal-producto');
-    const btnAbrirModalProd = document.getElementById('btn-abrir-modal-producto');
-    const formProducto = document.getElementById('form-nuevo-producto');
-    const idInput = document.getElementById('producto-id');
-    let productosLista = [];
-
-    if (stockBody) {
-        onSnapshot(productosRef, (snapshot) => {
-            productosLista = [];
-            stockBody.innerHTML = '';
-            if (document.getElementById('metric-productos')) document.getElementById('metric-productos').textContent = snapshot.size;
-
-            if (snapshot.empty) {
-                stockBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay productos.</td></tr>';
-                return;
-            }
-        
-            snapshot.forEach((docSnap) => {
-                const data = docSnap.data();
-                const p = { id: docSnap.id, ...data };
-                productosLista.push(p);
-                const estado = p.cantidad > 50 ? 'Disponible' : p.cantidad > 0 ? 'Bajo Stock' : 'Agotado';
-                const claseTag = p.cantidad > 50 ? 'status-entregado' : p.cantidad > 0 ? 'status-bajo' : 'status-agotado';
-                const imgSrc = (p.imagen && p.imagen.startsWith('http')) ? p.imagen : '../' + (p.imagen || 'images/images/muffin.jpg');
-
-                stockBody.innerHTML += `
-                    <tr>
-                        <td><img src="${imgSrc}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;"></td>
-                        <td><strong>${p.nombre}</strong><br><small style="color:#888;">ID: ${p.id.slice(0, 5)}</small></td>
-                        <td>${p.cantidad} pcs</td>
-                        <td><span class="badge ${claseTag}">${estado}</span></td>
-                        <td class="acciones-iconos">
-                            <i class="bi bi-pencil-square icon-edit" data-id="${p.id}" title="Editar"></i>
-                            <i class="bi bi-trash icon-delete" data-id="${p.id}" title="Eliminar"></i>
-                        </td>
-                    </tr>`;
-            });
-        });
-
-        stockBody.addEventListener('click', async (e) => {
-            if (e.target.classList.contains('icon-edit')) {
-                const p = productosLista.find(x => x.id === e.target.dataset.id);
-                if (p) {
-                    modalProducto.style.display = 'flex';
-                    document.getElementById('modal-titulo').textContent = 'Editar Producto';
-                    idInput.value = p.id;
-                    document.getElementById('precio-producto').value = p.precio || 10;
-                    document.getElementById('categoria-producto').value = p.categoria || 'Panes';
-                    document.getElementById('nombre-producto').value = p.nombre;
-                    document.getElementById('cantidad-producto').value = p.cantidad;
-                    document.getElementById('imagen-actual').value = p.imagen || '';
-                    document.getElementById('imagen-archivo').value = '';
-                }
-            }
-            if (e.target.classList.contains('icon-delete') && confirm("¿Eliminar este producto permanentemente?")) {
-                await deleteDoc(doc(db, "productos", e.target.dataset.id));
-            }
-        });
-    }
-
-    if (btnAbrirModalProd) btnAbrirModalProd.addEventListener('click', () => {
-        modalProducto.style.display = 'flex';
-        document.getElementById('modal-titulo').textContent = 'Nuevo Producto';
-        if(formProducto) formProducto.reset();
-        idInput.value = '';
-        document.getElementById('imagen-actual').value = '';
-    });
-
-    const cerrarModalProd = () => { if (modalProducto) modalProducto.style.display = 'none'; };
-    document.getElementById('cerrar-modal-producto')?.addEventListener('click', cerrarModalProd);
-    document.getElementById('btn-cancelar-producto')?.addEventListener('click', cerrarModalProd);
-
-    if (formProducto) {
-        formProducto.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const nombre = document.getElementById('nombre-producto').value.trim();
-            const cantidad = parseInt(document.getElementById('cantidad-producto').value, 10);
-            const categoria = document.getElementById('categoria-producto').value;
-            const precio = parseFloat(document.getElementById('precio-producto').value);
-            const docId = idInput.value;
-            const imagenActual = document.getElementById('imagen-actual').value;
-            const archivoImagen = document.getElementById('imagen-archivo').files[0];
-            const btnGuardar = document.getElementById('btn-guardar-producto');
-
-            if (!nombre || isNaN(cantidad) || isNaN(precio)) return;
-
-            btnGuardar.textContent = "Guardando...";
-            btnGuardar.disabled = true;
-
-            try {
-                let urlImagenFinal = imagenActual; 
-                if (archivoImagen) {
-                    const formData = new FormData();
-                    formData.append("image", archivoImagen);
-                    const respuesta = await fetch(`https://api.imgbb.com/1/upload?key=07cf6c87bdeebfc1e9e0e150e25a96ec`, { method: "POST", body: formData });
-                    const datos = await respuesta.json();
-                    if(datos.success) urlImagenFinal = datos.data.url; 
-                }
-                if (!urlImagenFinal) urlImagenFinal = "https://via.placeholder.com/150?text=Sin+Imagen";
-
-                const datosProducto = { nombre, cantidad, categoria, precio, imagen: urlImagenFinal };
-
-                if (docId) await updateDoc(doc(db, "productos", docId), datosProducto);
-                else await addDoc(productosRef, datosProducto);
-                
-                cerrarModalProd();
-            } catch (error) { alert("Error: " + error.message); } 
-            finally { btnGuardar.textContent = "Guardar Producto"; btnGuardar.disabled = false; }
-        });
-    }
-
-    // ==========================================
-    // 2. MÓDULO CRM Y REPORTES (FASTAPI)
-    // ==========================================
-    const clientesBody = document.getElementById('clientes-body');
-    const interaccionesBody = document.getElementById('interacciones-body');
-    const selectClientes = document.getElementById('int-cliente-id');
-    const secClientes = document.getElementById('seccion-clientes');
-    const secDetalleCliente = document.getElementById('seccion-detalle-cliente');
-    
-    // Gráficas
     const ctxChart = document.getElementById('interaccionesChart');
     let interaccionesChart = null;
     if (ctxChart) {
@@ -234,11 +94,223 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ==========================================
+    // 1. MÓDULO SCM: PROVEEDORES (NUEVO)
+    // ==========================================
+    const proveedoresBody = document.getElementById('proveedores-body');
+    const selectProveedorProd = document.getElementById('proveedor-producto');
+    const modalProveedor = document.getElementById('modal-proveedor');
+    const formProveedor = document.getElementById('form-nuevo-proveedor');
+
+    async function cargarProveedores() {
+        try {
+            const res = await fetch(`${API_URL}/proveedores`);
+            if(!res.ok) return;
+            const proveedoresLista = await res.json();
+            
+            if(proveedoresBody) proveedoresBody.innerHTML = '';
+            if(selectProveedorProd) selectProveedorProd.innerHTML = '<option value="">Selecciona un proveedor...</option>';
+
+            proveedoresLista.forEach(prov => {
+                if(proveedoresBody) {
+                    proveedoresBody.innerHTML += `
+                        <tr>
+                            <td><strong>${prov.nombre}</strong></td>
+                            <td>${prov.contacto}</td>
+                            <td>${prov.correo}<br><small>${prov.telefono}</small></td>
+                            <td><span class="badge" style="background:#16a085; color:white;">Activo</span></td>
+                        </tr>`;
+                }
+                if(selectProveedorProd) selectProveedorProd.innerHTML += `<option value="${prov.id}">${prov.nombre}</option>`;
+            });
+        } catch (error) { console.error("Error al cargar proveedores:", error); }
+    }
+    cargarProveedores();
+
+    document.getElementById('btn-abrir-modal-proveedor')?.addEventListener('click', () => {
+        if(formProveedor) formProveedor.reset();
+        if(modalProveedor) modalProveedor.style.display = 'flex';
+    });
+
+    document.getElementById('cerrar-modal-proveedor')?.addEventListener('click', () => {
+        if(modalProveedor) modalProveedor.style.display = 'none';
+    });
+    document.getElementById('btn-cancelar-proveedor')?.addEventListener('click', () => {
+        if(modalProveedor) modalProveedor.style.display = 'none';
+    });
+
+    if (formProveedor) {
+        formProveedor.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = getAuth().currentUser;
+            if (!user) return alert("Sesión expirada");
+            const token = await user.getIdToken();
+
+            const btnSub = formProveedor.querySelector('.btn-guardar');
+            btnSub.textContent = "Guardando..."; btnSub.disabled = true;
+
+            const datosProv = {
+                nombre: document.getElementById('prov-nombre').value,
+                contacto: document.getElementById('prov-contacto').value,
+                correo: document.getElementById('prov-correo').value,
+                telefono: document.getElementById('prov-telefono').value
+            };
+
+            try {
+                await fetch(`${API_URL}/proveedores`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(datosProv)
+                });
+                if(modalProveedor) modalProveedor.style.display = 'none';
+                cargarProveedores();
+            } catch (error) { alert("Error al guardar proveedor"); }
+            finally { btnSub.textContent = "Guardar Proveedor"; btnSub.disabled = false; }
+        });
+    }
+
+    // ==========================================
+    // 2. MÓDULO SCM: PRODUCTOS (ALMACÉN MIGRADO)
+    // ==========================================
+    const stockBody = document.getElementById('stock-body');
+    const modalProducto = document.getElementById('modal-producto');
+    const formProducto = document.getElementById('form-nuevo-producto');
+    let productosLista = [];
+
+    async function cargarProductos() {
+        try {
+            const res = await fetch(`${API_URL}/productos`);
+            if(!res.ok) return;
+            productosLista = await res.json();
+            
+            if (stockBody) stockBody.innerHTML = '';
+            
+            if (productosLista.length === 0 && stockBody) {
+                stockBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay productos.</td></tr>'; return;
+            }
+
+            productosLista.forEach(p => {
+                const stockMinimo = p.stock_minimo || 0;
+                const estado = p.stock_actual > stockMinimo ? 'Disponible' : (p.stock_actual > 0 ? 'Bajo Stock' : 'Agotado');
+                const claseTag = p.stock_actual > stockMinimo ? 'status-entregado' : (p.stock_actual > 0 ? 'status-bajo' : 'status-agotado');
+                const imgSrc = (p.imagen && p.imagen.startsWith('http')) ? p.imagen : '../' + (p.imagen || 'images/images/muffin.jpg');
+
+                if(stockBody) {
+                    stockBody.innerHTML += `
+                        <tr>
+                            <td><img src="${imgSrc}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;"></td>
+                            <td><strong>${p.nombre}</strong><br><small style="color:#888;">Logística: ${p.estrategia_logistica || 'N/A'}</small></td>
+                            <td>${p.stock_actual} pcs<br><small style="color:red">Min: ${stockMinimo}</small></td>
+                            <td><span class="badge ${claseTag}">${estado}</span></td>
+                            <td class="acciones-iconos">
+                                <i class="bi bi-pencil-square icon-edit" data-id="${p.id}" title="Editar"></i>
+                                <i class="bi bi-trash icon-delete" data-id="${p.id}" title="Eliminar"></i>
+                            </td>
+                        </tr>`;
+                }
+            });
+        } catch (error) { console.error("Error al cargar productos:", error); }
+    }
+    cargarProductos();
+
+    if (stockBody) {
+        stockBody.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('icon-edit')) {
+                const p = productosLista.find(x => x.id === e.target.dataset.id);
+                if (p) {
+                    modalProducto.style.display = 'flex';
+                    document.getElementById('producto-id').value = p.id;
+                    document.getElementById('nombre-producto').value = p.nombre;
+                    document.getElementById('desc-producto').value = p.descripcion || '';
+                    document.getElementById('categoria-producto').value = p.categoria || 'Panes';
+                    document.getElementById('proveedor-producto').value = p.proveedor_id || '';
+                    document.getElementById('cantidad-producto').value = p.stock_actual || 0;
+                    document.getElementById('minimo-producto').value = p.stock_minimo || 0;
+                    document.getElementById('costo-producto').value = p.costo_unitario || 0;
+                    document.getElementById('precio-producto').value = p.precio || 0;
+                    document.getElementById('estrategia-producto').value = p.estrategia_logistica || 'PULL';
+                    document.getElementById('imagen-actual').value = p.imagen || '';
+                }
+            }
+            if (e.target.classList.contains('icon-delete') && confirm("¿Eliminar producto de forma permanente?")) {
+                const user = getAuth().currentUser;
+                const token = await user.getIdToken();
+                await fetch(`${API_URL}/productos/${e.target.dataset.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                cargarProductos();
+            }
+        });
+    }
+
+    document.getElementById('btn-abrir-modal-producto')?.addEventListener('click', () => {
+        if(formProducto) formProducto.reset();
+        document.getElementById('producto-id').value = '';
+        if(modalProducto) modalProducto.style.display = 'flex';
+    });
+
+    document.getElementById('cerrar-modal-producto')?.addEventListener('click', () => { if (modalProducto) modalProducto.style.display = 'none'; });
+    document.getElementById('btn-cancelar-producto')?.addEventListener('click', () => { if (modalProducto) modalProducto.style.display = 'none'; });
+
+    if (formProducto) {
+        formProducto.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = getAuth().currentUser;
+            if (!user) return alert("Sesión expirada");
+            const token = await user.getIdToken();
+
+            const btnGuardar = document.getElementById('btn-guardar-producto');
+            btnGuardar.textContent = "Guardando..."; btnGuardar.disabled = true;
+
+            try {
+                let urlImagenFinal = document.getElementById('imagen-actual').value; 
+                const archivoImagen = document.getElementById('imagen-archivo').files[0];
+                if (archivoImagen) {
+                    const formData = new FormData();
+                    formData.append("image", archivoImagen);
+                    const respuesta = await fetch(`https://api.imgbb.com/1/upload?key=07cf6c87bdeebfc1e9e0e150e25a96ec`, { method: "POST", body: formData });
+                    const datos = await respuesta.json();
+                    if(datos.success) urlImagenFinal = datos.data.url; 
+                }
+                if (!urlImagenFinal) urlImagenFinal = "https://via.placeholder.com/150?text=Sin+Imagen";
+
+                const datosProducto = { 
+                    nombre: document.getElementById('nombre-producto').value.trim(), 
+                    descripcion: document.getElementById('desc-producto').value.trim(),
+                    categoria: document.getElementById('categoria-producto').value, 
+                    proveedor_id: document.getElementById('proveedor-producto').value,
+                    stock_actual: parseInt(document.getElementById('cantidad-producto').value, 10),
+                    stock_minimo: parseInt(document.getElementById('minimo-producto').value, 10),
+                    costo_unitario: parseFloat(document.getElementById('costo-producto').value),
+                    precio: parseFloat(document.getElementById('precio-producto').value),
+                    estrategia_logistica: document.getElementById('estrategia-producto').value,
+                    imagen: urlImagenFinal 
+                };
+
+                const docId = document.getElementById('producto-id').value;
+                if (docId) {
+                    await fetch(`${API_URL}/productos/${docId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(datosProducto) });
+                } else {
+                    await fetch(`${API_URL}/productos`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(datosProducto) });
+                }
+                
+                if (modalProducto) modalProducto.style.display = 'none';
+                cargarProductos();
+            } catch (error) { alert("Error al guardar producto"); } 
+            finally { btnGuardar.textContent = "Guardar Producto"; btnGuardar.disabled = false; }
+        });
+    }
+
+    // ==========================================
+    // 3. MÓDULO CRM: CLIENTES E INTERACCIONES
+    // ==========================================
+    const clientesBody = document.getElementById('clientes-body');
+    const interaccionesBody = document.getElementById('interacciones-body');
+    const selectClientes = document.getElementById('int-cliente-id');
+    const secClientes = document.getElementById('seccion-clientes');
+    const secDetalleCliente = document.getElementById('seccion-detalle-cliente');
+
     async function recargarDatosCRM() {
-      
         try {
             const resClientes = await fetch(`${API_URL}/clientes`);
-            
             if(!resClientes.ok) return;
             const clientes = await resClientes.json();
             
@@ -263,11 +335,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 let colorBadge = '#16a085'; 
                 let textoEstado = cli.estado || 'Activo';
-                if (estadoActual.includes('prospecto')) {
-                    colorBadge = '#0d6efd'; 
-                } else if (estadoActual.includes('inactivo')) {
-                    colorBadge = '#e74c3c'; 
-                }
+                if (estadoActual.includes('prospecto')) { colorBadge = '#0d6efd'; } 
+                else if (estadoActual.includes('inactivo')) { colorBadge = '#e74c3c'; }
 
                 if (clientesBody) {
                     clientesBody.innerHTML += `
@@ -300,7 +369,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } catch(e) {}
             }
-            
 
             let clientesSinInteraccion = Object.values(mapIntCliente).filter(v => v === 0).length;
 
@@ -347,27 +415,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (document.getElementById('metric-interacciones')) document.getElementById('metric-interacciones').textContent = todasLasInteracciones.length;
 
+            // ACTUALIZACIÓN DE LAS GRÁFICAS DE CHART.JS
             if (interaccionesChart) { interaccionesChart.data.datasets[0].data = [cLlamada, cCorreo, cWhatsapp, cNota, cReunion]; interaccionesChart.update(); }
             if (repBarChart) { repBarChart.data.datasets[0].data = [cLlamada, cCorreo, cWhatsapp, cReunion, cNota]; repBarChart.update(); }
             if (repPieChart) { repPieChart.data.datasets[0].data = [etapas.Prospecto, etapas.Activo, etapas.Inactivo]; repPieChart.update(); }
 
-        } catch (error) {console.error("Error crítico al conectar con la API:", error);
-        }
+        } catch (error) { console.error("Error al recargar CRM:", error); }
     }
-
     recargarDatosCRM();
 
     if (clientesBody) {
         clientesBody.addEventListener('click', async (e) => {
             if (e.target.classList.contains('icon-delete-cliente') && confirm("¿Dar de baja a este cliente?")) {
-                const user = getAuth().currentUser;
-                if (!user) return alert("Sesión expirada");
-                const token = await user.getIdToken();
-
-                await fetch(`${API_URL}/clientes/${e.target.dataset.id}`, { 
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const token = await getAuth().currentUser.getIdToken();
+                await fetch(`${API_URL}/clientes/${e.target.dataset.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
                 recargarDatosCRM();
             }
             if (e.target.classList.contains('icon-ver-detalle')) abrirDetalleCliente(e.target.dataset.id);
@@ -426,21 +487,6 @@ document.addEventListener('DOMContentLoaded', () => {
         recargarDatosCRM(); 
     });
 
-    document.getElementById('btn-detalle-correo')?.addEventListener('click', () => {
-        const email = document.getElementById('detalle-correo').textContent;
-        if (email && email !== "...") window.location.href = `mailto:${email}`;
-    });
-
-    document.getElementById('btn-detalle-editar')?.addEventListener('click', () => {
-        document.getElementById('cliente-id').value = document.getElementById('form-detalle-interaccion').dataset.clienteId;
-        document.getElementById('cli-nombre').value = document.getElementById('detalle-nombre').textContent;
-        document.getElementById('cli-correo').value = document.getElementById('detalle-correo').textContent;
-        document.getElementById('cli-telefono').value = document.getElementById('detalle-telefono').textContent;
-        document.getElementById('cli-empresa').value = ""; 
-        document.querySelector('#modal-cliente h3').textContent = "Editar Cliente";
-        document.getElementById('modal-cliente').style.display = 'flex';
-    });
-
     document.getElementById('btn-detalle-actualizar-etapa')?.addEventListener('click', async () => {
         const btnActEtapa = document.getElementById('btn-detalle-actualizar-etapa');
         const clienteId = document.getElementById('form-detalle-interaccion').dataset.clienteId;
@@ -448,17 +494,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!clienteId) return;
         
         const user = getAuth().currentUser;
-        if (!user) return alert("Sesión expirada");
         const token = await user.getIdToken();
 
         btnActEtapa.textContent = "...";
         try {
             await fetch(`${API_URL}/clientes/${clienteId}`, {
                 method: 'PUT', 
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ 
                     nombre: document.getElementById('detalle-nombre').textContent,
                     correo: document.getElementById('detalle-correo').textContent,
@@ -472,6 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { btnActEtapa.textContent = "Actualizar Etapa"; }
     });
 
+    // Formulario de Detalles Interacción
     const formDetalleInt = document.getElementById('form-detalle-interaccion');
     if (formDetalleInt) {
         formDetalleInt.addEventListener('submit', async (e) => {
@@ -480,19 +523,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!clienteId) return;
 
             const user = getAuth().currentUser;
-            if (!user) return alert("Sesión expirada");
             const token = await user.getIdToken();
-
             const btnSub = formDetalleInt.querySelector('button');
             btnSub.textContent = "..."; btnSub.disabled = true;
 
             try {
                 await fetch(`${API_URL}/interacciones`, {
                     method: 'POST', 
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'Authorization': `Bearer ${token}` 
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
                         cliente_id: clienteId,
                         tipo: document.getElementById('detalle-int-tipo').value,
@@ -507,17 +545,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Modal Cliente Global
+    // Modal Cliente
     const modalCliente = document.getElementById('modal-cliente');
     const formCliente = document.getElementById('form-nuevo-cliente');
     document.getElementById('btn-abrir-modal-cliente')?.addEventListener('click', () => {
         document.getElementById('cliente-id').value = ''; 
-        document.querySelector('#modal-cliente h3').textContent = "Registrar Nuevo Cliente";
         if(formCliente) formCliente.reset();
         if(modalCliente) modalCliente.style.display = 'flex';
     });
-    document.getElementById('cerrar-modal-cliente')?.addEventListener('click', () => modalCliente.style.display = 'none');
-    document.getElementById('btn-cancelar-cliente')?.addEventListener('click', () => modalCliente.style.display = 'none');
 
     if (formCliente) {
         formCliente.addEventListener('submit', async (e) => {
@@ -527,55 +562,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 nombre: document.getElementById('cli-nombre').value,
                 correo: document.getElementById('cli-correo').value,
                 telefono: document.getElementById('cli-telefono').value,
-                empresa: document.getElementById('cli-empresa').value,
-                estado: idCliente ? (document.getElementById('detalle-etapa') ? document.getElementById('detalle-etapa').value : "activo") : "activo"
+                empresa: document.getElementById('cli-empresa').value || 'Desconocida',
+                estado: "activo"
             };
 
-            const user = getAuth().currentUser;
-            if (!user) return alert("Sesión expirada");
-            const token = await user.getIdToken();
-
+            const token = await getAuth().currentUser.getIdToken();
             const btnSub = formCliente.querySelector('.btn-guardar');
             btnSub.textContent = "Guardando..."; btnSub.disabled = true;
 
             try {
                 if (idCliente) {
-                    await fetch(`${API_URL}/clientes/${idCliente}`, { 
-                        method: 'PUT', 
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        }, 
-                        body: JSON.stringify(datosCliente) 
-                    });
+                    await fetch(`${API_URL}/clientes/${idCliente}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(datosCliente) });
                     abrirDetalleCliente(idCliente); 
                 } else {
-                    await fetch(`${API_URL}/clientes`, { 
-                        method: 'POST', 
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        }, 
-                        body: JSON.stringify(datosCliente) 
-                    });
+                    await fetch(`${API_URL}/clientes`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(datosCliente) });
                 }
                 modalCliente.style.display = 'none';
                 formCliente.reset();
                 recargarDatosCRM(); 
             } catch (error) { alert("Error al guardar."); } 
-            finally { btnSub.textContent = "Guardar"; btnSub.disabled = false; }
+            finally { btnSub.textContent = "Guardar Cliente"; btnSub.disabled = false; }
         });
     }
 
-    // Modal Interaccion Global
+    // Modal Interacción
     const modalInteraccion = document.getElementById('modal-interaccion');
     const formInteraccion = document.getElementById('form-nueva-interaccion');
     document.getElementById('btn-abrir-modal-interaccion')?.addEventListener('click', () => {
         if(modalInteraccion) modalInteraccion.style.display = 'flex';
         if(formInteraccion) formInteraccion.reset();
     });
-    document.getElementById('cerrar-modal-interaccion')?.addEventListener('click', () => modalInteraccion.style.display = 'none');
-    document.getElementById('btn-cancelar-interaccion')?.addEventListener('click', () => modalInteraccion.style.display = 'none');
 
     if (formInteraccion) {
         formInteraccion.addEventListener('submit', async (e) => {
@@ -584,18 +600,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!clienteSeleccionado) return alert("Selecciona un cliente.");
             
             const user = getAuth().currentUser;
-            if (!user) return alert("Sesión expirada");
             const token = await user.getIdToken();
-
             const btnSub = formInteraccion.querySelector('.btn-guardar');
             btnSub.textContent = "Guardando..."; btnSub.disabled = true;
+
             try {
                 await fetch(`${API_URL}/interacciones`, {
                     method: 'POST', 
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
                         cliente_id: clienteSeleccionado,
                         tipo: document.getElementById('int-tipo').value,
@@ -612,7 +624,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 3. MÓDULO DE USUARIOS (STAFF) FIREBASE
+    // 4. MÓDULO STAFF / USUARIOS (RECUPERADO)
     // ==========================================
     const usuariosBody = document.getElementById('usuarios-body');
     const modalUsuario = document.getElementById('modal-usuario');
@@ -655,10 +667,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const cerrarModalUsu = () => { if(modalUsuario) modalUsuario.style.display = 'none'; };
-    document.getElementById('cerrar-modal-usuario')?.addEventListener('click', cerrarModalUsu);
-    document.getElementById('btn-cancelar-usuario')?.addEventListener('click', cerrarModalUsu);
-
     if (formUsuario) {
         formUsuario.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -671,14 +679,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     nombre: document.getElementById('usuario-nombre').value.trim(),
                     telefono: document.getElementById('usuario-telefono').value.trim()
                 });
-                cerrarModalUsu();
+                if(modalUsuario) modalUsuario.style.display = 'none';
             } catch (error) { alert("Error al actualizar usuario."); } 
             finally { btnSubUsu.textContent = "Guardar Cambios"; btnSubUsu.disabled = false; }
         });
     }
 
     // ==========================================
-    // 4. SEGUIMIENTO DE PEDIDOS
+    // 5. SEGUIMIENTO DE PEDIDOS (RECUPERADO)
     // ==========================================
     const renderizarSeguimientoActivo = () => {
         const trackingContainer = document.getElementById('tracking-container');
@@ -703,7 +711,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderizarSeguimientoActivo();
 
     // ==========================================
-    // 5. NAVEGACIÓN DEL MENÚ (CORREGIDA Y ROBUSTA)
+    // 6. SISTEMA DE NAVEGACIÓN Y BÚSQUEDA
     // ==========================================
     const menuLinks = document.querySelectorAll('.sidebar-menu li a');
     const menuItems = document.querySelectorAll('.sidebar-menu li'); 
@@ -717,7 +725,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'Staff': ['#seccion-usuarios'],
         'Productos': ['#seccion-productos'],
         'Catálogo': ['#seccion-productos'],
-        'Pedidos': ['#seccion-pedidos']
+        'Pedidos': ['#seccion-pedidos'],
+        'Proveedores': ['#seccion-proveedores']
     };
 
     const ocultarTodasLasSecciones = () => {
@@ -725,10 +734,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('seccion-graficas')?.classList.add('seccion-oculta');
         document.querySelectorAll('.crud-section, .tracking-section').forEach(sec => sec.classList.add('seccion-oculta'));
     };
-
-    ocultarTodasLasSecciones();
-    document.querySelector('.metrics-section')?.classList.remove('seccion-oculta');
-    document.getElementById('seccion-graficas')?.classList.remove('seccion-oculta');
 
     menuLinks.forEach(link => {
         link.addEventListener('click', (e) => {
@@ -742,10 +747,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             ocultarTodasLasSecciones();
             
-            if (searchInput) { 
-                searchInput.value = ''; 
-                searchInput.dispatchEvent(new Event('input')); 
-            }
+            const searchInput = document.getElementById('global-search');
+            if (searchInput) { searchInput.value = ''; searchInput.dispatchEvent(new Event('input')); }
 
             for (const [key, selectors] of Object.entries(seccionesMap)) {
                 if (textoEnlace.includes(key)) {
@@ -759,27 +762,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ==========================================
-    // BUSCADOR UNIVERSAL INTELIGENTE (POR SECCIÓN)
-    // ==========================================
     const searchInput = document.getElementById('global-search');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase().trim();
-            
-            const activeSection = document.querySelector('.crud-section:not(.seccion-oculta), .tracking-section:not(.seccion-oculta), .metrics-section:not(.seccion-oculta), .charts-section:not(.seccion-oculta)');
+            const activeSection = document.querySelector('.crud-section:not(.seccion-oculta), .tracking-section:not(.seccion-oculta)');
             if (!activeSection) return;
 
             const filas = activeSection.querySelectorAll('tbody tr');
             filas.forEach(fila => {
                 const textoFila = fila.textContent.toLowerCase();
                 fila.style.display = textoFila.includes(term) ? '' : 'none';
-            });
-
-            const tarjetas = activeSection.querySelectorAll('.tracking-card, .detalle-card, .card-metric, .chart-card');
-            tarjetas.forEach(tarjeta => {
-                const textoTarjeta = tarjeta.textContent.toLowerCase();
-                tarjeta.style.display = textoTarjeta.includes(term) ? '' : 'none';
             });
         });
     }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard CRM - La Nueva Ideal</title>
+    <title>Dashboard CRM y SCM - La Nueva Ideal</title>
     <link rel="stylesheet" href="../css/styles.css?v=1.2">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -41,7 +41,11 @@
             
             <li class="menu-divider" style="color: #f39c12; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; padding: 25px 20px 5px; letter-spacing: 1px;"> Operaciones Tienda</li>
             <li><a href="#seccion-productos"><i class="bi bi-box-seam"></i> Catálogo</a></li>
-            <li><a href="#seccion-pedidos"><i class="bi bi-truck"></i> Pedidos</a></li>
+            <li><a href="#seccion-pedidos"><i class="bi bi-bag-check"></i> Pedidos</a></li> 
+            
+            <!-- SEPARADOR PARA TU RÚBRICA SCM -->
+            <li class="menu-divider" style="color: #f39c12; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; padding: 25px 20px 5px; letter-spacing: 1px;"> Módulo SCM</li>
+            <li><a href="#seccion-proveedores"><i class="bi bi-building"></i> Proveedores</a></li>
             
             <li style="margin-top: 20px;"><a href="../index.html"><i class="bi bi-house-door"></i> Volver a Tienda</a></li>
         </ul>
@@ -87,8 +91,9 @@
                     </div>
                 </div>
             </section>
+
             <!-- ========================================== -->
-            <!-- NUEVA SECCIÓN: REPORTES Y MÉTRICAS         -->
+            <!-- SECCIÓN: REPORTES Y MÉTRICAS               -->
             <!-- ========================================== -->
             <section id="seccion-reportes" class="crud-section seccion-oculta" style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
                 <div style="margin-bottom: 25px;">
@@ -96,7 +101,6 @@
                     <p style="color: #666; font-size: 0.9rem;">Indicadores para evaluar el desempeño del CRM.</p>
                 </div>
 
-                <!-- 4 Tarjetas de Métricas -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
                     <div class="detalle-card" style="padding: 15px;">
                         <h4 style="margin: 0; font-size: 0.85rem; color: #666;">Total de clientes</h4>
@@ -120,7 +124,6 @@
                     </div>
                 </div>
 
-                <!-- Gráficas de Reportes -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                     <div class="detalle-card">
                         <h4 style="margin-top: 0; font-size: 1rem; color: #333; margin-bottom: 20px;">Interacciones por tipo</h4>
@@ -135,8 +138,9 @@
                 </div>
             </section>
 
-
-
+            <!-- ========================================== -->
+            <!-- SECCIÓN: CLIENTES Y DETALLES               -->
+            <!-- ========================================== -->
             <section id="seccion-clientes" class="crud-section seccion-oculta">
                 <div class="section-header">
                     <h2>Directorio de Clientes</h2>
@@ -167,13 +171,10 @@
                 </div>
             
                 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
-                    
                     <div style="display: flex; flex-direction: column; gap: 20px;">
                         <div class="detalle-card">
                             <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-                                <div style="width: 55px; height: 55px; border-radius: 50%; background: #4F231C; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: bold;" id="detalle-inicial">
-                                    C
-                                </div>
+                                <div style="width: 55px; height: 55px; border-radius: 50%; background: #4F231C; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: bold;" id="detalle-inicial">C</div>
                                 <div>
                                     <h4 id="detalle-nombre" style="margin: 0; font-size: 1.15rem;">Cargando...</h4>
                                     <small style="color: #888;" id="detalle-registro">Registrado en API</small>
@@ -212,7 +213,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="detalle-pedidos-body">
-                                    <tr><td colspan="4" style="text-align: center; color: #888; padding: 15px;">No hay pedidos registrados en la plataforma.</td></tr>
+                                    <tr><td colspan="4" style="text-align: center; color: #888; padding: 15px;">No hay pedidos registrados.</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -227,7 +228,7 @@
                                         <option value="Llamada">Llamada</option>
                                         <option value="Correo">Correo</option>
                                         <option value="WhatsApp">WhatsApp</option>
-                                        <option value="reunion">Reunión</option>
+                                        <option value="Reunión">Reunión</option>
                                     </select>
                                 </div>
                                 <div style="flex: 3;">
@@ -247,6 +248,9 @@
                 </div>
             </section>
 
+            <!-- ========================================== -->
+            <!-- SECCIÓN: INTERACCIONES GLOBALES            -->
+            <!-- ========================================== -->
             <section id="seccion-interacciones" class="crud-section seccion-oculta">
                 <div class="section-header">
                     <h2>Historial Global de Interacciones</h2>
@@ -268,6 +272,9 @@
                 </div>
             </section>
 
+            <!-- ========================================== -->
+            <!-- SECCIÓN: USUARIOS / STAFF                  -->
+            <!-- ========================================== -->
             <section id="seccion-usuarios" class="crud-section seccion-oculta">
                 <div class="section-header">
                     <h2>Gestión de Staff / Usuarios</h2>
@@ -288,9 +295,12 @@
                 </div>
             </section>
 
+            <!-- ========================================== -->
+            <!-- SECCIÓN: PRODUCTOS                         -->
+            <!-- ========================================== -->
             <section id="seccion-productos" class="crud-section seccion-oculta">
                 <div class="section-header">
-                    <h2>Catálogo de Productos</h2>
+                    <h2>Catálogo de Productos (Almacén SCM)</h2>
                     <button id="btn-abrir-modal-producto" class="btn-crm"><i class="bi bi-plus-lg"></i> Nuevo Producto</button>
                 </div>
                 <div class="table-container">
@@ -299,7 +309,7 @@
                             <tr>
                                 <th>Imagen</th>
                                 <th>Producto</th>
-                                <th>Cantidad</th>
+                                <th>Stock</th>
                                 <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
@@ -309,19 +319,48 @@
                 </div>
             </section>
 
+            <!-- ========================================== -->
+            <!-- SECCIÓN: PEDIDOS                           -->
+            <!-- ========================================== -->
             <section id="seccion-pedidos" class="tracking-section seccion-oculta">
                 <h2>Seguimiento de Pedidos Activos</h2>
                 <div class="tracking-container" id="tracking-container"></div>
             </section>
+
+            <!-- ========================================== -->
+            <!-- NUEVA SECCIÓN: PROVEEDORES SCM             -->
+            <!-- ========================================== -->
+            <section id="seccion-proveedores" class="crud-section seccion-oculta">
+                <div class="section-header">
+                    <h2>Directorio de Proveedores SCM</h2>
+                    <button id="btn-abrir-modal-proveedor" class="btn-crm"><i class="bi bi-plus-lg"></i> Nuevo Proveedor</button>
+                </div>
+                <div class="table-container">
+                    <table class="crm-table">
+                        <thead>
+                            <tr>
+                                <th>Empresa</th>
+                                <th>Contacto</th>
+                                <th>Correo / Teléfono</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="proveedores-body">
+                            <!-- Se llena con JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
         </div>
     </main>
 
     <!-- MODAL NUEVO CLIENTE -->
-    <div id="modal-cliente" class="modal-crm">
+    <div id="modal-cliente" class="modal-crm" style="display: none;">
         <div class="modal-crm-content">
             <div class="modal-crm-header">
                 <h3>Registrar Nuevo Cliente</h3>
-                <span class="close-crm" id="cerrar-modal-cliente">&times;</span>
+                <span class="close-crm" id="cerrar-modal-cliente" onclick="document.getElementById('modal-cliente').style.display='none'">&times;</span>
             </div>
             <form id="form-nuevo-cliente">
                 <input type="hidden" id="cliente-id">
@@ -344,7 +383,7 @@
                     <input type="text" id="cli-empresa" placeholder="Ej. Restaurante El Sol">
                 </div>
                 <div class="modal-crm-actions">
-                    <button type="button" class="btn-cancelar" id="btn-cancelar-cliente">Cancelar</button>
+                    <button type="button" class="btn-cancelar" id="btn-cancelar-cliente" onclick="document.getElementById('modal-cliente').style.display='none'">Cancelar</button>
                     <button type="submit" class="btn-guardar" style="background-color: #4F231C;">Guardar Cliente</button>
                 </div>
             </form>
@@ -352,11 +391,11 @@
     </div>
 
     <!-- MODAL INTERACCIONES -->
-    <div id="modal-interaccion" class="modal-crm">
+    <div id="modal-interaccion" class="modal-crm" style="display: none;">
         <div class="modal-crm-content">
             <div class="modal-crm-header">
                 <h3>Registrar Interacción</h3>
-                <span class="close-crm" id="cerrar-modal-interaccion">&times;</span>
+                <span class="close-crm" id="cerrar-modal-interaccion" onclick="document.getElementById('modal-interaccion').style.display='none'">&times;</span>
             </div>
             <form id="form-nueva-interaccion">
                 <div class="form-group">
@@ -379,20 +418,19 @@
                     <textarea id="int-desc" rows="3" required placeholder="Detalles de lo que se habló..."></textarea>
                 </div>
                 <div class="modal-crm-actions">
-                    <button type="button" class="btn-cancelar" id="btn-cancelar-interaccion">Cancelar</button>
+                    <button type="button" class="btn-cancelar" id="btn-cancelar-interaccion" onclick="document.getElementById('modal-interaccion').style.display='none'">Cancelar</button>
                     <button type="submit" class="btn-guardar" style="background-color: #16a085;">Guardar Interacción</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL USUARIOS -->
     <!-- MODAL USUARIOS (STAFF) -->
-    <div id="modal-usuario" class="modal-crm">
+    <div id="modal-usuario" class="modal-crm" style="display: none;">
         <div class="modal-crm-content">
             <div class="modal-crm-header">
                 <h3>Editar Perfil de Usuario</h3>
-                <span class="close-crm" id="cerrar-modal-usuario">&times;</span>
+                <span class="close-crm" id="cerrar-modal-usuario" onclick="document.getElementById('modal-usuario').style.display='none'">&times;</span>
             </div>
             <form id="form-editar-usuario">
                 <input type="hidden" id="usuario-id">
@@ -418,53 +456,124 @@
                     </div>
                 </div>
                 <div class="modal-crm-actions">
-                    <button type="button" class="btn-cancelar" id="btn-cancelar-usuario">Cancelar</button>
+                    <button type="button" class="btn-cancelar" id="btn-cancelar-usuario" onclick="document.getElementById('modal-usuario').style.display='none'">Cancelar</button>
                     <button type="submit" class="btn-guardar" style="background-color: #4F231C;">Guardar Cambios</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL PRODUCTOS -->
-    <div id="modal-producto" class="modal-crm">
+    <!-- MODAL NUEVO PROVEEDOR SCM -->
+    <div id="modal-proveedor" class="modal-crm" style="display: none;">
         <div class="modal-crm-content">
             <div class="modal-crm-header">
-                <h3 id="modal-titulo">Nuevo Producto</h3>
-                <span class="close-crm" id="cerrar-modal-producto">&times;</span>
+                <h3>Registrar Proveedor</h3>
+                <span class="close-crm" id="cerrar-modal-proveedor" onclick="document.getElementById('modal-proveedor').style.display='none'">&times;</span>
+            </div>
+            <form id="form-nuevo-proveedor">
+                <input type="hidden" id="proveedor-id">
+                <div class="form-group">
+                    <label>Empresa Proveedora</label>
+                    <input type="text" id="prov-nombre" required placeholder="Ej: Harinas San Blas">
+                </div>
+                <div class="form-group">
+                    <label>Nombre del Contacto</label>
+                    <input type="text" id="prov-contacto" required placeholder="Ej: Juan Pérez">
+                </div>
+                <div class="form-group" style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <label>Correo</label>
+                        <input type="email" id="prov-correo" required placeholder="ventas@empresa.com">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Teléfono</label>
+                        <input type="text" id="prov-telefono" required placeholder="449...">
+                    </div>
+                </div>
+                <div class="modal-crm-actions">
+                    <button type="button" id="btn-cancelar-proveedor" class="btn-cancelar" onclick="document.getElementById('modal-proveedor').style.display='none'">Cancelar</button>
+                    <button type="submit" class="btn-guardar" style="background-color: #16a085;">Guardar Proveedor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL PRODUCTOS SCM -->
+    <div id="modal-producto" class="modal-crm" style="display: none;">
+        <div class="modal-crm-content">
+            <div class="modal-crm-header">
+                <h3 id="modal-titulo">Ficha de Producto SCM</h3>
+                <span class="close-crm" id="cerrar-modal-producto" onclick="document.getElementById('modal-producto').style.display='none'">&times;</span>
             </div>
             <form id="form-nuevo-producto">
                 <input type="hidden" id="producto-id">
                 <input type="hidden" id="imagen-actual">
+                
                 <div class="form-group">
                     <label>Nombre del Producto</label>
-                    <input type="text" id="nombre-producto" required placeholder="Ej: Bolillo, Concha...">
+                    <input type="text" id="nombre-producto" required placeholder="Ej: Concha Vainilla">
                 </div>
                 <div class="form-group">
-                    <label>Cantidad en Stock</label>
-                    <input type="number" id="cantidad-producto" required min="0" placeholder="0">
+                    <label>Descripción</label>
+                    <input type="text" id="desc-producto" placeholder="Breve descripción del producto">
                 </div>
+                
                 <div class="form-group" style="display: flex; gap: 15px;">
                     <div style="flex: 1;">
                         <label>Categoría</label>
                         <select id="categoria-producto" required>
                             <option value="Panes">🍞 Panes</option>
-                            <option value="Cafés">☕ Cafés</option>
-                            <option value="Otros">📦 Otros</option>
+                            <option value="Bebidas">☕ Bebidas</option>
+                            <option value="Insumos">📦 Insumos</option>
                         </select>
                     </div>
                     <div style="flex: 1;">
-                        <label>Precio ($)</label>
-                        <input type="number" id="precio-producto" required min="1" placeholder="Ej: 15">
+                        <label>Proveedor SCM</label>
+                        <select id="proveedor-producto" required>
+                            <option value="">Cargando proveedores...</option>
+                        </select>
                     </div>
                 </div>
+
+                <div class="form-group" style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <label>Stock Actual</label>
+                        <input type="number" id="cantidad-producto" required min="0" placeholder="0">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Stock Mínimo (Alerta)</label>
+                        <input type="number" id="minimo-producto" required min="0" placeholder="Ej: 10">
+                    </div>
+                </div>
+
+                <div class="form-group" style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <label>Costo Unitario ($)</label>
+                        <input type="number" step="0.01" id="costo-producto" required placeholder="Ej: 5.50">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Precio de Venta ($)</label>
+                        <input type="number" step="0.01" id="precio-producto" required placeholder="Ej: 15.00">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Estrategia Logística SCM</label>
+                    <select id="estrategia-producto" required>
+                        <option value="PULL">PULL (Surtir bajo demanda / Pedido manual)</option>
+                        <option value="PUSH">PUSH (Surtir automático al llegar al mínimo)</option>
+                    </select>
+                </div>
+
                 <div class="form-group">
                     <label>Imagen del Producto</label>
                     <input type="file" id="imagen-archivo" accept="image/*" style="padding: 5px;">
                     <small style="color: #888; margin-top: 5px;">* Si editas y no eliges foto, se conservará la anterior.</small>
                 </div>
+                
                 <div class="modal-crm-actions">
-                    <button type="button" class="btn-cancelar" id="btn-cancelar-producto">Cancelar</button>
-                    <button type="submit" class="btn-guardar" id="btn-guardar-producto">Guardar Producto</button>
+                    <button type="button" id="btn-cancelar-producto" class="btn-cancelar" onclick="document.getElementById('modal-producto').style.display='none'">Cancelar</button>
+                    <button type="submit" id="btn-guardar-producto" class="btn-guardar" style="background-color: #4F231C;">Guardar Producto</button>
                 </div>
             </form>
         </div>
