@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Header, Depends, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 import firebase_admin
 import os
 import json
@@ -24,7 +25,7 @@ else:
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-app = FastAPI(title="API CRM La Nueva Ideal")
+app = FastAPI(title="API CRM y SCM La Nueva Ideal")
 
 # 2. Configurar CORS
 app.add_middleware(
@@ -35,7 +36,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- MODELOS PYDANTIC ---
+# ==========================================
+# MODELOS PYDANTIC (CRM + SCM)
+# ==========================================
 class Cliente(BaseModel):
     nombre: str
     correo: str
@@ -48,6 +51,25 @@ class Interaccion(BaseModel):
     tipo: str
     descripcion: str
     usuario_id: str
+
+class Proveedor(BaseModel):
+    nombre: str
+    contacto: str
+    correo: str
+    telefono: str
+
+class Producto(BaseModel):
+    nombre: str
+    descripcion: str = ""
+    categoria: str
+    stock_actual: int
+    stock_minimo: int
+    proveedor_id: str
+    costo_unitario: float
+    estrategia_logistica: str = "PULL" # PUSH o PULL
+    # Opcionales para mantener compatibilidad con tu frontend actual
+    imagen: Optional[str] = None
+    precio: Optional[float] = None
     
 # ==========================================
 # VALIDACIONES: SEGURIDAD
@@ -70,7 +92,7 @@ async def verificar_token_admin(credenciales: HTTPAuthorizationCredentials = Sec
         raise HTTPException(status_code=401, detail="Token inválido o expirado")
 
 # ==========================================
-# ENDPOINTS: CLIENTES
+# ENDPOINTS: CLIENTES Y CRM
 # ==========================================
 @app.get("/")
 def raiz():
@@ -160,3 +182,57 @@ def obtener_interacciones_por_cliente(cliente_id: str):
         return interacciones
     except Exception as e:
         return {"error_firebase": str(e)}
+
+# ==========================================
+# ENDPOINTS: SCM - PROVEEDORES
+# ==========================================
+
+@app.post("/proveedores", status_code=201, dependencies=[Depends(verificar_token_admin)])
+async def crear_proveedor(proveedor: Proveedor):
+    nuevo_proveedor = proveedor.model_dump()
+    doc_ref = db.collection("proveedores").document()
+    doc_ref.set(nuevo_proveedor)
+    return {"id": doc_ref.id, "mensaje": "Proveedor registrado exitosamente"}
+
+@app.get("/proveedores")
+def obtener_proveedores():
+    try:
+        docs = db.collection("proveedores").get()
+        return [{"id": doc.id, **doc.to_dict()} for doc in docs]
+    except Exception as e:
+        return {"error_firebase": str(e)}
+
+# ==========================================
+# ENDPOINTS: SCM - PRODUCTOS (Inventario Centralizado)
+# ==========================================
+
+@app.post("/productos", status_code=201, dependencies=[Depends(verificar_token_admin)])
+async def crear_producto(producto: Producto):
+    nuevo_producto = producto.model_dump()
+    doc_ref = db.collection("productos").document()
+    doc_ref.set(nuevo_producto)
+    return {"id": doc_ref.id, "mensaje": "Producto registrado en el almacén"}
+
+@app.get("/productos")
+def obtener_productos():
+    try:
+        docs = db.collection("productos").get()
+        return [{"id": doc.id, **doc.to_dict()} for doc in docs]
+    except Exception as e:
+        return {"error_firebase": str(e)}
+
+@app.put("/productos/{id}", dependencies=[Depends(verificar_token_admin)])
+async def actualizar_producto(id: str, producto: Producto):
+    doc_ref = db.collection("productos").document(id)
+    if not doc_ref.get().exists:
+        raise HTTPException(status_code=404, detail="Producto no encontrado en almacén")
+    doc_ref.update(producto.model_dump())
+    return {"mensaje": "Ficha de producto actualizada"}
+
+@app.delete("/productos/{id}", dependencies=[Depends(verificar_token_admin)])
+async def eliminar_producto(id: str):
+    doc_ref = db.collection("productos").document(id)
+    if not doc_ref.get().exists:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    doc_ref.delete()
+    return {"mensaje": "Producto eliminado del sistema SCM"}
