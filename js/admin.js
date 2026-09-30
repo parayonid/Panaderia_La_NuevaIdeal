@@ -841,38 +841,52 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // SISTEMA DE NAVEGACIÓN Y BÚSQUEDA
     // ==========================================
-    const menuLinks = document.querySelectorAll('.sidebar-menu li a');
+    // Asegúrate de escuchar también la clase .link-navegacion
+    const menuLinks = document.querySelectorAll('.sidebar-menu li a, .link-navegacion');
     
     const seccionesMap = {
         'Dashboard CRM': ['.metrics-section', '#seccion-graficas'], 
         'Reportes': ['#seccion-reportes'], 
         'Clientes': ['#seccion-clientes'], 
-        'Interacciones': ['#seccion-interacciones'], 
+        'Historial de Interacciones': ['#seccion-interacciones'], 
         'Staff': ['#seccion-usuarios'],
         'Catálogo': ['#seccion-productos'], 
         'Pedidos': ['#seccion-pedidos'],
         'Dashboard SCM': ['#seccion-dashboard-scm'], 
         'Kardex': ['#seccion-movimientos'], 
-        'Proveedores': ['#seccion-proveedores']
+        'Proveedores': ['#seccion-proveedores'],
+        'Ver todos': ['#seccion-proveedores'], 
+        'Revisar inventario': ['#seccion-productos'] 
     };
 
     menuLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-            const txt = e.currentTarget.textContent.trim();
+            // Quitamos la flechita "→" por si le dan clic a los links azules
+            const txt = e.currentTarget.textContent.trim().replace(' →', '');
             if (txt.includes('Volver') || txt.includes('Salir')) return;
             
             e.preventDefault();
             
-            document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active')); 
-            e.currentTarget.closest('li').classList.add('active');
+            // Lógica visual para resaltar el menú lateral activo
+            if(e.currentTarget.closest('.sidebar-menu li')) {
+                document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active')); 
+                e.currentTarget.closest('li').classList.add('active');
+            } else {
+                document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
+                if(txt === 'Ver todos') document.querySelector('a[href="#seccion-proveedores"]').closest('li').classList.add('active');
+                if(txt === 'Revisar inventario') document.querySelector('a[href="#seccion-productos"]').closest('li').classList.add('active');
+            }
             
+            // Ocultar todas las secciones
             document.querySelectorAll('.crud-section, .tracking-section, .metrics-section, .charts-section').forEach(s => s.classList.add('seccion-oculta'));
             
+            // Limpiar buscador
             const searchInputObj = document.getElementById('global-search');
             if (searchInputObj) {
                 searchInputObj.value = '';
             }
             
+            // Mostrar la sección correcta basada en el mapa
             for (const [k, v] of Object.entries(seccionesMap)) { 
                 if (txt.includes(k)) {
                     v.forEach(sel => document.querySelector(sel)?.classList.remove('seccion-oculta')); 
