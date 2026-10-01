@@ -299,15 +299,63 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // FORMULARIO PRODUCTOS SCM
     // ==========================================
-  document.getElementById('form-nuevo-producto')?.addEventListener('submit', async (e) => {
+  // ==========================================
+    // FORMULARIO PRODUCTOS SCM
+    // ==========================================
+    const modalProd = document.getElementById('modal-producto');
+    
+    // 1. ABRIR MODAL "NUEVO PRODUCTO" (Esto arregla el botón naranja)
+    document.getElementById('btn-abrir-modal-producto')?.addEventListener('click', () => { 
+        document.getElementById('form-nuevo-producto').reset(); 
+        document.getElementById('producto-id').value = ''; 
+        if (document.getElementById('imagen-actual')) document.getElementById('imagen-actual').value = '';
+        modalProd.style.display = 'flex'; 
+    });
+
+    // CERRAR MODAL CON LA "X"
+    document.getElementById('cerrar-modal-producto')?.addEventListener('click', () => {
+        modalProd.style.display = 'none';
+    });
+    
+    // 2. EDITAR O ELIMINAR DESDE LA TABLA
+    document.getElementById('stock-body')?.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('icon-edit')) {
+            const p = productosGlobal.find(x => x.id === e.target.dataset.id);
+            if (p) {
+                document.getElementById('producto-id').value = p.id;
+                document.getElementById('nombre-producto').value = p.nombre;
+                document.getElementById('categoria-producto').value = p.categoria || 'Panes';
+                document.getElementById('proveedor-producto').value = p.proveedor_id || '';
+                
+                document.getElementById('cantidad-producto').value = p.stock_actual !== undefined ? p.stock_actual : (p.cantidad || 0);
+                document.getElementById('minimo-producto').value = p.stock_minimo || 0;
+                document.getElementById('costo-producto').value = p.costo_unitario !== undefined ? p.costo_unitario : (p.precio || 0);
+                document.getElementById('precio-producto').value = p.precio || 0;
+                document.getElementById('estrategia-producto').value = p.estrategia_logistica || 'PULL';
+                if (document.getElementById('imagen-actual')) document.getElementById('imagen-actual').value = p.imagen || '';
+                
+                modalProd.style.display = 'flex';
+            }
+        }
+        if (e.target.classList.contains('icon-delete') && confirm("¿Eliminar producto de forma permanente?")) {
+            await fetch(`${API_URL}/productos/${e.target.dataset.id}`, { 
+                method: 'DELETE', 
+                headers: { 'Authorization': `Bearer ${globalToken}` } 
+            });
+            cargarTodoSCM();
+        }
+    });
+
+    // 3. SUBIR IMAGEN A IMGBB Y GUARDAR EN FASTAPI
+    document.getElementById('form-nuevo-producto')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('btn-guardar-producto'); 
         btn.textContent = "Subiendo imagen y guardando..."; 
         btn.disabled = true;
         
         try {
-            // LÓGICA DE SUBIDA A IMGBB
-            let urlImagenFinal = document.getElementById('imagen-actual').value; 
+            // Lógica de ImgBB
+            let urlImagenFinal = document.getElementById('imagen-actual')?.value || ""; 
             const archivoImagenInput = document.getElementById('imagen-archivo');
             
             if (archivoImagenInput && archivoImagenInput.files.length > 0) {
@@ -315,7 +363,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const formData = new FormData();
                 formData.append("image", archivoImagen);
                 
-                // Petición a ImgBB (Asegúrate de que la API Key sea la tuya si tienes una, o usa esta de prueba)
                 const respuestaImgBB = await fetch(`https://api.imgbb.com/1/upload?key=07cf6c87bdeebfc1e9e0e150e25a96ec`, { 
                     method: "POST", 
                     body: formData 
@@ -330,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // DATOS DEL PRODUCTO
+            // Recopilar datos
             const datosProducto = { 
                 nombre: document.getElementById('nombre-producto').value.trim(), 
                 categoria: document.getElementById('categoria-producto').value, 
@@ -340,12 +387,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 costo_unitario: parseFloat(document.getElementById('costo-producto').value),
                 precio: parseFloat(document.getElementById('precio-producto').value),
                 estrategia_logistica: document.getElementById('estrategia-producto').value,
-                imagen: urlImagenFinal || "https://via.placeholder.com/150?text=Sin+Imagen" // Asignamos la imagen o un placeholder
+                imagen: urlImagenFinal || "https://via.placeholder.com/150?text=Sin+Imagen"
             };
             
             const docId = document.getElementById('producto-id').value;
             
-            // ENVIAR A FASTAPI
+            // Enviar a Python (FastAPI)
             if (docId) {
                 await fetch(`${API_URL}/productos/${docId}`, { 
                     method: 'PUT', 
