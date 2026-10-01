@@ -299,49 +299,38 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // FORMULARIO PRODUCTOS SCM
     // ==========================================
-    const modalProd = document.getElementById('modal-producto');
-    
-    document.getElementById('btn-abrir-modal-producto')?.addEventListener('click', () => { 
-        document.getElementById('form-nuevo-producto').reset(); 
-        document.getElementById('producto-id').value=''; 
-        modalProd.style.display='flex'; 
-    });
-    
-    document.getElementById('stock-body')?.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('icon-edit')) {
-            const p = productosGlobal.find(x => x.id === e.target.dataset.id);
-            if (p) {
-                document.getElementById('producto-id').value = p.id;
-                document.getElementById('nombre-producto').value = p.nombre;
-                document.getElementById('categoria-producto').value = p.categoria || 'Panes';
-                document.getElementById('proveedor-producto').value = p.proveedor_id || '';
-                
-                // Fallback a campos viejos si existen
-                document.getElementById('cantidad-producto').value = p.stock_actual !== undefined ? p.stock_actual : (p.cantidad || 0);
-                document.getElementById('minimo-producto').value = p.stock_minimo || 0;
-                document.getElementById('costo-producto').value = p.costo_unitario !== undefined ? p.costo_unitario : (p.precio || 0);
-                document.getElementById('precio-producto').value = p.precio || 0;
-                document.getElementById('estrategia-producto').value = p.estrategia_logistica || 'PULL';
-                
-                modalProd.style.display = 'flex';
-            }
-        }
-        if (e.target.classList.contains('icon-delete') && confirm("¿Eliminar producto de forma permanente?")) {
-            await fetch(`${API_URL}/productos/${e.target.dataset.id}`, { 
-                method: 'DELETE', 
-                headers: { 'Authorization': `Bearer ${globalToken}` } 
-            });
-            cargarTodoSCM();
-        }
-    });
-
-    document.getElementById('form-nuevo-producto')?.addEventListener('submit', async (e) => {
+  document.getElementById('form-nuevo-producto')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('btn-guardar-producto'); 
-        btn.textContent = "Guardando..."; 
+        btn.textContent = "Subiendo imagen y guardando..."; 
         btn.disabled = true;
         
         try {
+            // LÓGICA DE SUBIDA A IMGBB
+            let urlImagenFinal = document.getElementById('imagen-actual').value; 
+            const archivoImagenInput = document.getElementById('imagen-archivo');
+            
+            if (archivoImagenInput && archivoImagenInput.files.length > 0) {
+                const archivoImagen = archivoImagenInput.files[0];
+                const formData = new FormData();
+                formData.append("image", archivoImagen);
+                
+                // Petición a ImgBB (Asegúrate de que la API Key sea la tuya si tienes una, o usa esta de prueba)
+                const respuestaImgBB = await fetch(`https://api.imgbb.com/1/upload?key=07cf6c87bdeebfc1e9e0e150e25a96ec`, { 
+                    method: "POST", 
+                    body: formData 
+                });
+                
+                const datosImgBB = await respuestaImgBB.json();
+                if (datosImgBB.success) {
+                    urlImagenFinal = datosImgBB.data.url; 
+                } else {
+                    console.error("Error al subir a ImgBB:", datosImgBB);
+                    alert("No se pudo subir la imagen, se guardará sin ella.");
+                }
+            }
+
+            // DATOS DEL PRODUCTO
             const datosProducto = { 
                 nombre: document.getElementById('nombre-producto').value.trim(), 
                 categoria: document.getElementById('categoria-producto').value, 
@@ -350,10 +339,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 stock_minimo: parseInt(document.getElementById('minimo-producto').value, 10),
                 costo_unitario: parseFloat(document.getElementById('costo-producto').value),
                 precio: parseFloat(document.getElementById('precio-producto').value),
-                estrategia_logistica: document.getElementById('estrategia-producto').value
+                estrategia_logistica: document.getElementById('estrategia-producto').value,
+                imagen: urlImagenFinal || "https://via.placeholder.com/150?text=Sin+Imagen" // Asignamos la imagen o un placeholder
             };
             
             const docId = document.getElementById('producto-id').value;
+            
+            // ENVIAR A FASTAPI
             if (docId) {
                 await fetch(`${API_URL}/productos/${docId}`, { 
                     method: 'PUT', 
@@ -373,6 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
         } catch (error) { 
             alert("Error al guardar producto"); 
+            console.error(error);
         } finally { 
             btn.textContent = "Guardar Producto"; 
             btn.disabled = false; 

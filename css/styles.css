@@ -926,3 +926,81 @@ input[type="file"]::file-selector-button:hover {
     flex: 1 1 250px; /* Se encogen y estiran según el espacio, con un mínimo de 250px */
     min-width: 0;
 }
+
+/* Espaciado del contenedor de la tabla */
+.table-container {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: white; /* Para darle contraste si hay un fondo gris oscuro */
+    border-radius: 8px; /* Opcional, pero se ve mejor */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Opcional, da un efecto de profundidad */
+    overflow-x: auto; /* Por si el contenido se desborda en pantallas pequeñas */
+}
+
+/* Espaciado en las celdas de la tabla (padding) */
+.crm-table th,
+.crm-table td {
+    padding: 12px 15px; /* Aumenta el padding para que respiren los textos */
+    text-align: left;
+    border-bottom: 1px solid #eee; /* Línea de separación sutil */
+    vertical-align: middle; /* Centra el contenido verticalmente */
+}
+
+/* Espacio en el encabezado para distinguirlo mejor */
+.crm-table th {
+    background-color: #f8f9fa; /* Color gris claro de fondo, puedes adaptarlo a los colores de tu tema */
+    font-weight: 600;
+    color: #333;
+}
+
+/* Agregar un poco de margen a los botones de acción para que no se encimen */
+.acciones-iconos i {
+    margin-right: 15px; /* Separación entre el botón de editar y eliminar */
+}
+
+/* Opcional: efecto al pasar el cursor sobre la fila */
+.crm-table tbody tr:hover {
+    background-color: #f1f1f1; 
+}
+
+/* Contenedor principal para que ocupe todo el ancho */
+.table-container {
+    width: 100%;
+    background-color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    box-sizing: border-box; /* Vital para que el padding no rompa la pantalla */
+    overflow-x: auto; 
+}
+
+/* Forzar a la tabla a estirarse al 100% */
+.crm-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+/* Diseño de celdas con más respiro */
+.crm-table th, 
+.crm-table td {
+    padding: 15px 20px; /* Más espacio horizontal para que no se pegue el texto */
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+/* Títulos de columnas más corporativos */
+.crm-table th {
+    background-color: #f8f9fa;
+    color: #555; 
+    font-weight: bold;
+    text-transform: uppercase; /* Convierte los títulos a mayúsculas */
+    font-size: 0.8rem;
+    letter-spacing: 0.5px; /* Separa un poco las letras */
+}
+
+/* Quitar borde a la última fila para que se vea limpio */
+.crm-table tbody tr:last-child td {
+    border-bottom: none;
+}
