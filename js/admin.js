@@ -126,19 +126,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // MÓDULO SCM (DASHBOARD, KARDEX, PROVEEDORES)
     // ==========================================
-    async function cargarTodoSCM() {
+   async function cargarTodoSCM() {
         if (!globalToken) return;
         try {
             // 1. CARGAR PROVEEDORES
             const resProv = await fetch(`${API_URL}/proveedores`);
-            const proveedores = await resProv.json();
+            proveedoresGlobal = await resProv.json(); // Ahora usamos la variable global
             
-            document.getElementById('scm-total-prov').textContent = proveedores.length;
+            document.getElementById('scm-total-prov').textContent = proveedoresGlobal.length;
             const proveedoresBody = document.getElementById('proveedores-body');
             const selectProveedorProd = document.getElementById('proveedor-producto');
             
             if (proveedoresBody) {
-                proveedoresBody.innerHTML = proveedores.map(p => `
+                proveedoresBody.innerHTML = proveedoresGlobal.map(p => `
                     <tr>
                         <td><strong>${p.nombre}</strong></td>
                         <td>${p.contacto}</td>
@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (selectProveedorProd) {
                 selectProveedorProd.innerHTML = '<option value="">Selecciona proveedor...</option>' + 
-                    proveedores.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+                    proveedoresGlobal.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
             }
 
             // 2. CARGAR PRODUCTOS Y ALMACÉN SCM
@@ -168,6 +168,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const costoReal = p.costo_unitario !== undefined ? p.costo_unitario : (p.precio || 0);
                 const stockMinimo = p.stock_minimo || 0;
                 
+                // Procesar la URL de la imagen
+                const imgSrc = (p.imagen && p.imagen.startsWith('http')) ? p.imagen : (p.imagen ? '../' + p.imagen : 'https://via.placeholder.com/45?text=Pan');
+                
                 valorInventario += (stockReal * costoReal);
                 
                 if (stockReal <= stockMinimo) {
@@ -183,7 +186,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (stockBody) {
                     stockBody.innerHTML += `
                         <tr>
-                            <td><strong>${p.nombre}</strong><br><small style="color:#888;">Logística: ${p.estrategia_logistica || 'PULL'}</small></td>
+                            <td><img src="${imgSrc}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;"></td>
+                            <td><strong>${p.nombre}</strong><br><small style="color:#888;">Logística: <b>${p.estrategia_logistica || 'PULL'}</b></small></td>
                             <td><span style="font-weight:bold; color:${textColor}">${stockReal} pcs</span></td>
                             <td>${stockMinimo}</td>
                             <td><span style="${tagColor} padding:3px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">${tagText}</span></td>
@@ -252,6 +256,31 @@ document.addEventListener('DOMContentLoaded', () => {
                         datasets: [{ data: [entradas, salidas], backgroundColor: ['#0d6efd', '#f39c12'], borderWidth:0 }] 
                     }, 
                     options: { plugins: { legend: { position: 'bottom' } } }
+                });
+            }
+
+            // 4. ÓRDENES DE COMPRA (LA MAGIA PUSH) - ¡ESTO ES LO QUE FALTABA!
+            const resOrd = await fetch(`${API_URL}/ordenes_compra`);
+            const ordenes = await resOrd.json();
+            const oBody = document.getElementById('ordenes-body');
+            if (oBody) {
+                oBody.innerHTML = '';
+                if(ordenes.length === 0) oBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888; padding: 20px;">No hay órdenes pendientes. El inventario está sano.</td></tr>`;
+                ordenes.forEach(o => {
+                    let prod = productosGlobal.find(x => x.id === o.producto_id);
+                    let prov = proveedoresGlobal.find(x => x.id === o.proveedor_id);
+                    let btnAction = o.estado === "Pendiente" ? `<button class="btn-aprobar-orden" data-id="${o.id}" style="background:#0d6efd; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Aprobar</button> <button class="btn-cancelar-orden" data-id="${o.id}" style="background:transparent; color:#e74c3c; border:1px solid #e74c3c; padding:5px 10px; border-radius:5px; cursor:pointer;">X</button>` : `<span style="color:#888;">Aprobada/Generada en Kardex</span>`;
+                    let tagEstado = o.estado === "Pendiente" ? `<span style="background:#fdedec; color:#e74c3c; padding:4px 8px; border-radius:4px; font-weight:bold;">Sugerida (PUSH)</span>` : `<span style="background:#e8f8f5; color:#16a085; padding:4px 8px; border-radius:4px; font-weight:bold;">Completada</span>`;
+                    
+                    oBody.innerHTML += `
+                        <tr>
+                            <td><small>${o.fecha}</small></td>
+                            <td>${prov ? prov.nombre : 'Sin proveedor'}</td>
+                            <td><strong>${prod ? prod.nombre : ''}</strong></td>
+                            <td><strong style="color:#0d6efd;">${o.cantidad} pcs</strong></td>
+                            <td>${tagEstado}</td>
+                            <td>${btnAction}</td>
+                        </tr>`;
                 });
             }
 

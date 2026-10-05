@@ -388,26 +388,26 @@
 
             <!-- SCM: PRODUCTOS (ALMACÉN) -->
             <section id="seccion-productos" class="crud-section seccion-oculta">
-                <div class="section-header">
-                    <h2>Catálogo de Productos (Almacén SCM)</h2>
-                    <button id="btn-abrir-modal-producto" class="btn-crm"><i class="bi bi-plus-lg"></i> Nuevo Producto</button>
-                </div>
-                <div class="table-container">
-                    <table class="crm-table">
-                        <thead>
-                            <tr>
-                                <th>Producto</th>
-                                <th>Stock</th>
-                                <th>Mínimo</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="stock-body"></tbody>
-                    </table>
-                </div>
-            </section>
-
+    <div class="section-header">
+        <h2>Catálogo de Productos</h2>
+        <button id="btn-abrir-modal-producto" class="btn-crm">Nuevo Producto</button>
+    </div>
+    <div class="table-container">
+        <table class="crm-table">
+            <thead>
+                <tr>
+                    <th>Imagen</th> <!-- ¡FALTABA ESTA LÍNEA! -->
+                    <th>Producto</th>
+                    <th>Stock</th>
+                    <th>Mínimo</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="stock-body"></tbody>
+        </table>
+    </div>
+</section>
             <!-- SCM: PROVEEDORES -->
             <section id="seccion-proveedores" class="crud-section seccion-oculta">
                 <div class="section-header">
