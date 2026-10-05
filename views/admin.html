@@ -42,6 +42,7 @@
             <li><a href="#seccion-dashboard-scm"><i class="bi bi-activity"></i> Dashboard SCM</a></li>
             <li><a href="#seccion-movimientos"><i class="bi bi-arrow-left-right"></i> Kardex (Movimientos)</a></li>
             <li><a href="#seccion-ordenes"><i class="bi bi-cart-plus"></i> Órdenes de Compra</a></li>
+            <li><a href="#seccion-logistica"><i class="bi bi-diagram-3"></i> Logística</a></li>
             <li><a href="#seccion-proveedores"><i class="bi bi-building"></i> Proveedores</a></li>
             
             <li style="margin-top: 20px;"><a href="../index.html"><i class="bi bi-house-door"></i> Volver a Tienda</a></li>
@@ -186,6 +187,77 @@
                         <thead><tr><th>Imagen</th><th>Producto</th><th>Stock</th><th>Mínimo</th><th>Estado</th><th>Acciones</th></tr></thead>
                         <tbody id="stock-body"></tbody>
                     </table>
+                </div>
+            </section>
+
+            <!-- SCM: LOGÍSTICA Y ESTRATEGIAS -->
+            <section id="seccion-logistica" class="crud-section seccion-oculta">
+                <div class="section-header">
+                    <h2>Logística y Estrategias</h2>
+                    <p style="color:#666; font-size:0.9rem; margin-top:5px;">Define y compara modelos de reposición Push vs Pull por producto.</p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 25px;">
+                    <!-- Columna Izquierda: Formulario -->
+                    <div class="detalle-card" style="align-self: start;">
+                        <h4 style="margin-top:0; margin-bottom: 20px; color:#333;">Configurar estrategia</h4>
+                        <form id="form-estrategia">
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label style="font-weight:bold; font-size:0.9rem; color:#555;">Producto *</label>
+                                <select id="log-producto" required style="margin-top:5px;">
+                                    <option value="">Selecciona un producto...</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 25px;">
+                                <label style="font-weight:bold; font-size:0.9rem; color:#555;">Estrategia *</label>
+                                <div style="margin-top: 10px; padding: 10px; border: 1px solid #eee; border-radius: 8px;">
+                                    <label style="display:block; margin-bottom:15px; cursor:pointer;">
+                                        <input type="radio" name="log-est" value="PUSH" required style="width:auto; margin-right:8px;"> 
+                                        <strong style="color:#16a085;">PUSH</strong> <span style="color:#666; font-size:0.85rem;">(Automática)</span>
+                                    </label>
+                                    <label style="display:block; cursor:pointer;">
+                                        <input type="radio" name="log-est" value="PULL" style="width:auto; margin-right:8px;"> 
+                                        <strong style="color:#0d6efd;">PULL</strong> <span style="color:#666; font-size:0.85rem;">(Bajo demanda)</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div style="background: #f4fdfb; border-left: 4px solid #16a085; padding: 10px 15px; border-radius: 4px; margin-bottom: 10px; font-size: 0.8rem; color: #555;">
+                                <strong>PUSH:</strong> Se genera pedido automáticamente al llegar al stock mínimo.
+                            </div>
+                            <div style="background: #f8f9fa; border-left: 4px solid #0d6efd; padding: 10px 15px; border-radius: 4px; margin-bottom: 25px; font-size: 0.8rem; color: #555;">
+                                <strong>PULL:</strong> El reabastecimiento es completamente manual.
+                            </div>
+                            
+                            <button type="submit" class="btn-guardar" style="width: 100%; background: #16a085; padding: 12px; font-size:1rem;">Guardar estrategia</button>
+                        </form>
+                    </div>
+
+                    <!-- Columna Derecha: KPIs y Tabla -->
+                    <div style="display: flex; flex-direction: column; gap: 25px;">
+                        <div style="display: flex; gap: 20px;">
+                            <div class="detalle-card" style="flex: 1; border-top: 5px solid #16a085; text-align: center;">
+                                <h4 style="color:#16a085; margin:0; font-size:0.9rem; text-transform:uppercase;">PUSH</h4>
+                                <p id="log-kpi-push" style="font-size: 2.5rem; font-weight: bold; margin: 10px 0; color:#333;">0</p>
+                                <small style="color:#888;">productos asignados</small>
+                            </div>
+                            <div class="detalle-card" style="flex: 1; border-top: 5px solid #0d6efd; text-align: center;">
+                                <h4 style="color:#0d6efd; margin:0; font-size:0.9rem; text-transform:uppercase;">PULL</h4>
+                                <p id="log-kpi-pull" style="font-size: 2.5rem; font-weight: bold; margin: 10px 0; color:#333;">0</p>
+                                <small style="color:#888;">productos asignados</small>
+                            </div>
+                        </div>
+
+                        <div class="detalle-card" style="flex: 1;">
+                            <h4 style="margin-top:0; margin-bottom: 15px; color:#333;">Productos por estrategia</h4>
+                            <div class="table-container" style="padding:0; box-shadow:none;">
+                                <table class="crm-table">
+                                    <thead><tr><th>Producto</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Estrategia</th></tr></thead>
+                                    <tbody id="log-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 

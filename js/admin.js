@@ -242,6 +242,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     oBody.innerHTML += `<tr><td><small>${o.fecha}</small></td><td>${prov ? prov.nombre : 'Sin proveedor'}</td><td><strong>${prod ? prod.nombre : ''}</strong></td><td><strong style="color:#0d6efd;">${o.cantidad} pcs</strong></td><td>${tagEstado}</td><td>${btnAction}</td></tr>`;
                 });
             }
+            // 5. LLENAR PESTAÑA DE LOGÍSTICA Y ESTRATEGIAS
+            let countPush = 0; let countPull = 0;
+            const logBody = document.getElementById('log-table-body');
+            const logSelect = document.getElementById('log-producto');
+            if(logBody) logBody.innerHTML = '';
+            if(logSelect) logSelect.innerHTML = '<option value="">Selecciona un producto...</option>';
+
+            productosGlobal.forEach(p => {
+                const est = p.estrategia_logistica || 'PULL';
+                if(est === 'PUSH') countPush++; else countPull++;
+                const stockReal = p.stock_actual !== undefined ? p.stock_actual : (p.cantidad || 0);
+                const badgeColor = est === 'PUSH' ? 'background:#e8f8f5; color:#16a085;' : 'background:#e6f0ff; color:#0d6efd;';
+
+                if(logBody) {
+                    logBody.innerHTML += `<tr>
+                        <td><strong>${p.nombre}</strong></td>
+                        <td><small style="color:#888;">${p.categoria}</small></td>
+                        <td>${stockReal}</td>
+                        <td>${p.stock_minimo || 0}</td>
+                        <td><span style="${badgeColor} padding:5px 10px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer; display:inline-block;" class="badge-toggle-est" data-id="${p.id}" data-est="${est}" title="Clic para cambiar rápidamente">${est} ⇄</span></td>
+                    </tr>`;
+                }
+                if(logSelect) logSelect.innerHTML += `<option value="${p.id}">${p.nombre}</option>`;
+            });
+
+            if(document.getElementById('log-kpi-push')) document.getElementById('log-kpi-push').textContent = countPush;
+            if(document.getElementById('log-kpi-pull')) document.getElementById('log-kpi-pull').textContent = countPull;
         } catch (e) {}
     }
 
@@ -303,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. SISTEMA DE NAVEGACIÓN Y BÚSQUEDA
     // ==========================================
     const menuLinks = document.querySelectorAll('.sidebar-menu li a, .link-navegacion');
-    const seccionesMap = { 'Dashboard CRM': ['.metrics-section', '#seccion-graficas'], 'Reportes': ['#seccion-reportes'], 'Clientes': ['#seccion-clientes'], 'Historial de Interacciones': ['#seccion-interacciones'], 'Staff': ['#seccion-usuarios'], 'Catálogo': ['#seccion-productos'], 'Pedidos': ['#seccion-pedidos'], 'Dashboard SCM': ['#seccion-dashboard-scm'], 'Kardex': ['#seccion-movimientos'], 'Órdenes': ['#seccion-ordenes'], 'Proveedores': ['#seccion-proveedores'], 'Ver todos': ['#seccion-proveedores'], 'Revisar inventario': ['#seccion-productos'] };
+    const seccionesMap = { 'Dashboard CRM': ['.metrics-section', '#seccion-graficas'], 'Reportes': ['#seccion-reportes'], 'Clientes': ['#seccion-clientes'], 'Historial de Interacciones': ['#seccion-interacciones'], 'Staff': ['#seccion-usuarios'], 'Catálogo': ['#seccion-productos'], 'Pedidos': ['#seccion-pedidos'], 'Dashboard SCM': ['#seccion-dashboard-scm'], 'Kardex': ['#seccion-movimientos'], 'Órdenes': ['#seccion-ordenes'], 'Logística': ['#seccion-logistica'], 'Proveedores': ['#seccion-proveedores'], 'Ver todos': ['#seccion-proveedores'], 'Revisar inventario': ['#seccion-productos'] };
 
     menuLinks.forEach(link => {
         link.addEventListener('click', (e) => {
