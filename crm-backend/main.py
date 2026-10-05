@@ -44,6 +44,11 @@ class Producto(BaseModel):
     nombre: str; descripcion: str = ""; categoria: str; stock_actual: int; stock_minimo: int; proveedor_id: str; costo_unitario: float; estrategia_logistica: str = "PULL"; imagen: Optional[str] = None; precio: Optional[float] = None
 class Movimiento(BaseModel):
     producto_id: str; tipo: str; cantidad: int; motivo: str; usuario_id: str
+    
+class OrdenCompra(BaseModel):
+    producto_id: str
+    proveedor_id: str
+    cantidad: int
 
 security = HTTPBearer()
 async def verificar_token_admin(credenciales: HTTPAuthorizationCredentials = Security(security)):
@@ -122,6 +127,11 @@ async def registrar_movimiento(mov: Movimiento):
     
     prod_data = prod_doc.to_dict()
     stock_actual = prod_data.get("stock_actual", prod_data.get("cantidad", 0))
+    
+    # --- CANDADO DE INVENTARIO (VALIDACIÓN) ---
+    if mov.tipo == "Salida" and mov.cantidad > stock_actual:
+        raise HTTPException(status_code=400, detail=f"Stock insuficiente. Solo tienes {stock_actual} piezas y quieres sacar {mov.cantidad}.")
+
     stock_minimo = prod_data.get("stock_minimo", 0)
     estrategia = prod_data.get("estrategia_logistica", "PULL")
     
@@ -141,10 +151,28 @@ async def registrar_movimiento(mov: Movimiento):
             cant_sugerida = max(stock_minimo * 2, 10) 
             db.collection("ordenes_compra").add({
                 "producto_id": mov.producto_id, "proveedor_id": prod_data.get("proveedor_id", ""),
-                "cantidad": cant_sugerida, "estado": "Pendiente", "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                "cantidad": cant_sugerida, "estado": "Pendiente", "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "tipo": "Automática (PUSH)"
             })
             
     return {"mensaje": "Movimiento registrado."}
+
+@app.post("/ordenes_compra", status_code=201, dependencies=[Depends(verificar_token_admin)])
+async def crear_orden_manual(orden: OrdenCompra):
+    # Verificamos que no haya una orden pendiente para no duplicar
+    pendientes = db.collection("ordenes_compra").where("producto_id", "==", orden.producto_id).where("estado", "==", "Pendiente").get()
+    if pendientes:
+        raise HTTPException(status_code=400, detail="Ya existe una orden pendiente para este producto.")
+        
+    db.collection("ordenes_compra").add({
+        "producto_id": orden.producto_id,
+        "proveedor_id": orden.proveedor_id,
+        "cantidad": orden.cantidad,
+        "estado": "Pendiente",
+        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "tipo": "Manual (PULL)"
+    })
+    return {"mensaje": "Orden manual generada"}
 
 @app.get("/ordenes_compra")
 def obtener_ordenes_compra():

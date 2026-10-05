@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (document.getElementById('movimientosChart')) { if(chartMov) chartMov.destroy(); chartMov = new Chart(document.getElementById('movimientosChart'), { type: 'doughnut', data: { labels: ['Entradas', 'Salidas'], datasets: [{ data: [entradas, salidas], backgroundColor: ['#0d6efd', '#f39c12'], borderWidth:0 }] }, options: { plugins: { legend: { position: 'bottom' } } } }); }
 
-            // ÓRDENES DE COMPRA AUTOMÁTICAS (PUSH)
+           // ÓRDENES DE COMPRA (PUSH Y PULL)
             const resOrd = await fetch(`${API_URL}/ordenes_compra`); const ordenes = await resOrd.json();
             const oBody = document.getElementById('ordenes-body');
             if (oBody) {
@@ -250,10 +250,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 ordenes.forEach(o => {
                     let prod = productosGlobal.find(x => x.id === o.producto_id); let prov = proveedoresGlobal.find(x => x.id === o.proveedor_id);
                     let btnAction = o.estado === "Pendiente" ? `<button class="btn-aprobar-orden" data-id="${o.id}" style="background:#0d6efd; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-weight:bold;">Aprobar Reabastecimiento</button>` : `<span style="color:#888;">Aprobada y en Kardex</span>`;
-                    let tagEstado = o.estado === "Pendiente" ? `<span style="background:#fdedec; color:#e74c3c; padding:4px 8px; border-radius:4px; font-weight:bold;">Sugerida (PUSH)</span>` : `<span style="background:#e8f8f5; color:#16a085; padding:4px 8px; border-radius:4px; font-weight:bold;">Completada</span>`;
+                    
+                    // EL CAMBIO: Leemos el tipo desde FastAPI para saber si es PULL o PUSH
+                    let textoTipo = o.tipo || "Automática (PUSH)";
+                    let colorFondo = textoTipo.includes("PULL") ? "#e6f0ff" : "#fdedec";
+                    let colorTexto = textoTipo.includes("PULL") ? "#0d6efd" : "#e74c3c";
+                    
+                    let tagEstado = o.estado === "Pendiente" ? `<span style="background:${colorFondo}; color:${colorTexto}; padding:4px 8px; border-radius:4px; font-weight:bold;">${textoTipo}</span>` : `<span style="background:#e8f8f5; color:#16a085; padding:4px 8px; border-radius:4px; font-weight:bold;">Completada</span>`;
+                    
                     oBody.innerHTML += `<tr><td><small>${o.fecha}</small></td><td>${prov ? prov.nombre : 'Sin proveedor'}</td><td><strong>${prod ? prod.nombre : ''}</strong></td><td><strong style="color:#0d6efd;">${o.cantidad} pcs</strong></td><td>${tagEstado}</td><td>${btnAction}</td></tr>`;
                 });
             }
+           
             // 5. LLENAR PESTAÑA DE LOGÍSTICA Y ESTRATEGIAS
             let countPush = 0; let countPull = 0;
             const logBody = document.getElementById('log-table-body');
@@ -440,6 +448,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 cargarTodoSCM();
             }
         }
+        // ==========================================
+    // ÓRDENES MANUALES PULL
+    // ==========================================
+    const modalOrd = document.getElementById('modal-orden');
+    document.getElementById('btn-abrir-modal-orden')?.addEventListener('click', () => { 
+        const selectProd = document.getElementById('ord-producto');
+        selectProd.innerHTML = '<option value="">Selecciona qué producto pedir...</option>' + productosGlobal.map(p => `<option value="${p.id}">${p.nombre} (Stock: ${p.stock_actual !== undefined ? p.stock_actual : (p.cantidad || 0)})</option>`).join('');
+        document.getElementById('form-nueva-orden').reset(); 
+        modalOrd.style.display='flex'; 
+    });
+
+    document.getElementById('form-nueva-orden')?.addEventListener('submit', async (e) => {
+        e.preventDefault(); const btn = e.target.querySelector('button'); btn.textContent = "Generando..."; btn.disabled = true;
+        try { 
+            const prodId = document.getElementById('ord-producto').value;
+            const prod = productosGlobal.find(x => x.id === prodId);
+            const cantidad = parseInt(document.getElementById('ord-cantidad').value);
+            
+            const res = await fetch(`${API_URL}/ordenes_compra`, { 
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, 
+                body: JSON.stringify({ producto_id: prodId, proveedor_id: prod.proveedor_id || "", cantidad: cantidad }) 
+            }); 
+            
+            if (!res.ok) {
+                const err = await res.json();
+                alert("❌ " + err.detail);
+                return;
+            }
+            
+            modalOrd.style.display='none'; 
+            cargarTodoSCM();
+        } catch(e) { 
+            alert("Error al generar orden manual"); 
+        } finally { 
+            btn.textContent = "Generar Orden de Compra"; btn.disabled = false; 
+        }
+    });
     });
     // ==========================================
     // 4. SISTEMA DE NAVEGACIÓN Y BÚSQUEDA

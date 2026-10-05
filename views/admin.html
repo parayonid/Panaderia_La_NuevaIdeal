@@ -161,9 +161,14 @@
 
             <!-- SCM ÓRDENES DE COMPRA (NUEVA SECCIÓN) -->
             <section id="seccion-ordenes" class="crud-section seccion-oculta">
-                <div class="section-header">
-                    <h2>Órdenes de Compra a Proveedores (Push)</h2>
-                    <p style="color:#666; font-size:0.9rem; margin-top:5px;">Generadas automáticamente por alertas de stock mínimo.</p>
+                <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="margin: 0;">Órdenes de Compra a Proveedores</h2>
+                        <p style="color:#666; font-size:0.9rem; margin-top:5px;">Pedidos automáticos (PUSH) y manuales (PULL).</p>
+                    </div>
+                    <button id="btn-abrir-modal-orden" class="btn-crm" style="background-color: #0d6efd; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                        <i class="bi bi-plus-lg"></i> Pedido Manual (PULL)
+                    </button>
                 </div>
                 <div class="table-container">
                     <table class="crm-table">
@@ -346,6 +351,34 @@
             </form>
         </div>
     </div>
+
+    <!-- MODAL PEDIDO MANUAL PULL -->
+    <div id="modal-orden" class="modal-crm" style="display: none;">
+        <div class="modal-crm-content">
+            <div class="modal-crm-header">
+                <h3>Generar Pedido Manual (PULL)</h3>
+                <span class="close-crm" onclick="document.getElementById('modal-orden').style.display='none'">&times;</span>
+            </div>
+            <form id="form-nueva-orden">
+                <div class="form-group">
+                    <label style="font-size:0.85rem; color:#555; font-weight:bold;">Producto a reabastecer</label>
+                    <select id="ord-producto" required style="margin-bottom:15px; width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                        <option value="">Cargando productos...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="font-size:0.85rem; color:#555; font-weight:bold;">Cantidad a pedir</label>
+                    <input type="number" id="ord-cantidad" required min="1" placeholder="Ej. 50" style="margin-bottom:20px; width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                </div>
+                
+                <div class="modal-crm-actions">
+                    <button type="submit" class="btn-guardar" style="background-color: #0d6efd; width:100%;">Generar Orden de Compra</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
 
     <script type="module" src="../js/admin.js?v=1.6"></script>
 </body>   
