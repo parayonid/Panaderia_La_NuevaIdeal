@@ -88,6 +88,18 @@ def obtener_interacciones_cliente(cliente_id: str): return [{"id": doc.id, **doc
 async def crear_proveedor(proveedor: Proveedor): doc_ref = db.collection("proveedores").document(); doc_ref.set(proveedor.model_dump()); return {"id": doc_ref.id}
 @app.get("/proveedores")
 def obtener_proveedores(): return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("proveedores").get()]
+@app.put("/proveedores/{id}", dependencies=[Depends(verificar_token_admin)])
+async def actualizar_proveedor(id: str, proveedor: Proveedor):
+    doc_ref = db.collection("proveedores").document(id)
+    if not doc_ref.get().exists:
+        raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+    doc_ref.update(proveedor.model_dump())
+    return {"mensaje": "Proveedor actualizado"}
+
+@app.delete("/proveedores/{id}", dependencies=[Depends(verificar_token_admin)])
+async def eliminar_proveedor(id: str):
+    db.collection("proveedores").document(id).delete()
+    return {"mensaje": "Proveedor eliminado"}
 
 @app.post("/productos", status_code=201, dependencies=[Depends(verificar_token_admin)])
 async def crear_producto(producto: Producto): doc_ref = db.collection("productos").document(); doc_ref.set(producto.model_dump()); return {"id": doc_ref.id}

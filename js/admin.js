@@ -194,7 +194,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const resProv = await fetch(`${API_URL}/proveedores`); proveedoresGlobal = await resProv.json();
             document.getElementById('scm-total-prov').textContent = proveedoresGlobal.length;
             const provBody = document.getElementById('proveedores-body'); const selProv = document.getElementById('proveedor-producto');
-            if (provBody) provBody.innerHTML = proveedoresGlobal.map(p => `<tr><td><strong>${p.nombre}</strong></td><td>${p.contacto}</td><td>${p.correo}<br><small>${p.telefono}</small></td><td><span class="badge" style="background:#16a085; color:white;">Activo</span></td></tr>`).join('');
+          if (provBody) {
+                provBody.innerHTML = proveedoresGlobal.map(p => `
+                    <tr>
+                        <td><strong>${p.nombre}</strong></td>
+                        <td>${p.contacto}</td>
+                        <td>${p.correo}<br><small>${p.telefono}</small></td>
+                        <td><span class="badge" style="background:#16a085; color:white;">Activo</span></td>
+                        <td>
+                            <i class="bi bi-pencil-square icon-edit-prov" data-id="${p.id}" style="cursor:pointer; margin-right:10px; color:#16a085;"></i>
+                            <i class="bi bi-trash icon-delete-prov" data-id="${p.id}" style="cursor:pointer; color:#e74c3c;"></i>
+                        </td>
+                    </tr>`).join('');
+            }
             if (selProv) selProv.innerHTML = '<option value="">Selecciona proveedor...</option>' + proveedoresGlobal.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
 
             // ALMACÉN (PRODUCTOS)
@@ -273,11 +285,58 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Formularios SCM
-    document.getElementById('btn-abrir-modal-proveedor')?.addEventListener('click', () => { document.getElementById('form-nuevo-proveedor').reset(); document.getElementById('modal-proveedor').style.display='flex'; });
+   // Formularios SCM - Proveedores
+    document.getElementById('btn-abrir-modal-proveedor')?.addEventListener('click', () => { 
+        document.getElementById('form-nuevo-proveedor').reset(); 
+        document.getElementById('proveedor-id').value = ''; // Limpiamos el ID oculto
+        document.getElementById('modal-proveedor').style.display='flex'; 
+    });
+
+    // EDITAR O ELIMINAR PROVEEDOR DESDE LA TABLA
+    document.getElementById('proveedores-body')?.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('icon-edit-prov')) {
+            const p = proveedoresGlobal.find(x => x.id === e.target.dataset.id);
+            if (p) {
+                document.getElementById('proveedor-id').value = p.id;
+                document.getElementById('prov-nombre').value = p.nombre;
+                document.getElementById('prov-contacto').value = p.contacto;
+                document.getElementById('prov-correo').value = p.correo;
+                document.getElementById('prov-telefono').value = p.telefono;
+                document.getElementById('modal-proveedor').style.display = 'flex';
+            }
+        }
+        if (e.target.classList.contains('icon-delete-prov') && confirm("¿Eliminar este proveedor de forma permanente?")) {
+            await fetch(`${API_URL}/proveedores/${e.target.dataset.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${globalToken}` } });
+            cargarTodoSCM();
+        }
+    });
+
+    // GUARDAR (POST) O ACTUALIZAR (PUT) PROVEEDOR
     document.getElementById('form-nuevo-proveedor')?.addEventListener('submit', async (e) => {
-        e.preventDefault(); const btn = e.target.querySelector('button'); btn.textContent = "..."; btn.disabled = true;
-        try { await fetch(`${API_URL}/proveedores`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, body: JSON.stringify({ nombre: document.getElementById('prov-nombre').value, contacto: document.getElementById('prov-contacto').value, correo: document.getElementById('prov-correo').value, telefono: document.getElementById('prov-telefono').value }) }); document.getElementById('modal-proveedor').style.display='none'; cargarTodoSCM();
-        } catch(e) {} finally { btn.textContent = "Guardar Proveedor"; btn.disabled = false; }
+        e.preventDefault(); const btn = e.target.querySelector('button'); btn.textContent = "Guardando..."; btn.disabled = true;
+        try { 
+            const docId = document.getElementById('proveedor-id').value;
+            const datosProv = { 
+                nombre: document.getElementById('prov-nombre').value.trim(), 
+                contacto: document.getElementById('prov-contacto').value.trim(), 
+                correo: document.getElementById('prov-correo').value.trim(), 
+                telefono: document.getElementById('prov-telefono').value.trim() 
+            };
+            
+            if (docId) {
+                await fetch(`${API_URL}/proveedores/${docId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, body: JSON.stringify(datosProv) });
+            } else {
+                await fetch(`${API_URL}/proveedores`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, body: JSON.stringify(datosProv) });
+            }
+            
+            document.getElementById('modal-proveedor').style.display='none'; 
+            cargarTodoSCM();
+        } catch(e) { 
+            alert("Error al guardar proveedor"); 
+        } finally { 
+            btn.textContent = "Guardar Proveedor"; 
+            btn.disabled = false; 
+        }
     });
 
     document.getElementById('btn-abrir-modal-mov')?.addEventListener('click', () => { document.getElementById('form-nuevo-movimiento').reset(); document.getElementById('modal-movimiento').style.display='flex'; });
@@ -325,7 +384,63 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('modal-producto').style.display = 'none'; cargarTodoSCM();
         } catch (error) {} finally { btn.textContent = "Guardar Producto"; btn.disabled = false; }
     });
+// GUARDAR ESTRATEGIA DESDE EL FORMULARIO
+    document.getElementById('form-estrategia')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = e.target.querySelector('button'); btn.textContent = "Guardando..."; btn.disabled = true;
+        try {
+            const prodId = document.getElementById('log-producto').value;
+            const nuevaEst = document.querySelector('input[name="log-est"]:checked').value;
+            const prod = productosGlobal.find(x => x.id === prodId);
+            
+            if(prod) {
+                // Limpiamos los datos para que FastAPI no rechace productos viejos
+                const prodSeguro = {
+                    nombre: prod.nombre,
+                    categoria: prod.categoria || 'Panes',
+                    proveedor_id: prod.proveedor_id || '',
+                    stock_actual: prod.stock_actual !== undefined ? prod.stock_actual : (prod.cantidad || 0),
+                    stock_minimo: prod.stock_minimo || 0,
+                    costo_unitario: prod.costo_unitario !== undefined ? prod.costo_unitario : (prod.precio || 0),
+                    precio: prod.precio || 0,
+                    estrategia_logistica: nuevaEst,
+                    imagen: prod.imagen || ''
+                };
 
+                await fetch(`${API_URL}/productos/${prodId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, body: JSON.stringify(prodSeguro) });
+                cargarTodoSCM();
+            }
+        } catch(err) { alert('Error al actualizar estrategia'); }
+        finally { btn.textContent = "Guardar estrategia"; btn.disabled = false; e.target.reset(); }
+    });
+
+    // CAMBIAR ESTRATEGIA CON UN CLIC EN LA TABLA (MODO RÁPIDO)
+    document.getElementById('log-table-body')?.addEventListener('click', async (e) => {
+        if(e.target.classList.contains('badge-toggle-est')) {
+            const prodId = e.target.dataset.id;
+            const nuevaEst = e.target.dataset.est === 'PUSH' ? 'PULL' : 'PUSH';
+            const prod = productosGlobal.find(x => x.id === prodId);
+            
+            if(prod) {
+                e.target.textContent = "...";
+                // Limpiamos los datos para que FastAPI no rechace productos viejos
+                const prodSeguro = {
+                    nombre: prod.nombre,
+                    categoria: prod.categoria || 'Panes',
+                    proveedor_id: prod.proveedor_id || '',
+                    stock_actual: prod.stock_actual !== undefined ? prod.stock_actual : (prod.cantidad || 0),
+                    stock_minimo: prod.stock_minimo || 0,
+                    costo_unitario: prod.costo_unitario !== undefined ? prod.costo_unitario : (prod.precio || 0),
+                    precio: prod.precio || 0,
+                    estrategia_logistica: nuevaEst,
+                    imagen: prod.imagen || ''
+                };
+
+                await fetch(`${API_URL}/productos/${prodId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, body: JSON.stringify(prodSeguro) });
+                cargarTodoSCM();
+            }
+        }
+    });
     // ==========================================
     // 4. SISTEMA DE NAVEGACIÓN Y BÚSQUEDA
     // ==========================================
