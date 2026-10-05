@@ -298,10 +298,22 @@
     </div>
 
     <div id="modal-proveedor" class="modal-crm" style="display: none;">
-        <div class="modal-crm-content"><div class="modal-crm-header"><h3>Registrar Proveedor</h3><span class="close-crm" onclick="document.getElementById('modal-proveedor').style.display='none'">&times;</span></div>
+        <div class="modal-crm-content">
+            <div class="modal-crm-header">
+                <h3>Registrar Proveedor</h3>
+                <span class="close-crm" onclick="document.getElementById('modal-proveedor').style.display='none'">&times;</span>
+            </div>
             <form id="form-nuevo-proveedor">
-                <input type="text" id="prov-nombre" required placeholder="Empresa" style="margin-bottom:15px; width:100%; padding:10px;"><input type="text" id="prov-contacto" required placeholder="Contacto" style="margin-bottom:15px; width:100%; padding:10px;"><input type="email" id="prov-correo" required placeholder="Correo" style="margin-bottom:15px; width:100%; padding:10px;"><input type="text" id="prov-telefono" required placeholder="Teléfono" style="margin-bottom:15px; width:100%; padding:10px;">
-                <div class="modal-crm-actions"><button type="submit" class="btn-guardar" style="background-color: #16a085; width:100%;">Guardar Proveedor</button></div>
+                <!-- ESTE ES EL CAMPO QUE FALTABA PARA QUE JS NO FALLE: -->
+                <input type="hidden" id="proveedor-id"> 
+                
+                <input type="text" id="prov-nombre" required placeholder="Empresa" style="margin-bottom:15px; width:100%; padding:10px;">
+                <input type="text" id="prov-contacto" required placeholder="Contacto" style="margin-bottom:15px; width:100%; padding:10px;">
+                <input type="email" id="prov-correo" required placeholder="Correo" style="margin-bottom:15px; width:100%; padding:10px;">
+                <input type="text" id="prov-telefono" required placeholder="Teléfono" style="margin-bottom:15px; width:100%; padding:10px;">
+                <div class="modal-crm-actions">
+                    <button type="submit" class="btn-guardar" style="background-color: #16a085; width:100%;">Guardar Proveedor</button>
+                </div>
             </form>
         </div>
     </div>
