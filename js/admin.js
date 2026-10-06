@@ -489,6 +489,56 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 4. SISTEMA DE NAVEGACIÓN Y BÚSQUEDA
     // ==========================================
+
+    // ==========================================
+    // ÓRDENES MANUALES PULL
+    // ==========================================
+    const btnAbrirOrden = document.getElementById('btn-abrir-modal-orden');
+    const modalOrd = document.getElementById('modal-orden');
+
+    if (btnAbrirOrden) {
+        btnAbrirOrden.addEventListener('click', () => { 
+            const selectProd = document.getElementById('ord-producto');
+            if (selectProd) {
+                selectProd.innerHTML = '<option value="">Selecciona qué producto pedir...</option>' + 
+                productosGlobal.map(p => `<option value="${p.id}">${p.nombre} (Stock: ${p.stock_actual !== undefined ? p.stock_actual : (p.cantidad || 0)})</option>`).join('');
+            }
+            document.getElementById('form-nueva-orden').reset(); 
+            if (modalOrd) modalOrd.style.display = 'flex'; 
+        });
+    }
+
+    document.getElementById('form-nueva-orden')?.addEventListener('submit', async (e) => {
+        e.preventDefault(); 
+        const btn = e.target.querySelector('button'); 
+        btn.textContent = "Generando..."; 
+        btn.disabled = true;
+        try { 
+            const prodId = document.getElementById('ord-producto').value;
+            const prod = productosGlobal.find(x => x.id === prodId);
+            const cantidad = parseInt(document.getElementById('ord-cantidad').value);
+            
+            const res = await fetch(`${API_URL}/ordenes_compra`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, 
+                body: JSON.stringify({ producto_id: prodId, proveedor_id: prod.proveedor_id || "", cantidad: cantidad }) 
+            }); 
+            
+            if (!res.ok) {
+                const err = await res.json();
+                alert("❌ " + err.detail);
+                return;
+            }
+            
+            if (modalOrd) modalOrd.style.display = 'none'; 
+            cargarTodoSCM();
+        } catch(e) { 
+            alert("Error al generar orden manual"); 
+        } finally { 
+            btn.textContent = "Generar Orden de Compra"; 
+            btn.disabled = false; 
+        }
+    });
     const menuLinks = document.querySelectorAll('.sidebar-menu li a, .link-navegacion');
     const seccionesMap = { 'Dashboard CRM': ['.metrics-section', '#seccion-graficas'], 'Reportes': ['#seccion-reportes'], 'Clientes': ['#seccion-clientes'], 'Historial de Interacciones': ['#seccion-interacciones'], 'Staff': ['#seccion-usuarios'], 'Catálogo': ['#seccion-productos'], 'Pedidos': ['#seccion-pedidos'], 'Dashboard SCM': ['#seccion-dashboard-scm'], 'Kardex': ['#seccion-movimientos'], 'Órdenes': ['#seccion-ordenes'], 'Logística': ['#seccion-logistica'], 'Proveedores': ['#seccion-proveedores'], 'Ver todos': ['#seccion-proveedores'], 'Revisar inventario': ['#seccion-productos'] };
 
