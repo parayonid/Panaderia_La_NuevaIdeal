@@ -21,6 +21,39 @@ let globalToken = null; let globalUserEmail = null;
 let interaccionesChart = null; let repBarChart = null; let repPieChart = null; let chartSalud = null; let chartMov = null;
 let productosGlobal = []; let proveedoresGlobal = [];
 
+// ==========================================
+// SISTEMA DE NOTIFICACIONES FLOTANTES
+// ==========================================
+function mostrarNotificacion(mensaje, tipo = 'error') {
+    const contenedor = document.getElementById('toast-container');
+    if (!contenedor) return;
+    
+    const toast = document.createElement('div');
+    const colorBg = tipo === 'error' ? '#e74c3c' : '#16a085'; // Rojo para error, verde para éxito
+    const icono = tipo === 'error' ? 'bi-exclamation-octagon-fill' : 'bi-check-circle-fill';
+    
+    toast.style.cssText = `
+        background-color: ${colorBg}; color: white; padding: 15px 20px; border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 12px;
+        font-size: 0.95rem; font-weight: bold; opacity: 0; transform: translateX(100%);
+        transition: all 0.3s ease; max-width: 350px;
+    `;
+    
+    toast.innerHTML = `<i class="bi ${icono}" style="font-size: 1.3rem;"></i> <div>${mensaje}</div>`;
+    contenedor.appendChild(toast);
+    
+    // Animar entrada
+    setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateX(0)'; }, 10);
+    
+    // Animar salida y eliminar después de 4 segundos
+    setTimeout(() => {
+        toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+
+
 document.addEventListener('DOMContentLoaded', () => {
     
     // ==========================================
@@ -347,11 +380,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.getElementById('btn-abrir-modal-mov')?.addEventListener('click', () => { document.getElementById('form-nuevo-movimiento').reset(); document.getElementById('modal-movimiento').style.display='flex'; });
+    document.getElementById('btn-abrir-modal-mov')?.addEventListener('click', () => { 
+        document.getElementById('form-nuevo-movimiento').reset(); 
+        document.getElementById('modal-movimiento').style.display='flex'; 
+    });
+
     document.getElementById('form-nuevo-movimiento')?.addEventListener('submit', async (e) => {
-        e.preventDefault(); const btn = e.target.querySelector('button'); btn.textContent = "..."; btn.disabled = true;
-        try { await fetch(`${API_URL}/movimientos`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, body: JSON.stringify({ producto_id: document.getElementById('mov-producto').value, tipo: document.querySelector('input[name="mov-tipo"]:checked').value, cantidad: parseInt(document.getElementById('mov-cantidad').value), motivo: document.getElementById('mov-motivo').value, usuario_id: globalUserEmail }) }); document.getElementById('modal-movimiento').style.display='none'; cargarTodoSCM();
-        } catch(e) {} finally { btn.textContent = "Guardar Movimiento"; btn.disabled = false; }
+        e.preventDefault(); 
+        const btn = e.target.querySelector('button'); 
+        btn.textContent = "Guardando..."; 
+        btn.disabled = true;
+        try { 
+            const res = await fetch(`${API_URL}/movimientos`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, 
+                body: JSON.stringify({ 
+                    producto_id: document.getElementById('mov-producto').value, 
+                    tipo: document.querySelector('input[name="mov-tipo"]:checked').value, 
+                    cantidad: parseInt(document.getElementById('mov-cantidad').value), 
+                    motivo: document.getElementById('mov-motivo').value, 
+                    usuario_id: globalUserEmail 
+                }) 
+            }); 
+            
+            // 🛑 AQUÍ DETECTA EL CANDADO DE INVENTARIO Y MUESTRA LA NOTIFICACIÓN ROJA
+            if (!res.ok) {
+                const errorData = await res.json();
+                mostrarNotificacion(errorData.detail, 'error'); 
+                btn.textContent = "Guardar Movimiento"; 
+                btn.disabled = false;
+                return;
+            }
+            
+            // ✅ SI TODO SALE BIEN, CIERRA EL MODAL Y MUESTRA NOTIFICACIÓN VERDE
+            document.getElementById('modal-movimiento').style.display='none'; 
+            mostrarNotificacion("Movimiento registrado con éxito", "exito");
+            cargarTodoSCM();
+            
+        } catch(e) { 
+            mostrarNotificacion("Error de conexión al registrar movimiento.", "error"); 
+        } finally { 
+            btn.textContent = "Guardar Movimiento"; 
+            btn.disabled = false; 
+        }
     });
 
     document.getElementById('ordenes-body')?.addEventListener('click', async (e) => {
