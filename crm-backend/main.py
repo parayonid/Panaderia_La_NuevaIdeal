@@ -1,14 +1,16 @@
 from fastapi import FastAPI, HTTPException, Header, Depends, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 import firebase_admin
 import os
 import json
 import logging 
 from firebase_admin import credentials, firestore, auth
-from datetime import datetime
+from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from google.cloud import firestore as google_firestore
 
 os.environ["GRPC_DNS_RESOLVER"] = "native"
 
@@ -139,7 +141,7 @@ async def registrar_movimiento(mov: Movimiento):
 
     @google_firestore.transactional
     def aplicar(transaction):
-        snap = transaction.get(prod_ref)
+        snap = prod_ref.get(transaction=transaction)
         if not snap.exists:
             raise HTTPException(status_code=404, detail='Producto no encontrado')
         data = snap.to_dict()
@@ -151,9 +153,11 @@ async def registrar_movimiento(mov: Movimiento):
                    and data.get('estrategia_logistica', 'PULL') == 'PUSH')
         tiene_pendiente = False
         if es_push:
-            consulta = (db.collection('ordenes_compra').where('producto_id', '==', mov.producto_id)
-                        .where('estado', '==', 'Pendiente').limit(1))
-            tiene_pendiente = bool(list(transaction.get(consulta)))
+            consulta = db.collection('ordenes_compra').where('producto_id', '==', mov.producto_id)
+            tiene_pendiente = any(
+                doc.to_dict().get('estado') == 'Pendiente'
+                for doc in transaction.get(consulta)
+            )
         momento = datetime.now(timezone.utc).isoformat()
         transaction.update(prod_ref, {'stock_actual': nuevo_stock})
         transaction.set(db.collection('movimientos').document(), {
@@ -169,7 +173,6 @@ async def registrar_movimiento(mov: Movimiento):
 
     return aplicar(transaccion)
 
-
 @app.post("/ordenes_compra", status_code=201, dependencies=[Depends(verificar_token_scm)])
 async def crear_orden_manual(orden: OrdenCompra):
     if orden.cantidad <= 0:
@@ -178,12 +181,11 @@ async def crear_orden_manual(orden: OrdenCompra):
 
     @google_firestore.transactional
     def registrar(transaction):
-        producto = transaction.get(db.collection('productos').document(orden.producto_id))
+        producto = db.collection('productos').document(orden.producto_id).get(transaction=transaction)
         if not producto.exists:
             raise HTTPException(status_code=404, detail='Producto no encontrado')
-        consulta = (db.collection('ordenes_compra').where('producto_id', '==', orden.producto_id)
-                    .where('estado', '==', 'Pendiente').limit(1))
-        if list(transaction.get(consulta)):
+        consulta = db.collection('ordenes_compra').where('producto_id', '==', orden.producto_id)
+        if any(doc.to_dict().get('estado') == 'Pendiente' for doc in transaction.get(consulta)):
             raise HTTPException(status_code=409, detail='Ya existe una orden pendiente para este producto.')
         transaction.set(db.collection('ordenes_compra').document(), {
             **orden.model_dump(), 'estado':'Pendiente',
@@ -193,12 +195,10 @@ async def crear_orden_manual(orden: OrdenCompra):
 
     return registrar(transaction)
 
-
 @app.get("/ordenes_compra")
 def obtener_ordenes_compra():
     return [{"id": d.id, **d.to_dict()} for d in db.collection('ordenes_compra')
             .order_by('fecha', direction=firestore.Query.DESCENDING).stream()]
-
 
 @app.put("/ordenes_compra/{id}/estado", dependencies=[Depends(verificar_token_scm)])
 async def actualizar_orden_compra(id: str, data: dict):
@@ -209,14 +209,14 @@ async def actualizar_orden_compra(id: str, data: dict):
 
     @google_firestore.transactional
     def aprobar(transaction):
-        orden_snap = transaction.get(orden_ref)
+        orden_snap = orden_ref.get(transaction=transaction)
         if not orden_snap.exists:
             raise HTTPException(status_code=404, detail='Orden no encontrada')
         orden = orden_snap.to_dict()
         if orden.get('estado') != 'Pendiente':
             return {'mensaje': 'La orden ya fue procesada.', 'estado': orden.get('estado')}
         prod_ref = db.collection('productos').document(orden['producto_id'])
-        prod_snap = transaction.get(prod_ref)
+        prod_snap = prod_ref.get(transaction=transaction)
         if not prod_snap.exists:
             raise HTTPException(status_code=404, detail='No existe el producto de la orden')
         producto = prod_snap.to_dict()
@@ -236,22 +236,13 @@ async def actualizar_orden_compra(id: str, data: dict):
 
     return aprobar(transaccion)
 
-
-
 # =============================================================
 # ERP: ÓRDENES DE CLIENTES Y SINCRONIZACIÓN CRM + SCM
 # =============================================================
 
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
-from datetime import timezone
-from pydantic import Field
-from google.cloud import firestore as google_firestore
-
-
 class ItemOrdenCliente(BaseModel):
     producto_id: str = Field(min_length=1, max_length=150)
     cantidad: int = Field(ge=1, le=10000)
-
 
 class OrdenClienteNueva(BaseModel):
     cliente_id: str = Field(min_length=1, max_length=150)
@@ -267,7 +258,6 @@ class OrdenClienteNueva(BaseModel):
         max_length=80,
         pattern=r"^[A-Za-z0-9_-]+$"
     )
-
 
 def dinero_erp(valor):
     """Calcula importes usando el precio del catálogo."""
@@ -287,7 +277,6 @@ def dinero_erp(valor):
             status_code=400,
             detail="Un producto tiene un precio de venta inválido."
         )
-
 
 # =============================================================
 # 1. LISTAR ÓRDENES DE CLIENTES
@@ -312,7 +301,6 @@ def listar_ordenes_clientes():
         {"id": documento.id, **documento.to_dict()}
         for documento in documentos
     ]
-
 
 # =============================================================
 # 2. CONSULTAR DETALLE DE UNA ORDEN
@@ -340,7 +328,6 @@ def detalle_orden_cliente(orden_id: str):
         "id": documento.id,
         **documento.to_dict()
     }
-
 
 # =============================================================
 # 3. CREAR ORDEN DE CLIENTE
@@ -417,7 +404,7 @@ def crear_orden_cliente(
         # EVITAR ÓRDENES DUPLICADAS
         # -------------------------------------
 
-        anterior = transaction.get(orden_ref)
+        anterior = orden_ref.get(transaction=transaction)
 
         if anterior.exists:
             return {
@@ -429,7 +416,7 @@ def crear_orden_cliente(
         # VALIDAR CLIENTE
         # -------------------------------------
 
-        cliente_snap = transaction.get(cliente_ref)
+        cliente_snap = cliente_ref.get(transaction=transaction)
 
         if not cliente_snap.exists:
             raise HTTPException(
@@ -456,7 +443,7 @@ def crear_orden_cliente(
 
         for prod_id, referencia in producto_refs:
 
-            snap = transaction.get(referencia)
+            snap = referencia.get(transaction=transaction)
 
             if not snap.exists:
                 raise HTTPException(
@@ -505,7 +492,7 @@ def crear_orden_cliente(
         # GENERAR FOLIO CONSECUTIVO
         # -------------------------------------
 
-        contador = transaction.get(contador_ref)
+        contador = contador_ref.get(transaction=transaction)
 
         if contador.exists:
             siguiente = (
