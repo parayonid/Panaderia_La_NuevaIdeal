@@ -6,6 +6,7 @@ from typing import Optional
 import firebase_admin
 import os
 import json
+import logging 
 from firebase_admin import credentials, firestore, auth
 from datetime import datetime
 
@@ -236,148 +237,516 @@ async def actualizar_orden_compra(id: str, data: dict):
     return aprobar(transaccion)
 
 
+
 # =============================================================
 # ERP: ÓRDENES DE CLIENTES Y SINCRONIZACIÓN CRM + SCM
 # =============================================================
+
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from datetime import timezone
 from pydantic import Field
 from google.cloud import firestore as google_firestore
 
+
 class ItemOrdenCliente(BaseModel):
     producto_id: str = Field(min_length=1, max_length=150)
     cantidad: int = Field(ge=1, le=10000)
 
+
 class OrdenClienteNueva(BaseModel):
     cliente_id: str = Field(min_length=1, max_length=150)
-    items: list[ItemOrdenCliente] = Field(min_length=1, max_length=40)
-    # Permite reintentar la misma petición sin descontar inventario dos veces.
-    solicitud_id: Optional[str] = Field(default=None, min_length=8, max_length=80, pattern=r"^[A-Za-z0-9_-]+$")
+    items: list[ItemOrdenCliente] = Field(
+        min_length=1,
+        max_length=40
+    )
+
+    # Evita registrar dos veces una misma solicitud.
+    solicitud_id: Optional[str] = Field(
+        default=None,
+        min_length=8,
+        max_length=80,
+        pattern=r"^[A-Za-z0-9_-]+$"
+    )
 
 
 def dinero_erp(valor):
-    """Obtiene importes positivos desde el catálogo, no desde el navegador."""
+    """Calcula importes usando el precio del catálogo."""
     try:
         numero = Decimal(str(valor))
+
         if not numero.is_finite() or numero < 0:
             raise ValueError()
-        return numero.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+        return numero.quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
+
     except (ValueError, TypeError, InvalidOperation):
-        raise HTTPException(status_code=400, detail='Un producto tiene un precio de venta inválido.')
+        raise HTTPException(
+            status_code=400,
+            detail="Un producto tiene un precio de venta inválido."
+        )
 
 
-@app.get('/ordenes_clientes', dependencies=[Depends(verificar_token_erp_lectura)])
+# =============================================================
+# 1. LISTAR ÓRDENES DE CLIENTES
+# =============================================================
+
+@app.get(
+    "/ordenes_clientes",
+    dependencies=[Depends(verificar_token_erp_lectura)]
+)
 def listar_ordenes_clientes():
-    documentos = db.collection('ordenes_clientes').order_by(
-        'fecha', direction=firestore.Query.DESCENDING
-    ).stream()
-    return [{'id': d.id, **d.to_dict()} for d in documentos]
+
+    documentos = (
+        db.collection("ordenes_clientes")
+        .order_by(
+            "fecha",
+            direction=firestore.Query.DESCENDING
+        )
+        .stream()
+    )
+
+    return [
+        {"id": documento.id, **documento.to_dict()}
+        for documento in documentos
+    ]
 
 
-@app.get('/ordenes_clientes/{orden_id}', dependencies=[Depends(verificar_token_erp_lectura)])
+# =============================================================
+# 2. CONSULTAR DETALLE DE UNA ORDEN
+# =============================================================
+
+@app.get(
+    "/ordenes_clientes/{orden_id}",
+    dependencies=[Depends(verificar_token_erp_lectura)]
+)
 def detalle_orden_cliente(orden_id: str):
-    documento = db.collection('ordenes_clientes').document(orden_id).get()
+
+    documento = (
+        db.collection("ordenes_clientes")
+        .document(orden_id)
+        .get()
+    )
+
     if not documento.exists:
-        raise HTTPException(status_code=404, detail='Orden de cliente no encontrada')
-    return {'id': documento.id, **documento.to_dict()}
+        raise HTTPException(
+            status_code=404,
+            detail="Orden de cliente no encontrada"
+        )
+
+    return {
+        "id": documento.id,
+        **documento.to_dict()
+    }
 
 
-@app.post('/ordenes_clientes', status_code=201)
+# =============================================================
+# 3. CREAR ORDEN DE CLIENTE
+# =============================================================
+
+@app.post("/ordenes_clientes", status_code=201)
 def crear_orden_cliente(
     payload: OrdenClienteNueva,
     usuario=Depends(verificar_token_erp_escritura)
 ):
-    cantidades = {}
-    for renglon in payload.items:
-        cantidades[renglon.producto_id] = cantidades.get(renglon.producto_id, 0) + renglon.cantidad
-        if cantidades[renglon.producto_id] > 10000:
-            raise HTTPException(status_code=400, detail='Cantidad máxima por producto: 10000')
 
-    orden_ref = db.collection('ordenes_clientes').document(payload.solicitud_id) if payload.solicitud_id else db.collection('ordenes_clientes').document()
-    cliente_ref = db.collection('clientes').document(payload.cliente_id)
-    producto_refs = [(prod_id, db.collection('productos').document(prod_id)) for prod_id in sorted(cantidades)]
-    contador_ref = db.collection('config_erp').document('contador_ordenes_clientes')
+    # -----------------------------------------
+    # VALIDACIÓN DE CANTIDADES
+    # -----------------------------------------
+
+    cantidades = {}
+
+    for renglon in payload.items:
+
+        cantidades[renglon.producto_id] = (
+            cantidades.get(renglon.producto_id, 0)
+            + renglon.cantidad
+        )
+
+        if cantidades[renglon.producto_id] > 10000:
+            raise HTTPException(
+                status_code=400,
+                detail="Cantidad máxima por producto: 10000"
+            )
+
+    # -----------------------------------------
+    # REFERENCIAS DE FIRESTORE
+    # -----------------------------------------
+
+    if payload.solicitud_id:
+        orden_ref = (
+            db.collection("ordenes_clientes")
+            .document(payload.solicitud_id)
+        )
+    else:
+        orden_ref = (
+            db.collection("ordenes_clientes")
+            .document()
+        )
+
+    cliente_ref = (
+        db.collection("clientes")
+        .document(payload.cliente_id)
+    )
+
+    producto_refs = [
+        (
+            prod_id,
+            db.collection("productos").document(prod_id)
+        )
+        for prod_id in sorted(cantidades)
+    ]
+
+    contador_ref = (
+        db.collection("config_erp")
+        .document("contador_ordenes_clientes")
+    )
+
     tx = db.transaction()
+
+    # =========================================
+    # TRANSACCIÓN DE FIRESTORE
+    # =========================================
 
     @google_firestore.transactional
     def registrar(transaction):
-        # Importante: todas las lecturas ocurren ANTES de cualquier escritura.
+
+        # -------------------------------------
+        # EVITAR ÓRDENES DUPLICADAS
+        # -------------------------------------
+
         anterior = transaction.get(orden_ref)
+
         if anterior.exists:
-            return {'id': anterior.id, **anterior.to_dict()}
+            return {
+                "id": anterior.id,
+                **anterior.to_dict()
+            }
+
+        # -------------------------------------
+        # VALIDAR CLIENTE
+        # -------------------------------------
 
         cliente_snap = transaction.get(cliente_ref)
+
         if not cliente_snap.exists:
-            raise HTTPException(status_code=404, detail='El cliente seleccionado no existe.')
+            raise HTTPException(
+                status_code=404,
+                detail="El cliente seleccionado no existe."
+            )
+
         cliente = cliente_snap.to_dict()
-        if str(cliente.get('estado', 'activo')).lower() == 'inactivo':
-            raise HTTPException(status_code=400, detail='No puedes crear órdenes para un cliente inactivo.')
+
+        if str(
+            cliente.get("estado", "activo")
+        ).lower() == "inactivo":
+
+            raise HTTPException(
+                status_code=400,
+                detail="No puedes crear órdenes para un cliente inactivo."
+            )
+
+        # -------------------------------------
+        # VALIDAR PRODUCTOS E INVENTARIO
+        # -------------------------------------
 
         productos = []
+
         for prod_id, referencia in producto_refs:
+
             snap = transaction.get(referencia)
+
             if not snap.exists:
-                raise HTTPException(status_code=404, detail=f'Producto {prod_id} no encontrado.')
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Producto {prod_id} no encontrado."
+                )
+
             producto = snap.to_dict()
+
             cantidad = cantidades[prod_id]
-            stock = int(producto.get('stock_actual', producto.get('cantidad', 0)))
+
+            stock = int(
+                producto.get(
+                    "stock_actual",
+                    producto.get("cantidad", 0)
+                )
+            )
+
             if cantidad > stock:
+
                 raise HTTPException(
                     status_code=409,
-                    detail=f'Stock insuficiente para {producto.get("nombre", prod_id)}: quedan {stock} piezas.'
+                    detail=(
+                        f"Stock insuficiente para "
+                        f"{producto.get('nombre', prod_id)}: "
+                        f"quedan {stock} piezas."
+                    )
                 )
-            precio = dinero_erp(producto.get('precio'))
-            productos.append((prod_id, referencia, producto, cantidad, stock, precio))
+
+            precio = dinero_erp(
+                producto.get("precio")
+            )
+
+            productos.append(
+                (
+                    prod_id,
+                    referencia,
+                    producto,
+                    cantidad,
+                    stock,
+                    precio
+                )
+            )
+
+        # -------------------------------------
+        # GENERAR FOLIO CONSECUTIVO
+        # -------------------------------------
 
         contador = transaction.get(contador_ref)
-        siguiente = int(contador.to_dict().get('consecutivo', 0)) + 1 if contador.exists else 1
 
-        # Consultar órdenes PUSH pendientes dentro de la misma transacción.
+        if contador.exists:
+            siguiente = (
+                int(
+                    contador.to_dict().get(
+                        "consecutivo",
+                        0
+                    )
+                ) + 1
+            )
+        else:
+            siguiente = 1
+
+        # -------------------------------------
+        # COMPROBAR REABASTECIMIENTO PUSH
+        # -------------------------------------
+
         pendientes = {}
-        for prod_id, _, producto, cantidad, stock, _ in productos:
-            stock_nuevo = stock - cantidad
-            if stock_nuevo <= int(producto.get('stock_minimo', 0)) and producto.get('estrategia_logistica') == 'PUSH':
-                consulta = (db.collection('ordenes_compra')
-                            .where('producto_id', '==', prod_id)
-                            .where('estado', '==', 'Pendiente').limit(1))
-                pendientes[prod_id] = bool(list(transaction.get(consulta)))
 
-        momento = datetime.now(timezone.utc).isoformat()
-        folio = f'OV-{siguiente:06d}'
-        items_detalle = []
-        total = Decimal('0.00')
-        for prod_id, referencia, producto, cantidad, stock, precio in productos:
-            subtotal = precio * cantidad
-            total += subtotal
+        for (
+            prod_id,
+            referencia,
+            producto,
+            cantidad,
+            stock,
+            precio
+        ) in productos:
+
             stock_nuevo = stock - cantidad
+
+            stock_minimo = int(
+                producto.get("stock_minimo", 0)
+            )
+
+            estrategia = producto.get(
+                "estrategia_logistica",
+                "PULL"
+            )
+
+            if (
+                stock_nuevo <= stock_minimo
+                and estrategia == "PUSH"
+            ):
+
+                # Consultar por producto solamente
+                # para evitar requerir un índice compuesto.
+
+                consulta = (
+                    db.collection("ordenes_compra")
+                    .where(
+                        "producto_id",
+                        "==",
+                        prod_id
+                    )
+                )
+
+                pendientes[prod_id] = any(
+                    doc.to_dict().get("estado") == "Pendiente"
+                    for doc in transaction.get(consulta)
+                )
+
+        # -------------------------------------
+        # PREPARAR INFORMACIÓN DE LA VENTA
+        # -------------------------------------
+
+        momento = datetime.now(
+            timezone.utc
+        ).isoformat()
+
+        folio = f"OV-{siguiente:06d}"
+
+        items_detalle = []
+
+        total = Decimal("0.00")
+
+        # -------------------------------------
+        # DESCONTAR INVENTARIO Y CREAR KARDEX
+        # -------------------------------------
+
+        for (
+            prod_id,
+            referencia,
+            producto,
+            cantidad,
+            stock,
+            precio
+        ) in productos:
+
+            subtotal = precio * cantidad
+
+            total += subtotal
+
+            stock_nuevo = stock - cantidad
+
             items_detalle.append({
-                'producto_id': prod_id, 'nombre': producto.get('nombre', 'Producto'),
-                'cantidad': cantidad, 'precio_unitario': float(precio), 'subtotal': float(subtotal)
+                "producto_id": prod_id,
+                "nombre": producto.get(
+                    "nombre",
+                    "Producto"
+                ),
+                "cantidad": cantidad,
+                "precio_unitario": float(precio),
+                "subtotal": float(subtotal)
             })
-            transaction.update(referencia, {'stock_actual': stock_nuevo})
-            movimiento_ref = db.collection('movimientos').document()
-            transaction.set(movimiento_ref, {
-                'producto_id': prod_id, 'tipo': 'Salida', 'cantidad': cantidad,
-                'motivo': f'Venta ERP {folio}', 'usuario_id': usuario.get('email', usuario.get('uid', 'ERP')),
-                'orden_cliente_id': orden_ref.id, 'fecha': momento, 'stock_resultante': stock_nuevo
-            })
-            if prod_id in pendientes and not pendientes[prod_id]:
-                compra_ref = db.collection('ordenes_compra').document()
-                transaction.set(compra_ref, {
-                    'producto_id': prod_id, 'proveedor_id': producto.get('proveedor_id', ''),
-                    'cantidad': max(int(producto.get('stock_minimo', 0)) * 2, 10),
-                    'estado': 'Pendiente', 'fecha': momento, 'tipo': 'Automática (PUSH)'
-                })
+
+            # Actualizar inventario
+            transaction.update(
+                referencia,
+                {
+                    "stock_actual": stock_nuevo
+                }
+            )
+
+            # Registrar salida en Kardex
+            movimiento_ref = (
+                db.collection("movimientos")
+                .document()
+            )
+
+            transaction.set(
+                movimiento_ref,
+                {
+                    "producto_id": prod_id,
+                    "tipo": "Salida",
+                    "cantidad": cantidad,
+                    "motivo": f"Venta ERP {folio}",
+                    "usuario_id": usuario.get(
+                        "email",
+                        usuario.get("uid", "ERP")
+                    ),
+                    "orden_cliente_id": orden_ref.id,
+                    "fecha": momento,
+                    "stock_resultante": stock_nuevo
+                }
+            )
+
+            # ---------------------------------
+            # GENERAR ORDEN PUSH SI HACE FALTA
+            # ---------------------------------
+
+            if (
+                prod_id in pendientes
+                and not pendientes[prod_id]
+            ):
+
+                compra_ref = (
+                    db.collection("ordenes_compra")
+                    .document()
+                )
+
+                transaction.set(
+                    compra_ref,
+                    {
+                        "producto_id": prod_id,
+                        "proveedor_id": producto.get(
+                            "proveedor_id",
+                            ""
+                        ),
+                        "cantidad": max(
+                            int(
+                                producto.get(
+                                    "stock_minimo",
+                                    0
+                                )
+                            ) * 2,
+                            10
+                        ),
+                        "estado": "Pendiente",
+                        "fecha": momento,
+                        "tipo": "Automática (PUSH)"
+                    }
+                )
+
+        # -------------------------------------
+        # GUARDAR ORDEN ERP
+        # -------------------------------------
 
         orden = {
-            'folio': folio, 'fecha': momento, 'estado': 'Procesada',
-            'cliente_id': payload.cliente_id, 'cliente_nombre': cliente.get('nombre', 'Cliente'),
-            'cliente_correo': cliente.get('correo', ''), 'items': items_detalle,
-            'subtotal': float(total), 'total': float(total),
-            'usuario_id': usuario.get('email', usuario.get('uid', 'ERP'))
+            "folio": folio,
+            "fecha": momento,
+            "estado": "Procesada",
+            "cliente_id": payload.cliente_id,
+            "cliente_nombre": cliente.get(
+                "nombre",
+                "Cliente"
+            ),
+            "cliente_correo": cliente.get(
+                "correo",
+                ""
+            ),
+            "items": items_detalle,
+            "subtotal": float(total),
+            "total": float(total),
+            "usuario_id": usuario.get(
+                "email",
+                usuario.get("uid", "ERP")
+            )
         }
-        transaction.set(orden_ref, orden)
-        transaction.set(contador_ref, {'consecutivo': siguiente})
-        return {'id': orden_ref.id, **orden}
 
-    return registrar(tx)
+        transaction.set(
+            orden_ref,
+            orden
+        )
+
+        transaction.set(
+            contador_ref,
+            {
+                "consecutivo": siguiente
+            }
+        )
+
+        return {
+            "id": orden_ref.id,
+            **orden
+        }
+
+    # =========================================
+    # EJECUTAR TRANSACCIÓN Y REGISTRAR ERRORES
+    # =========================================
+
+    try:
+        return registrar(tx)
+
+    except HTTPException:
+        # Conservar errores de validación:
+        # 400, 404 y 409.
+        raise
+
+    except Exception as exc:
+
+        # Mostrar el error completo en Render Logs.
+        logging.getLogger("uvicorn.error").exception(
+            "[ERP] Falló POST /ordenes_clientes, solicitud_id=%s",
+            payload.solicitud_id or "(sin idempotencia)"
+        )
+
+        # No exponer detalles internos al navegador.
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "No fue posible registrar la orden. "
+                "Consulta los logs de Render."
+            )
+        ) from exc
