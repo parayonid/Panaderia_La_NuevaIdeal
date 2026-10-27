@@ -1004,3 +1004,55 @@ input[type="file"]::file-selector-button:hover {
 .crm-table tbody tr:last-child td {
     border-bottom: none;
 }
+
+/* ============================================
+   CORRECCIÓN TABLAS ERP - LA NUEVA IDEAL
+============================================ */
+
+/* Restaurar estructura de las tablas ERP */
+.dashboard-body table.erp-table {
+    display: table !important;
+    width: 100%;
+    min-width: 570px;
+    border-collapse: collapse;
+}
+
+.dashboard-body .erp-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.dashboard-body table.erp-table thead {
+    display: table-header-group;
+}
+
+.dashboard-body table.erp-table tbody {
+    display: table-row-group;
+}
+
+.dashboard-body table.erp-table tr {
+    display: table-row;
+}
+
+.dashboard-body table.erp-table th,
+.dashboard-body table.erp-table td {
+    display: table-cell;
+    text-align: left;
+    vertical-align: middle;
+}
+
+/* Encabezados */
+.dashboard-body table.erp-table th {
+    color: #536174 !important;
+    background-color: #f7f9fb;
+}
+
+/* Mostrar folio, fecha, cliente y total */
+.dashboard-body table.erp-table td {
+    color: #243447 !important;
+}
+
+/* Mantener verde el estado Procesada */
+.dashboard-body table.erp-table .erp-status {
+    color: #046347 !important;
+}
