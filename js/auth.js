@@ -163,61 +163,91 @@ document.addEventListener('DOMContentLoaded', () => {
             const email = document.getElementById('login-email').value.trim();
             const pass = document.getElementById('login-password').value;
             const btnSubmit = formLogin.querySelector('button[type="submit"]');
+            if (btnSubmit) {
+                btnSubmit.textContent = 'Verificando...';
+                btnSubmit.disabled = true;
+            }
+            if (errorLogin) errorLogin.style.display = 'none';
 
-            if (btnSubmit) btnSubmit.textContent = "Verificando...";
-            if (errorLogin) errorLogin.style.display = "none";
+            const mostrarErrorLogin = (mensaje) => {
+                if (errorLogin) {
+                    errorLogin.textContent = mensaje;
+                    errorLogin.style.display = 'block';
+                }
+            };
 
             try {
-                // 1. Validar el correo y contraseña en Firebase Auth
-                const userCredential = await signInWithEmailAndPassword(auth, email, pass);
-                const user = userCredential.user;
-                
-               
-              // 2. Buscar el documento de este usuario en Firestore para leer su "rol"
-                const userDoc = await getDoc(doc(db, "usuarios", user.uid));
-                let userRole = "cliente"; // Rol por defecto si algo falla
-
-                if (userDoc.exists()) {
-                    userRole = userDoc.data().rol; // Aquí lee el "admin" que le pusiste en la base de datos
+                // Paso 1: Auth (correo y contraseña).
+                // Paso 2: Perfil Firestore. No confundir errores de un paso con el otro.
+                let user;
+                try {
+                    const resultado = await signInWithEmailAndPassword(auth, email, pass);
+                    user = resultado.user;
+                    console.info('[Login] Firebase Authentication correcto.');
+                } catch (error) {
+                    console.error('[Login] Falló Firebase Authentication:', error.code, error);
+                    const mensajesAuth = {
+                        'auth/invalid-credential': 'Correo o contraseña incorrectos.',
+                        'auth/wrong-password': 'Correo o contraseña incorrectos.',
+                        'auth/user-not-found': 'La cuenta no existe en Firebase Authentication.',
+                        'auth/invalid-email': 'El formato del correo no es válido.',
+                        'auth/user-disabled': 'Esta cuenta está deshabilitada.',
+                        'auth/network-request-failed': 'No se pudo conectar con Firebase. Comprueba tu conexión.',
+                        'auth/too-many-requests': 'Demasiados intentos. Inténtalo más tarde.',
+                        'auth/operation-not-allowed': 'El inicio de sesión por correo no está habilitado en Firebase.',
+                        'auth/unauthorized-domain': 'Este dominio no está autorizado en Firebase Authentication.'
+                    };
+                    mostrarErrorLogin(mensajesAuth[error.code] || `Error de autenticación: ${error.code || 'desconocido'}`);
+                    return;
                 }
 
-                // --- AGREGAR ESTAS LÍNEAS PARA GUARDAR LA SESIÓN EN EL NAVEGADOR ---
+                let userDoc;
+                try {
+                    userDoc = await getDoc(doc(db, 'usuarios', user.uid));
+                    console.info('[Login] Lectura del perfil de Firestore correcta.');
+                } catch (error) {
+                    console.error('[Login] Falló la consulta del perfil en Firestore:', error.code, error);
+                    if (error.code === 'permission-denied') {
+                        mostrarErrorLogin('Inicio de sesión correcto, pero Firestore denegó la lectura de tu perfil (permission-denied). Revisa las reglas de usuarios.');
+                    } else if (error.code === 'unavailable') {
+                        mostrarErrorLogin('Inicio de sesión correcto, pero Firestore no está disponible. Comprueba tu conexión.');
+                    } else {
+                        mostrarErrorLogin(`Inicio de sesión correcto, pero falló Firestore: ${error.code || 'desconocido'}`);
+                    }
+                    return;
+                }
+
+                if (!userDoc.exists()) {
+                    console.warn('[Login] Falta el documento usuarios/{UID}. UID:', user.uid);
+                    mostrarErrorLogin('La contraseña fue aceptada, pero no existe tu perfil en la colección usuarios de Firestore.');
+                    return;
+                }
+
+                const userRole = userDoc.data().rol;
+                if (!['admin', 'ventas', 'logistica', 'cliente'].includes(userRole)) {
+                    console.warn('[Login] Rol inválido:', userRole);
+                    mostrarErrorLogin('Tu cuenta inició sesión, pero tiene un rol sin configurar correctamente en Firestore.');
+                    return;
+                }
+
                 localStorage.setItem('isLoggedIn', 'true');
                 localStorage.setItem('usuarioActual', JSON.stringify({
                     correo: user.email,
                     rol: userRole
                 }));
-                // -----------------------------------------------------------------
-
                 if (loginModal) loginModal.style.display = 'none';
-                
-                // 3. Redirección condicional según el rol REAL de la base de datos
-                if (userRole === 'admin') {
-                    window.location.href = 'views/admin.html';
-                } else {
-                    window.location.href = 'views/user.html';
-                }
-
-            } catch (error) {
-                if (errorLogin) {
-                    errorLogin.style.display = "block";
-                    if (
-                        error.code === 'auth/user-not-found' || 
-                        error.code === 'auth/invalid-credential' ||
-                        error.code === 'auth/wrong-password'
-                    ) {
-                        errorLogin.textContent = "Esta cuenta no existe o las credenciales son incorrectas.";
-                    } else {
-                        errorLogin.textContent = "No se pudo iniciar sesión. Verifica tu información.";
-                    }
-                }
+                window.location.href = ['admin', 'ventas', 'logistica'].includes(userRole)
+                    ? 'views/admin.html'
+                    : 'views/user.html';
             } finally {
-                if (btnSubmit) btnSubmit.textContent = "Entrar";
+                if (btnSubmit) {
+                    btnSubmit.textContent = 'Entrar';
+                    btnSubmit.disabled = false;
+                }
             }
         });
     }
 
-  
     // ==========================================
     // 5. CARGA DE PRODUCTOS DE FIRESTORE A LA TIENDA
     // ==========================================

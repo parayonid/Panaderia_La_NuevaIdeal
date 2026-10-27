@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-import { getFirestore, collection, query, where, getDocs, updateDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+import { getFirestore, collection, updateDoc, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBns2UIA_ED5CsjBMEmJxUYLqxp1PRXlGo",
@@ -65,14 +65,15 @@ document.addEventListener('DOMContentLoaded', () => {
     onAuthStateChanged(getAuth(), async (user) => {
         if (!user) return window.location.href = "../index.html";
         try {
-            const q = query(collection(db, "usuarios"), where("correo", "==", user.email));
-            const querySnapshot = await getDocs(q);
-            if (querySnapshot.empty) return window.location.href = "../index.html";
-            let usuarioRol = null;
-            querySnapshot.forEach(docSnap => {
-                if (docSnap.id === user.uid) usuarioRol = docSnap.data().rol;
-            });
-            // El backend requiere que el documento de usuarios tenga como ID el UID Firebase.
+            // Leer directamente el documento del usuario autenticado.
+            // No listar la colección usuarios: las reglas pueden permitir get pero no list.
+            const usuarioDoc = await getDoc(doc(db, 'usuarios', user.uid));
+            if (!usuarioDoc.exists()) {
+                console.error('[Admin] No existe perfil usuarios/{UID}:', user.uid);
+                alert('Tu cuenta no tiene perfil en Firestore. Revisa usuarios/{UID}.');
+                return window.location.href = '../index.html';
+            }
+            const usuarioRol = usuarioDoc.data().rol;
             if (!['admin', 'ventas', 'logistica'].includes(usuarioRol)) {
                 alert('Acceso denegado: usuario sin rol de gestión.');
                 return window.location.href = '../index.html';
@@ -92,7 +93,11 @@ document.addEventListener('DOMContentLoaded', () => {
             cargarERP();
             if (globalRol === 'ventas') mostrarSeccion('#seccion-erp-dashboard');
             if (globalRol === 'logistica') mostrarSeccion('#seccion-dashboard-scm');
-        } catch (error) { window.location.href = "../index.html"; }
+        } catch (error) {
+            console.error('[Admin] Error al comprobar permisos:', error.code, error);
+            alert(`No se pudo cargar tu perfil (${error.code || 'error desconocido'}). Revisa la consola.`);
+            window.location.href = '../index.html';
+        }
     });
 
     const pedidos = JSON.parse(localStorage.getItem('pedidosHistorial')) || [];
