@@ -17,7 +17,7 @@ const db = getFirestore(app);
 const usuariosRef = collection(db,"usuarios");
 const API_URL = "https://panaderia-la-nuevaideal.onrender.com";
 
-let globalToken = null; let globalUserEmail = null;
+let globalToken = null; let globalUserEmail = null; let globalRol = null;
 let interaccionesChart = null; let repBarChart = null; let repPieChart = null; let chartSalud = null; let chartMov = null;
 let productosGlobal = []; let proveedoresGlobal = [];
 
@@ -39,7 +39,10 @@ function mostrarNotificacion(mensaje, tipo = 'error') {
         transition: all 0.3s ease; max-width: 350px;
     `;
     
-    toast.innerHTML = `<i class="bi ${icono}" style="font-size: 1.3rem;"></i> <div>${mensaje}</div>`;
+    toast.innerHTML = `<i class="bi ${icono}" style="font-size: 1.3rem;"></i>`;
+    const textoMensaje = document.createElement('div');
+    textoMensaje.textContent = mensaje;
+    toast.appendChild(textoMensaje);
     contenedor.appendChild(toast);
     
     // Animar entrada
@@ -65,15 +68,30 @@ document.addEventListener('DOMContentLoaded', () => {
             const q = query(collection(db, "usuarios"), where("correo", "==", user.email));
             const querySnapshot = await getDocs(q);
             if (querySnapshot.empty) return window.location.href = "../index.html";
-            let esAdmin = false; querySnapshot.forEach((docSnap) => { if (docSnap.data().rol === 'admin') esAdmin = true; });
-            if (!esAdmin) { alert("Acceso denegado."); window.location.href = "../index.html"; }
-            
+            let usuarioRol = null;
+            querySnapshot.forEach(docSnap => {
+                if (docSnap.id === user.uid) usuarioRol = docSnap.data().rol;
+            });
+            // El backend requiere que el documento de usuarios tenga como ID el UID Firebase.
+            if (!['admin', 'ventas', 'logistica'].includes(usuarioRol)) {
+                alert('Acceso denegado: usuario sin rol de gestión.');
+                return window.location.href = '../index.html';
+            }
+            globalRol = usuarioRol;
             globalToken = await user.getIdToken();
             globalUserEmail = user.email;
-            
-            inicializarGraficasCRM();
-            cargarTodoSCM(); 
-            recargarDatosCRM();
+            document.body.dataset.rol = globalRol;
+            document.getElementById('rol-actual').textContent = { admin:'Administrador', ventas:'Ventas', logistica:'Logística' }[globalRol];
+            document.querySelectorAll('.sidebar-menu li[data-roles], button[data-roles]').forEach(elemento => {
+                if (!elemento.dataset.roles.split(',').includes(globalRol)) elemento.hidden = true;
+            });
+            document.querySelectorAll('[data-rol-card]').forEach(elemento => elemento.classList.toggle('current', elemento.dataset.rolCard === globalRol));
+            if (['admin','ventas'].includes(globalRol)) { inicializarGraficasCRM(); recargarDatosCRM(); }
+            if (globalRol === 'admin') iniciarEscuchaUsuarios();
+            cargarTodoSCM();
+            cargarERP();
+            if (globalRol === 'ventas') mostrarSeccion('#seccion-erp-dashboard');
+            if (globalRol === 'logistica') mostrarSeccion('#seccion-dashboard-scm');
         } catch (error) { window.location.href = "../index.html"; }
     });
 
@@ -166,7 +184,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = e.target.querySelector('button'); btn.textContent = "..."; btn.disabled = true;
         try {
             if (idCliente) { await fetch(`${API_URL}/clientes/${idCliente}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, body: JSON.stringify(datosCliente) }); abrirDetalleCliente(idCliente); }
-            else { await fetch(`${API_URL}/clientes`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, body: JSON.stringify(datosCliente) }); }
+            else {
+                const respuesta = await fetch(`${API_URL}/clientes`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, body: JSON.stringify(datosCliente) });
+                if (!respuesta.ok) throw new Error('No se pudo crear el cliente');
+                const creado = await respuesta.json();
+                await cargarERP();
+                if (creado.id && erpElemento('seccion-erp-nueva') && !erpElemento('seccion-erp-nueva').classList.contains('seccion-oculta')) {
+                    erpElemento('erp-buscar-cliente').value = '';
+                    erpRenderClientes();
+                    erpElemento('erp-select-cliente').value = creado.id;
+                    erpMostrarCliente();
+                }
+            }
             document.getElementById('modal-cliente').style.display = 'none'; e.target.reset(); recargarDatosCRM();
         } catch (e) { alert("Error al guardar."); } finally { btn.textContent = "Guardar Cliente"; btn.disabled = false; }
     });
@@ -191,6 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Firebase (Usuarios/Tracking)
+    function iniciarEscuchaUsuarios() {
     if (document.getElementById('usuarios-body')) {
         onSnapshot(usuariosRef, (snapshot) => {
             document.getElementById('usuarios-body').innerHTML = ''; if (document.getElementById('metric-usuarios')) document.getElementById('metric-usuarios').textContent = snapshot.size;
@@ -205,6 +235,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    }
+
     document.getElementById('form-editar-usuario')?.addEventListener('submit', async (e) => {
         e.preventDefault(); const btn = e.target.querySelector('button'); btn.textContent = "..."; btn.disabled = true;
         try { await updateDoc(doc(db, "usuarios", document.getElementById('usuario-id').value), { rol: document.getElementById('usuario-rol').value, nombre: document.getElementById('usuario-nombre').value.trim(), telefono: document.getElementById('usuario-telefono').value.trim() }); document.getElementById('modal-usuario').style.display = 'none';
@@ -519,44 +551,344 @@ document.addEventListener('DOMContentLoaded', () => {
                 cargarTodoSCM();
             }
         }
-        // ==========================================
-    // ÓRDENES MANUALES PULL
-    // ==========================================
-    const modalOrd = document.getElementById('modal-orden');
-    document.getElementById('btn-abrir-modal-orden')?.addEventListener('click', () => { 
-        const selectProd = document.getElementById('ord-producto');
-        selectProd.innerHTML = '<option value="">Selecciona qué producto pedir...</option>' + productosGlobal.map(p => `<option value="${p.id}">${p.nombre} (Stock: ${p.stock_actual !== undefined ? p.stock_actual : (p.cantidad || 0)})</option>`).join('');
-        document.getElementById('form-nueva-orden').reset(); 
-        modalOrd.style.display='flex'; 
     });
 
-    document.getElementById('form-nueva-orden')?.addEventListener('submit', async (e) => {
-        e.preventDefault(); const btn = e.target.querySelector('button'); btn.textContent = "Generando..."; btn.disabled = true;
-        try { 
-            const prodId = document.getElementById('ord-producto').value;
-            const prod = productosGlobal.find(x => x.id === prodId);
-            const cantidad = parseInt(document.getElementById('ord-cantidad').value);
-            
-            const res = await fetch(`${API_URL}/ordenes_compra`, { 
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${globalToken}` }, 
-                body: JSON.stringify({ producto_id: prodId, proveedor_id: prod.proveedor_id || "", cantidad: cantidad }) 
-            }); 
-            
-            if (!res.ok) {
-                const err = await res.json();
-                alert("❌ " + err.detail);
-                return;
-            }
-            
-            modalOrd.style.display='none'; 
-            cargarTodoSCM();
-        } catch(e) { 
-            alert("Error al generar orden manual"); 
-        } finally { 
-            btn.textContent = "Generar Orden de Compra"; btn.disabled = false; 
+    // ==========================================
+    // 4. MÓDULO ERP · ÓRDENES DE CLIENTES
+    // ==========================================
+    const erpDatos = { clientes: [], productos: [], ordenes: [], movimientos: [], cargado: false };
+    const erpCarrito = new Map();
+    const erpGraficas = {};
+    let erpSolicitudId = null;
+    let erpOrdenCreada = null;
+    let erpEnviando = false;
+
+    const erpEsc = (valor) => String(valor ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const erpMXN = (numero) => new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN' }).format(Number(numero) || 0);
+    const erpFecha = (fecha) => { const valor = new Date(fecha); return Number.isNaN(valor.getTime()) ? '—' : valor.toLocaleString('es-MX'); };
+    const erpIdNuevo = () => (globalThis.crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(36).slice(2)}`).replace(/[^A-Za-z0-9_-]/g, '');
+    const erpStock = p => Number(p?.stock_actual ?? p?.cantidad ?? 0);
+    const erpElemento = id => document.getElementById(id);
+    const erpTexto = (id, contenido) => { const elem = erpElemento(id); if (elem) elem.textContent = contenido; };
+
+    async function erpApi(ruta, options = {}) {
+        const usuario = getAuth().currentUser;
+        if (!usuario) throw new Error('La sesión ha caducado. Vuelve a iniciar sesión.');
+        const tokenActual = await usuario.getIdToken();
+        const respuesta = await fetch(`${API_URL}${ruta}`, {
+            ...options,
+            headers: { Authorization: `Bearer ${tokenActual}`, ...(options.body ? {'Content-Type': 'application/json'} : {}), ...(options.headers || {}) }
+        });
+        const respuestaTexto = await respuesta.text();
+        let dato;
+        try { dato = respuestaTexto ? JSON.parse(respuestaTexto) : null; }
+        catch { dato = null; }
+        if (!respuesta.ok) {
+            const mensaje = typeof dato?.detail === 'string' ? dato.detail : `Error HTTP ${respuesta.status}`;
+            throw new Error(mensaje);
         }
+        return dato;
+    }
+
+    async function cargarERP() {
+        if (!globalToken) return;
+        erpDatos.cargado = false;
+        try {
+            const [clientes, productos, ordenes, movimientos] = await Promise.all([
+                erpApi('/clientes'), erpApi('/productos'), erpApi('/ordenes_clientes'), erpApi('/movimientos')
+            ]);
+            if (![clientes, productos, ordenes, movimientos].every(Array.isArray)) throw new Error('Los datos ERP recibidos no son válidos');
+            Object.assign(erpDatos, { clientes, productos, ordenes, movimientos, cargado: true });
+            renderizarERP();
+        } catch (error) {
+            console.error('Error al cargar ERP:', error);
+            mostrarNotificacion(`No se pudo cargar ERP: ${error.message}`);
+        }
+    }
+
+    function erpOrdenesValidas() {
+        return erpDatos.ordenes.filter(o => ['Procesada', 'Completada'].includes(o.estado));
+    }
+
+    function erpEstadisticas() {
+        const ordenes = erpOrdenesValidas();
+        const vendidos = new Map();
+        let unidades = 0;
+        const meses = [];
+        const hoy = new Date();
+        for (let desplazamiento = 5; desplazamiento >= 0; desplazamiento--) {
+            const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - desplazamiento, 1);
+            meses.push({ key: `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`, label: fecha.toLocaleDateString('es-MX', {month:'short', year:'2-digit'}), valor: 0 });
+        }
+        ordenes.forEach(orden => {
+            const fecha = new Date(orden.fecha);
+            if (!Number.isNaN(fecha.getTime())) {
+                const key = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+                const mes = meses.find(m => m.key === key);
+                if (mes) mes.valor += Number(orden.total) || 0;
+            }
+            (orden.items || []).forEach(item => {
+                const cantidad = Number(item.cantidad) || 0;
+                unidades += cantidad;
+                const key = item.producto_id || item.nombre;
+                const previo = vendidos.get(key) || { nombre: item.nombre || 'Producto', cantidad: 0 };
+                previo.cantidad += cantidad;
+                vendidos.set(key, previo);
+            });
+        });
+        return {
+            ordenes,
+            ventas: ordenes.reduce((s, o) => s + (Number(o.total) || 0), 0),
+            unidades, meses,
+            top: [...vendidos.values()].sort((a, b) => b.cantidad - a.cantidad).slice(0, 5),
+            activos: erpDatos.clientes.filter(c => !String(c.estado || 'activo').toLowerCase().includes('inactivo') && !String(c.estado || '').toLowerCase().includes('prospecto')).length,
+            disponibles: erpDatos.productos.filter(p => erpStock(p) > 0).length
+        };
+    }
+
+    function erpDibujarGrafica(id, tipo, etiquetas, valores, colores, horizontal = false) {
+        const canvas = erpElemento(id);
+        if (!canvas || typeof Chart === 'undefined') return;
+        if (erpGraficas[id]) erpGraficas[id].destroy();
+        erpGraficas[id] = new Chart(canvas, {
+            type: tipo,
+            data: { labels: etiquetas, datasets: [{ label: tipo === 'bar' ? 'Cantidad / ventas' : 'Productos', data: valores, backgroundColor: colores, borderWidth: 0, borderRadius: tipo === 'bar' ? 5 : 0 }] },
+            options: { responsive:true, maintainAspectRatio:false, indexAxis: horizontal ? 'y' : 'x',
+                plugins: { legend: { display:tipo === 'doughnut', position:'bottom' } },
+                scales: tipo === 'bar' ? { x:{ beginAtZero:true }, y:{ beginAtZero:true } } : undefined }
+        });
+    }
+
+    function erpFilaOrden(orden) {
+        const folio = erpEsc(orden.folio || orden.id);
+        return `<tr><td><strong>${folio}</strong></td><td>${erpEsc(erpFecha(orden.fecha))}</td><td>${erpEsc(orden.cliente_nombre || 'Cliente')}</td><td>${erpMXN(orden.total)}</td><td><span class="erp-status">${erpEsc(orden.estado || 'Procesada')}</span></td><td><button class="erp-btn secondary erp-ver-orden" type="button" data-id="${erpEsc(orden.id)}"><i class="bi bi-eye"></i> Ver</button></td></tr>`;
+    }
+
+    function renderizarERP() {
+        const e = erpEstadisticas();
+        erpTexto('erp-kpi-clientes', e.activos);
+        erpTexto('erp-kpi-ordenes', e.ordenes.length);
+        erpTexto('erp-kpi-ventas', erpMXN(e.ventas));
+        erpTexto('erp-kpi-unidades', e.unidades);
+        erpTexto('erp-reporte-ventas', erpMXN(e.ventas));
+        erpTexto('erp-reporte-ordenes', e.ordenes.length);
+        erpTexto('erp-reporte-unidades', e.unidades);
+        erpTexto('erp-reporte-disponibles', `${e.disponibles} / ${erpDatos.productos.length}`);
+        const ultimas = erpDatos.ordenes.slice(0, 5);
+        erpElemento('erp-ultimas-body').innerHTML = ultimas.length ? ultimas.map(erpFilaOrden).join('') : '<tr><td colspan="6" class="erp-empty">Aún no hay órdenes de clientes.</td></tr>';
+        erpListaOrdenes();
+        erpDibujarGrafica('erp-chart-ventas', 'bar', e.meses.map(m => m.label), e.meses.map(m => m.valor), '#3180f7');
+        erpDibujarGrafica('erp-chart-ventas-reporte', 'bar', e.meses.map(m => m.label), e.meses.map(m => m.valor), '#3180f7');
+        const top = e.top.length ? e.top : [{nombre:'Sin ventas', cantidad:0}];
+        erpDibujarGrafica('erp-chart-top', 'bar', top.map(t => t.nombre), top.map(t => t.cantidad), '#0cb08a', true);
+        erpDibujarGrafica('erp-chart-top-reporte', 'bar', top.map(t => t.nombre), top.map(t => t.cantidad), '#0cb08a', true);
+        erpDibujarGrafica('erp-chart-inventario', 'doughnut', ['Con existencias', 'Sin existencias'], [e.disponibles, erpDatos.productos.length - e.disponibles], ['#07916f', '#f0a128']);
+        erpNivelImplementacion();
+        erpRenderClientes();
+        erpRenderProductos();
+        erpRenderCarrito();
+    }
+
+    function erpListaOrdenes() {
+        const filtro = (erpElemento('erp-buscar-orden')?.value || '').toLowerCase().trim();
+        const visibles = erpDatos.ordenes.filter(o => `${o.folio || ''} ${o.cliente_nombre || ''} ${o.estado || ''}`.toLowerCase().includes(filtro));
+        erpTexto('erp-count-ordenes', `${visibles.length} órdenes`);
+        erpElemento('erp-ordenes-body').innerHTML = visibles.length ? visibles.map(erpFilaOrden).join('') : '<tr><td colspan="6" class="erp-empty">No hay órdenes que coincidan.</td></tr>';
+    }
+
+    function erpNivelImplementacion() {
+        const valido = erpDatos.cargado;
+        const hayVentas = erpDatos.ordenes.length > 0;
+        const movimientosERP = erpDatos.movimientos.some(m => !!m.orden_cliente_id);
+        const checks = [
+            { ok: valido, descripcion: 'Clientes enlazados al CRM (consulta operativa)' },
+            { ok: valido, descripcion: 'Productos e inventario enlazados al SCM (consulta operativa)' },
+            { ok: valido, descripcion: 'Módulo de órdenes ERP disponible' },
+            { ok: hayVentas, descripcion: 'Al menos una orden real procesada' },
+            { ok: movimientosERP, descripcion: 'Movimientos automáticos ERP verificados en Kardex' },
+            { ok: false, descripcion: 'Optimización avanzada con indicadores y procesos auditados (pendiente)' }
+        ];
+        const nivel = !valido ? 0 : movimientosERP ? 2 : 1;
+        erpTexto('erp-nivel-titulo', `Nivel actual: ${['Básico', 'Integrado', 'Automatizado', 'Optimizado'][nivel]}`);
+        [...erpElemento('erp-madurez').children].forEach((n, i) => n.classList.toggle('active', i <= nivel));
+        erpElemento('erp-checklist').innerHTML = checks.map(c => `<div class="${c.ok ? 'ok' : 'pending'}"><i class="bi bi-${c.ok ? 'check-square-fill' : 'square'}"></i> ${erpEsc(c.descripcion)}</div>`).join('');
+    }
+
+    function erpRenderClientes() {
+        const select = erpElemento('erp-select-cliente');
+        if (!select) return;
+        const filtro = (erpElemento('erp-buscar-cliente')?.value || '').toLowerCase();
+        const anterior = select.value;
+        const activos = erpDatos.clientes.filter(c => !String(c.estado || '').toLowerCase().includes('inactivo'));
+        const filtrados = activos.filter(c => `${c.nombre || ''} ${c.empresa || ''} ${c.correo || ''}`.toLowerCase().includes(filtro));
+        select.innerHTML = '<option value="">Selecciona un cliente...</option>' + filtrados.map(c => `<option value="${erpEsc(c.id)}">${erpEsc(c.nombre)} · ${erpEsc(c.empresa || c.correo || 'Sin empresa')}</option>`).join('');
+        if (filtrados.some(c => c.id === anterior)) select.value = anterior;
+        erpMostrarCliente();
+    }
+
+    function erpMostrarCliente() {
+        const id = erpElemento('erp-select-cliente')?.value;
+        const c = erpDatos.clientes.find(cl => cl.id === id);
+        const tarjeta = erpElemento('erp-cliente-seleccionado');
+        tarjeta.style.display = c ? 'block' : 'none';
+        if (c) tarjeta.innerHTML = `<strong>${erpEsc(c.nombre)}</strong><div>${erpEsc(c.empresa || '')}</div><small>${erpEsc(c.correo || '')} · ${erpEsc(c.telefono || '')}</small>`;
+    }
+
+    function erpRenderProductos() {
+        const cuerpo = erpElemento('erp-productos-body');
+        if (!cuerpo) return;
+        const filtro = (erpElemento('erp-buscar-producto')?.value || '').toLowerCase();
+        const disponibles = erpDatos.productos.filter(p => `${p.nombre || ''} ${p.categoria || ''}`.toLowerCase().includes(filtro));
+        cuerpo.innerHTML = disponibles.length ? disponibles.map(p => {
+            const stock = erpStock(p);
+            const precio = Number(p.precio);
+            const valido = p.precio !== undefined && p.precio !== null && p.precio !== '' && Number.isFinite(precio) && precio >= 0;
+            return `<tr><td><span class="erp-item-name">${erpEsc(p.nombre)}</span><br><small>${erpEsc(p.categoria || '')}</small></td><td>${stock}</td><td>${valido ? erpMXN(precio) : 'Precio no disponible'}</td><td><input class="erp-input erp-cantidad" type="number" min="1" max="${Math.max(0,stock)}" value="1" data-id="${erpEsc(p.id)}" style="max-width:85px;"></td><td><button type="button" class="erp-btn erp-agregar" data-id="${erpEsc(p.id)}" ${stock <= 0 || !valido ? 'disabled' : ''}><i class="bi bi-plus-lg"></i> Agregar</button></td></tr>`;
+        }).join('') : '<tr><td colspan="5" class="erp-empty">No hay productos que coincidan.</td></tr>';
+    }
+
+    function erpRenderCarrito() {
+        const cuerpo = erpElemento('erp-carrito-body');
+        if (!cuerpo) return;
+        let html = '', total = 0;
+        for (const [id, cantidad] of erpCarrito) {
+            const prod = erpDatos.productos.find(p => p.id === id);
+            if (!prod) continue;
+            const subtotal = (Number(prod.precio) || 0) * cantidad;
+            total += subtotal;
+            html += `<tr><td>${erpEsc(prod.nombre)}</td><td>${cantidad}</td><td>${erpMXN(subtotal)}</td><td><button type="button" class="erp-btn secondary erp-quitar" data-id="${erpEsc(id)}">Quitar</button></td></tr>`;
+        }
+        cuerpo.innerHTML = html || '<tr><td colspan="4" class="erp-empty">Agrega al menos un producto.</td></tr>';
+        erpTexto('erp-resumen-subtotal', erpMXN(total));
+        erpTexto('erp-resumen-total', erpMXN(total));
+    }
+
+    function erpResumen() {
+        const c = erpDatos.clientes.find(x => x.id === erpElemento('erp-select-cliente').value);
+        erpElemento('erp-resumen-cliente').innerHTML = c ? `<strong>Cliente:</strong> ${erpEsc(c.nombre)} <small>(${erpEsc(c.correo || '')})</small>` : '';
+        const filas = [...erpCarrito].map(([id, cantidad]) => {
+            const p = erpDatos.productos.find(x => x.id === id);
+            if (!p) return '';
+            return `<tr><td>${erpEsc(p.nombre)}</td><td>${cantidad}</td><td>${erpMXN(p.precio)}</td><td>${erpMXN(Number(p.precio) * cantidad)}</td></tr>`;
+        });
+        erpElemento('erp-resumen-body').innerHTML = filas.join('');
+        erpRenderCarrito();
+    }
+
+    function erpPaso(paso) {
+        for (let i=1; i<=3; i++) {
+            erpElemento(`erp-paso-${i}`).hidden = i !== paso;
+            erpElemento(`erp-indicador-${i}`).className = `erp-step ${i < paso ? 'done' : i === paso ? 'active' : ''}`;
+        }
+        erpElemento('erp-procesando').hidden = true;
+        if (paso === 3) erpResumen();
+    }
+
+    async function erpIniciar() {
+        if (!['admin','ventas'].includes(globalRol)) return;
+        await cargarERP();
+        if (!erpDatos.cargado) return;
+        erpCarrito.clear();
+        erpSolicitudId = erpIdNuevo();
+        erpElemento('erp-buscar-cliente').value = '';
+        erpElemento('erp-buscar-producto').value = '';
+        erpRenderClientes();
+        erpElemento('erp-select-cliente').value = '';
+        erpMostrarCliente();
+        erpRenderProductos();
+        erpRenderCarrito();
+        erpPaso(1);
+        mostrarSeccion('#seccion-erp-nueva');
+    }
+
+    function erpVerDetalle(id) {
+        const orden = erpDatos.ordenes.find(o => o.id === id) || (erpOrdenCreada?.id === id ? erpOrdenCreada : null);
+        if (!orden) { mostrarNotificacion('No se encontró la orden.'); return; }
+        erpTexto('erp-detalle-folio', orden.folio || orden.id);
+        erpTexto('erp-detalle-metadatos', `${orden.cliente_nombre || 'Cliente'} · ${erpFecha(orden.fecha)} · ${orden.estado || ''}`);
+        erpElemento('erp-detalle-body').innerHTML = (orden.items || []).map(i => `<tr><td>${erpEsc(i.nombre)}</td><td>${Number(i.cantidad) || 0}</td><td>${erpMXN(i.precio_unitario)}</td><td>${erpMXN(i.subtotal)}</td></tr>`).join('');
+        erpTexto('erp-detalle-total', erpMXN(orden.total));
+        mostrarSeccion('#seccion-erp-detalle');
+    }
+
+    async function erpConfirmarOrden() {
+        if (erpEnviando || !erpCarrito.size) return;
+        const clienteId = erpElemento('erp-select-cliente').value;
+        const items = [...erpCarrito].map(([producto_id, cantidad]) => ({producto_id, cantidad}));
+        erpEnviando = true;
+        erpElemento('erp-confirmar').disabled = true;
+        [1,2,3].forEach(i => { erpElemento(`erp-paso-${i}`).hidden = true; });
+        erpElemento('erp-procesando').hidden = false;
+        try {
+            const orden = await erpApi('/ordenes_clientes', {
+                method: 'POST', body: JSON.stringify({cliente_id: clienteId, items, solicitud_id: erpSolicitudId})
+            });
+            erpOrdenCreada = orden;
+            erpTexto('erp-exito-folio', orden.folio || orden.id);
+            erpTexto('erp-exito-cliente', orden.cliente_nombre);
+            erpTexto('erp-exito-total', erpMXN(orden.total));
+            erpTexto('erp-exito-fecha', erpFecha(orden.fecha));
+            mostrarSeccion('#seccion-erp-exito');
+            mostrarNotificacion('Orden registrada e inventario actualizado.', 'exito');
+            // La operación ya fue confirmada. Fallas de refresco no revierten la venta.
+            cargarERP();
+            cargarTodoSCM();
+        } catch (error) {
+            mostrarNotificacion(`No se pudo confirmar la operación: ${error.message}. Si fue un fallo de red, puedes reintentar sin duplicar el pedido.`, 'error');
+            erpPaso(3);
+        } finally {
+            erpEnviando = false;
+            erpElemento('erp-confirmar').disabled = false;
+        }
+    }
+
+    erpElemento('erp-nueva-dashboard')?.addEventListener('click', erpIniciar);
+    erpElemento('erp-nueva-listado')?.addEventListener('click', erpIniciar);
+    erpElemento('erp-buscar-orden')?.addEventListener('input', erpListaOrdenes);
+    erpElemento('erp-buscar-cliente')?.addEventListener('input', erpRenderClientes);
+    erpElemento('erp-select-cliente')?.addEventListener('change', erpMostrarCliente);
+    erpElemento('erp-buscar-producto')?.addEventListener('input', erpRenderProductos);
+    erpElemento('erp-cancelar-orden')?.addEventListener('click', () => mostrarSeccion('#seccion-erp-ordenes'));
+    erpElemento('erp-abrir-nuevo-cliente')?.addEventListener('click', () => erpElemento('btn-abrir-modal-cliente').click());
+    erpElemento('erp-cliente-siguiente')?.addEventListener('click', () => {
+        if (!erpElemento('erp-select-cliente').value) return mostrarNotificacion('Selecciona un cliente para continuar.');
+        erpPaso(2);
     });
+    erpElemento('erp-productos-atras')?.addEventListener('click', () => erpPaso(1));
+    erpElemento('erp-productos-siguiente')?.addEventListener('click', () => {
+        if (!erpCarrito.size) return mostrarNotificacion('Agrega al menos un producto.');
+        for (const [id, cantidad] of erpCarrito) {
+            const producto = erpDatos.productos.find(p => p.id === id);
+            if (!producto || cantidad > erpStock(producto)) return mostrarNotificacion('Hay productos sin stock suficiente.');
+        }
+        erpPaso(3);
     });
+    erpElemento('erp-resumen-atras')?.addEventListener('click', () => erpPaso(2));
+    erpElemento('erp-confirmar')?.addEventListener('click', erpConfirmarOrden);
+    erpElemento('erp-exito-ver')?.addEventListener('click', () => erpVerDetalle(erpOrdenCreada?.id));
+    erpElemento('erp-exito-volver')?.addEventListener('click', () => mostrarSeccion('#seccion-erp-ordenes'));
+    erpElemento('erp-detalle-volver')?.addEventListener('click', () => mostrarSeccion('#seccion-erp-ordenes'));
+    erpElemento('erp-productos-body')?.addEventListener('click', e => {
+        const btn = e.target.closest('.erp-agregar');
+        if (!btn || btn.disabled) return;
+        const id = btn.dataset.id;
+        const producto = erpDatos.productos.find(p => p.id === id);
+        const cantidad = Number(e.currentTarget.querySelector(`.erp-cantidad[data-id="${CSS.escape(id)}"]`)?.value);
+        if (!producto || !Number.isInteger(cantidad) || cantidad < 1) return mostrarNotificacion('Indica una cantidad válida.');
+        const nueva = cantidad + (erpCarrito.get(id) || 0);
+        if (nueva > erpStock(producto)) return mostrarNotificacion('Cantidad superior a las existencias disponibles.');
+        erpCarrito.set(id, nueva);
+        erpRenderCarrito();
+    });
+    erpElemento('erp-carrito-body')?.addEventListener('click', e => {
+        const btn = e.target.closest('.erp-quitar');
+        if (btn) { erpCarrito.delete(btn.dataset.id); erpRenderCarrito(); }
+    });
+    ['erp-ordenes-body','erp-ultimas-body'].forEach(id => erpElemento(id)?.addEventListener('click', e => {
+        const btn = e.target.closest('.erp-ver-orden');
+        if (btn) erpVerDetalle(btn.dataset.id);
+    }));
+
     // ==========================================
     // 4. SISTEMA DE NAVEGACIÓN Y BÚSQUEDA
     // ==========================================
@@ -610,20 +942,51 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.disabled = false; 
         }
     });
-    const menuLinks = document.querySelectorAll('.sidebar-menu li a, .link-navegacion');
-    const seccionesMap = { 'Dashboard CRM': ['.metrics-section', '#seccion-graficas'], 'Reportes': ['#seccion-reportes'], 'Clientes': ['#seccion-clientes'], 'Historial de Interacciones': ['#seccion-interacciones'], 'Staff': ['#seccion-usuarios'], 'Catálogo': ['#seccion-productos'], 'Pedidos': ['#seccion-pedidos'], 'Dashboard SCM': ['#seccion-dashboard-scm'], 'Kardex': ['#seccion-movimientos'], 'Órdenes': ['#seccion-ordenes'], 'Logística': ['#seccion-logistica'], 'Proveedores': ['#seccion-proveedores'], 'Ver todos': ['#seccion-proveedores'], 'Revisar inventario': ['#seccion-productos'] };
+    const seccionesMap = {
+        '#dashboard-crm': ['.metrics-section', '#seccion-graficas'],
+        '#seccion-reportes': ['#seccion-reportes'],
+        '#seccion-clientes': ['#seccion-clientes'],
+        '#seccion-interacciones': ['#seccion-interacciones'],
+        '#seccion-usuarios': ['#seccion-usuarios'],
+        '#seccion-productos': ['#seccion-productos'],
+        '#seccion-pedidos': ['#seccion-pedidos'],
+        '#seccion-dashboard-scm': ['#seccion-dashboard-scm'],
+        '#seccion-movimientos': ['#seccion-movimientos'],
+        '#seccion-ordenes': ['#seccion-ordenes'],
+        '#seccion-logistica': ['#seccion-logistica'],
+        '#seccion-proveedores': ['#seccion-proveedores'],
+        '#seccion-erp-dashboard': ['#seccion-erp-dashboard'],
+        '#seccion-erp-ordenes': ['#seccion-erp-ordenes'],
+        '#seccion-erp-nueva': ['#seccion-erp-nueva'],
+        '#seccion-erp-detalle': ['#seccion-erp-detalle'],
+        '#seccion-erp-exito': ['#seccion-erp-exito'],
+        '#seccion-erp-reportes': ['#seccion-erp-reportes'],
+        '#seccion-erp-nivel': ['#seccion-erp-nivel'],
+        '#seccion-erp-roles': ['#seccion-erp-roles']
+    };
 
-    menuLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            const txt = e.currentTarget.textContent.trim().replace(' →', '');
-            if (txt.includes('Volver') || txt.includes('Salir')) return;
+    function mostrarSeccion(destino) {
+        const partes = seccionesMap[destino];
+        if (!partes) return;
+        const seccion = destino !== '#dashboard-crm' ? document.querySelector(destino) : null;
+        if (seccion?.dataset.roles && !seccion.dataset.roles.split(',').includes(globalRol)) return;
+        document.querySelectorAll('.crud-section, .tracking-section, .metrics-section, .charts-section').forEach(seccion => seccion.classList.add('seccion-oculta'));
+        partes.forEach(selector => document.querySelector(selector)?.classList.remove('seccion-oculta'));
+        document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
+        document.querySelector(`.sidebar-menu a[href="${destino}"]`)?.closest('li')?.classList.add('active');
+        if (document.getElementById('global-search')) document.getElementById('global-search').value = '';
+        if (destino.startsWith('#seccion-erp')) {
+            // Chart.js debe reajustarse después de mostrar contenedores que estaban ocultos.
+            requestAnimationFrame(() => Object.values(erpGraficas).forEach(grafica => grafica.resize()));
+        }
+    }
+
+    document.querySelectorAll('.sidebar-menu li a, .link-navegacion').forEach(link => {
+        link.addEventListener('click', e => {
+            const destino = link.getAttribute('href');
+            if (!destino?.startsWith('#')) return;
             e.preventDefault();
-            if(e.currentTarget.closest('.sidebar-menu li')) { document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active')); e.currentTarget.closest('li').classList.add('active'); } 
-            else { document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active')); if(txt === 'Ver todos') document.querySelector('a[href="#seccion-proveedores"]').closest('li').classList.add('active'); if(txt === 'Revisar inventario') document.querySelector('a[href="#seccion-productos"]').closest('li').classList.add('active'); }
-            
-            document.querySelectorAll('.crud-section, .tracking-section, .metrics-section, .charts-section').forEach(s => s.classList.add('seccion-oculta'));
-            if (document.getElementById('global-search')) document.getElementById('global-search').value = '';
-            for (const [k, v] of Object.entries(seccionesMap)) { if (txt.includes(k)) v.forEach(sel => document.querySelector(sel)?.classList.remove('seccion-oculta')); }
+            mostrarSeccion(destino);
         });
     });
 

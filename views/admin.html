@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard CRM y SCM - La Nueva Ideal</title>
+    <title>Dashboard CRM, SCM y ERP - La Nueva Ideal</title>
     <link rel="stylesheet" href="../css/styles.css?v=1.3">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -18,33 +18,95 @@
         .crm-table th, .crm-table td { padding: 15px 20px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; }
         .crm-table th { background-color: #f8f9fa; color: #555; font-weight: bold; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
         .crm-table tbody tr:last-child td { border-bottom: none; }
+        [hidden] { display: none !important; }
+        /* ERP · compatible con la hoja de estilos existente de La Nueva Ideal */
+        .erp-head { display:flex; justify-content:space-between; align-items:center; gap:15px; flex-wrap:wrap; margin-bottom:22px; }
+        .erp-head h2 { margin:0; color:#4F231C; }
+        .erp-subtitle { margin:5px 0 0; color:#718096; font-size:.92rem; }
+        .erp-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(185px,1fr)); gap:16px; margin-bottom:20px; }
+        .erp-two { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-bottom:18px; }
+        .erp-card { background:#fff; border:1px solid #e8ecef; box-shadow:0 4px 18px rgba(26,36,50,.035); border-radius:12px; padding:20px; min-width:0; }
+        .erp-card h3 { color:#4F231C; font-size:1rem; margin:0 0 14px; }
+        .erp-kpi-label { margin:0; color:#68758b; font-size:.86rem; font-weight:600; }
+        .erp-kpi-number { margin:8px 0 0; font-size:1.9rem; font-weight:800; color:#22354a; }
+        .erp-btn { background:#007b61; color:white; border:0; border-radius:8px; padding:10px 16px; font-size:.91rem; font-weight:650; cursor:pointer; }
+        .erp-btn:hover:not(:disabled) { background:#00614e; }
+        .erp-btn.secondary { background:#f4f6f8; color:#32415a; border:1px solid #dde4eb; }
+        .erp-btn.primary { background:#155eef; }
+        .erp-btn:disabled { opacity:.5; cursor:not-allowed; }
+        .erp-toolbar { display:flex; gap:10px; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+        .erp-input { border:1px solid #d7dfe8; border-radius:8px; padding:10px 12px; font:inherit; background:white; width:100%; box-sizing:border-box; }
+        .erp-label { display:block; font-weight:650; font-size:.87rem; color:#34445d; margin-bottom:7px; }
+        .erp-table-wrap { overflow-x:auto; }
+        .erp-table { width:100%; border-collapse:collapse; min-width:570px; }
+        .erp-table th,.erp-table td { padding:13px 10px; border-bottom:1px solid #edf0f4; text-align:left; }
+        .erp-table th { background:#f7f9fb; color:#536174; font-size:.82rem; }
+        .erp-table td { font-size:.9rem; }
+        .erp-table tbody tr:last-child td { border-bottom:0; }
+        .erp-status { display:inline-block; border-radius:7px; background:#dff7ec; color:#046347; padding:5px 9px; font-weight:650; font-size:.78rem; }
+        .erp-stepper { display:flex; margin-bottom:22px; gap:10px; }
+        .erp-step { flex:1; padding:11px 8px; border-bottom:3px solid #e4e9ef; color:#8893a3; font-weight:650; font-size:.88rem; text-align:center; }
+        .erp-step.active { border-color:#155eef; color:#155eef; }
+        .erp-step.done { border-color:#07916f; color:#07916f; }
+        .erp-step-content[hidden],.erp-view[hidden] { display:none!important; }
+        .erp-action-row { display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:18px; }
+        .erp-item-name { font-weight:700; color:#28394d; }
+        .erp-empty { text-align:center; color:#8491a2; padding:25px; }
+        .erp-summary { max-width:340px; margin-left:auto; background:#f7f9fd; border-radius:10px; padding:18px; }
+        .erp-summary div { display:flex; justify-content:space-between; gap:12px; }
+        .erp-highlight { font-size:1.2rem; color:#155eef; font-weight:800; }
+        .erp-process { padding:44px 20px; text-align:center; }
+        .erp-spinner { width:54px; height:54px; border:5px solid #dfe9ff; border-top-color:#155eef; border-radius:50%; margin:0 auto 20px; animation:erp-spin .85s linear infinite; }
+        @keyframes erp-spin { to { transform:rotate(360deg) } }
+        .erp-checklist { display:grid; gap:10px; }
+        .erp-checklist .ok { color:#067c5b; }
+        .erp-checklist .pending { color:#7a8799; }
+        .erp-maturity { display:flex; justify-content:space-between; gap:8px; margin:16px 0 20px; }
+        .erp-maturity span { flex:1; font-size:.78rem; text-align:center; padding:9px 4px; border-top:3px solid #dce3ed; color:#8c97a6; }
+        .erp-maturity .active { color:#078667; border-color:#078667; font-weight:800; }
+        .erp-role { border-top:4px solid #155eef; }
+        .erp-role ul { padding-left:21px; line-height:1.9; }
+        .erp-role.current { outline:2px solid #07916f; }
+        .erp-chart { height:245px; position:relative; }
+        .erp-chart canvas { width:100%!important; height:100%!important; }
+        body[data-rol="ventas"] #seccion-productos .icon-edit,
+        body[data-rol="ventas"] #seccion-productos .icon-delete,
+        body[data-rol="ventas"] #btn-abrir-modal-producto { display:none!important; }
+        @media(max-width:860px) { .erp-two {grid-template-columns:1fr;} .erp-step {font-size:.76rem;} }
+        @media(max-width:520px) { .erp-kpi-number {font-size:1.5rem;} .erp-card {padding:14px;} }
     </style>
 </head>
 <body class="dashboard-body">
     <aside class="sidebar">
         <div class="sidebar-header">
             <img src="../images/images/new_ideal.svg" alt="Logo" class="sidebar-logo">
-            <h2>Admin</h2>
+            <h2>Panel de Gestión</h2>
         </div>
         <ul class="sidebar-menu">
-            <li class="menu-divider" style="color: #f39c12; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; padding: 15px 20px 5px; letter-spacing: 1px;"> Módulo CRM</li>
-            <li class="active"><a href="#"><i class="bi bi-grid-1x2"></i> Dashboard CRM</a></li>
-            <li><a href="#seccion-reportes"><i class="bi bi-bar-chart-line-fill"></i> Reportes</a></li>
-            <li><a href="#seccion-clientes"><i class="bi bi-person-lines-fill"></i> Clientes</a></li>
-            <li><a href="#seccion-interacciones"><i class="bi bi-chat-left-text"></i> Historial de Interacciones</a></li>
-            <li><a href="#seccion-usuarios"><i class="bi bi-people"></i> Staff (Usuarios)</a></li>
+            <li class="menu-divider" data-roles="admin,ventas" style="color: #f39c12; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; padding: 15px 20px 5px; letter-spacing: 1px;"> Módulo CRM</li>
+            <li class="active" data-roles="admin,ventas"><a href="#dashboard-crm"><i class="bi bi-grid-1x2"></i> Dashboard CRM</a></li>
+            <li data-roles="admin,ventas"><a href="#seccion-reportes"><i class="bi bi-bar-chart-line-fill"></i> Reportes</a></li>
+            <li data-roles="admin,ventas"><a href="#seccion-clientes"><i class="bi bi-person-lines-fill"></i> Clientes</a></li>
+            <li data-roles="admin,ventas"><a href="#seccion-interacciones"><i class="bi bi-chat-left-text"></i> Historial de Interacciones</a></li>
+            <li data-roles="admin"><a href="#seccion-usuarios"><i class="bi bi-people"></i> Staff (Usuarios)</a></li>
             
-            <li class="menu-divider" style="color: #f39c12; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; padding: 25px 20px 5px; letter-spacing: 1px;"> Operaciones Tienda</li>
-            <li><a href="#seccion-productos"><i class="bi bi-box-seam"></i> Catálogo</a></li>
-            <li><a href="#seccion-pedidos"><i class="bi bi-bag-check"></i> Pedidos</a></li> 
+            <li class="menu-divider" data-roles="admin,ventas,logistica" style="color: #f39c12; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; padding: 25px 20px 5px; letter-spacing: 1px;"> Operaciones Tienda</li>
+            <li data-roles="admin,ventas,logistica"><a href="#seccion-productos"><i class="bi bi-box-seam"></i> Catálogo</a></li>
+            <li data-roles="admin"><a href="#seccion-pedidos"><i class="bi bi-bag-check"></i> Pedidos</a></li> 
             
-            <li class="menu-divider" style="color: #f39c12; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; padding: 25px 20px 5px; letter-spacing: 1px;"> Módulo SCM</li>
-            <li><a href="#seccion-dashboard-scm"><i class="bi bi-activity"></i> Dashboard SCM</a></li>
-            <li><a href="#seccion-movimientos"><i class="bi bi-arrow-left-right"></i> Kardex (Movimientos)</a></li>
-            <li><a href="#seccion-ordenes"><i class="bi bi-cart-plus"></i> Órdenes de Compra</a></li>
-            <li><a href="#seccion-logistica"><i class="bi bi-diagram-3"></i> Logística</a></li>
-            <li><a href="#seccion-proveedores"><i class="bi bi-building"></i> Proveedores</a></li>
+            <li class="menu-divider" data-roles="admin,logistica" style="color: #f39c12; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; padding: 25px 20px 5px; letter-spacing: 1px;"> Módulo SCM</li>
+            <li data-roles="admin,logistica"><a href="#seccion-dashboard-scm"><i class="bi bi-activity"></i> Dashboard SCM</a></li>
+            <li data-roles="admin,logistica"><a href="#seccion-movimientos"><i class="bi bi-arrow-left-right"></i> Kardex (Movimientos)</a></li>
+            <li data-roles="admin,logistica"><a href="#seccion-ordenes"><i class="bi bi-cart-plus"></i> Órdenes de Compra</a></li>
+            <li data-roles="admin,logistica"><a href="#seccion-logistica"><i class="bi bi-diagram-3"></i> Logística</a></li>
+            <li data-roles="admin,logistica"><a href="#seccion-proveedores"><i class="bi bi-building"></i> Proveedores</a></li>
             
+            <li class="menu-divider" style="color:#f39c12;font-size:.8rem;font-weight:bold;text-transform:uppercase;padding:25px 20px 5px;letter-spacing:1px;" data-roles="admin,ventas,logistica">Módulo ERP</li>
+            <li data-roles="admin,ventas,logistica"><a href="#seccion-erp-dashboard"><i class="bi bi-grid-1x2"></i> Dashboard ERP</a></li>
+            <li data-roles="admin,ventas,logistica"><a href="#seccion-erp-ordenes"><i class="bi bi-receipt"></i> Órdenes ERP</a></li>
+            <li data-roles="admin,ventas,logistica"><a href="#seccion-erp-reportes"><i class="bi bi-graph-up"></i> Reportes ERP</a></li>
+            <li data-roles="admin,ventas,logistica"><a href="#seccion-erp-nivel"><i class="bi bi-layers"></i> Nivel ERP</a></li>
+            <li data-roles="admin"><a href="#seccion-erp-roles"><i class="bi bi-person-lines-fill"></i> Panel por rol</a></li>
             <li style="margin-top: 20px;"><a href="../index.html"><i class="bi bi-house-door"></i> Volver a Tienda</a></li>
         </ul>
     </aside>
@@ -52,7 +114,7 @@
     <main class="main-content">
         <header class="top-header">
             <div class="search-bar"><i class="bi bi-search"></i><input type="text" id="global-search" placeholder="Buscar en la sección actual..."></div>
-            <div class="user-profile"><span>Administrador</span><i class="bi bi-person-circle"></i></div>
+            <div class="user-profile"><span id="rol-actual">Administrador</span><i class="bi bi-person-circle"></i></div>
         </header>
 
         <div class="dashboard-container">
@@ -85,7 +147,7 @@
             </section>
 
             <section id="seccion-clientes" class="crud-section seccion-oculta">
-                <div class="section-header"><h2>Directorio de Clientes</h2><button id="btn-abrir-modal-cliente" class="btn-crm"><i class="bi bi-plus-lg"></i> Nuevo Cliente</button></div>
+                <div class="section-header"><h2 style="color:#4F231C">Directorio de Clientes</h2><button id="btn-abrir-modal-cliente" class="btn-crm"><i class="bi bi-plus-lg"></i> Nuevo Cliente</button></div>
                 <div class="table-container">
                     <table class="crm-table"><thead><tr><th>Nombre</th><th>Empresa</th><th>Correo / Teléfono</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="clientes-body"></tbody></table>
                 </div>
@@ -124,12 +186,12 @@
             </section>
 
             <section id="seccion-interacciones" class="crud-section seccion-oculta">
-                <div class="section-header"><h2>Historial Global de Interacciones</h2><button id="btn-abrir-modal-interaccion" class="btn-crm" style="background-color: #16a085;"><i class="bi bi-plus-lg"></i> Nueva Interacción</button></div>
+                <div class="section-header"><h2 style="color:#4F231C">Historial Global de Interacciones</h2><button id="btn-abrir-modal-interaccion" class="btn-crm" style="background-color: #16a085;"><i class="bi bi-plus-lg"></i> Nueva Interacción</button></div>
                 <div class="table-container"><table class="crm-table"><thead><tr><th>Fecha</th><th>Cliente Asignado</th><th>Tipo</th><th>Descripción</th><th>Admin (Staff)</th></tr></thead><tbody id="interacciones-body"></tbody></table></div>
             </section>
 
             <section id="seccion-usuarios" class="crud-section seccion-oculta">
-                <div class="section-header"><h2>Gestión de Staff / Usuarios</h2></div>
+                <div class="section-header"><h2 style="color:#4F231C">Gestión de Staff / Usuarios</h2></div>
                 <div class="table-container"><table class="crm-table"><thead><tr><th>Nombre y Correo</th><th>Rol</th><th>Teléfono</th><th>Registro</th><th>Acciones</th></tr></thead><tbody id="usuarios-body"></tbody></table></div>
             </section>
 
@@ -163,7 +225,7 @@
             <section id="seccion-ordenes" class="crud-section seccion-oculta">
                 <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <h2 style="margin: 0;">Órdenes de Compra a Proveedores</h2>
+                        <h2 style="margin: 0;" style="color:#4F231C">Órdenes de Compra a Proveedores</h2>
                         <p style="color:#666; font-size:0.9rem; margin-top:5px;">Pedidos automáticos (PUSH) y manuales (PULL).</p>
                     </div>
                     <button id="btn-abrir-modal-orden" class="btn-crm" style="background-color: #0d6efd; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">
@@ -180,7 +242,7 @@
 
             <!-- SCM KARDEX -->
             <section id="seccion-movimientos" class="crud-section seccion-oculta">
-                <div class="section-header"><h2>Movimientos de Inventario (Kardex)</h2><button id="btn-abrir-modal-mov" class="btn-crm" style="background-color: #212529;"><i class="bi bi-plus-lg"></i> Registrar Movimiento</button></div>
+                <div class="section-header"><h2 style="color:#4F231C">Movimientos de Inventario (Kardex)</h2><button id="btn-abrir-modal-mov" class="btn-crm" style="background-color: #212529;"><i class="bi bi-plus-lg"></i> Registrar Movimiento</button></div>
                 <div class="table-container"><table class="crm-table"><thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Motivo / Notas</th></tr></thead><tbody id="movimientos-body"></tbody></table></div>
             </section>
 
@@ -198,7 +260,7 @@
             <!-- SCM: LOGÍSTICA Y ESTRATEGIAS -->
             <section id="seccion-logistica" class="crud-section seccion-oculta">
                 <div class="section-header">
-                    <h2>Logística y Estrategias</h2>
+                    <h2 style="color:#4F231C">Logística y Estrategias</h2>
                     <p style="color:#666; font-size:0.9rem; margin-top:5px;">Define y compara modelos de reposición Push vs Pull por producto.</p>
                 </div>
                 
@@ -268,8 +330,64 @@
 
             <!-- SCM PROVEEDORES -->
             <section id="seccion-proveedores" class="crud-section seccion-oculta">
-                <div class="section-header"><h2>Gestión de Fabricantes / Proveedores</h2><button id="btn-abrir-modal-proveedor" class="btn-crm"><i class="bi bi-plus-lg"></i> Nuevo Proveedor</button></div>
+                <div class="section-header"><h2 style="color:#4F231C">Gestión de Fabricantes / Proveedores</h2><button id="btn-abrir-modal-proveedor" class="btn-crm"><i class="bi bi-plus-lg"></i> Nuevo Proveedor</button></div>
                 <div class="table-container"><table class="crm-table"><thead><tr><th>Empresa</th><th>Contacto</th><th>Correo / Teléfono</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="proveedores-body"></tbody></table></div>
+            </section>
+            <!-- ERP: vista integrada, órdenes de venta, reportes y madurez -->
+            <section id="seccion-erp-dashboard" class="crud-section seccion-oculta" data-roles="admin,ventas,logistica">
+                <div class="erp-head"><div><h2><i class="bi bi-grid-1x2"></i> Dashboard ERP</h2><p class="erp-subtitle">Integración de ventas, clientes (CRM) e inventario (SCM).</p></div><button class="erp-btn" id="erp-nueva-dashboard" data-roles="admin,ventas"><i class="bi bi-plus-lg"></i> Nueva orden</button></div>
+                <div class="erp-grid">
+                    <div class="erp-card"><p class="erp-kpi-label">Clientes activos</p><p id="erp-kpi-clientes" class="erp-kpi-number">—</p></div>
+                    <div class="erp-card"><p class="erp-kpi-label">Órdenes de clientes</p><p id="erp-kpi-ordenes" class="erp-kpi-number">—</p></div>
+                    <div class="erp-card"><p class="erp-kpi-label">Ventas registradas</p><p id="erp-kpi-ventas" class="erp-kpi-number">—</p></div>
+                    <div class="erp-card"><p class="erp-kpi-label">Productos vendidos</p><p id="erp-kpi-unidades" class="erp-kpi-number">—</p></div>
+                </div>
+                <div class="erp-two">
+                    <div class="erp-card"><h3>Ventas · últimos 6 meses</h3><div class="erp-chart"><canvas id="erp-chart-ventas"></canvas></div></div>
+                    <div class="erp-card"><h3>Productos más vendidos</h3><div class="erp-chart"><canvas id="erp-chart-top"></canvas></div></div>
+                </div>
+                <div class="erp-card"><h3>Últimas órdenes</h3><div class="erp-table-wrap"><table class="erp-table"><thead><tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody id="erp-ultimas-body"><tr><td colspan="6" class="erp-empty">Cargando...</td></tr></tbody></table></div></div>
+            </section>
+
+            <section id="seccion-erp-ordenes" class="crud-section seccion-oculta" data-roles="admin,ventas,logistica">
+                <div class="erp-head"><div><h2><i class="bi bi-receipt"></i> Órdenes de clientes</h2><p class="erp-subtitle">Listado de ventas registradas en el ERP.</p></div><button class="erp-btn" id="erp-nueva-listado" data-roles="admin,ventas"><i class="bi bi-plus-lg"></i> Nueva orden</button></div>
+                <div class="erp-card"><div class="erp-toolbar"><input class="erp-input" style="max-width:380px;" id="erp-buscar-orden" type="search" placeholder="Buscar folio, cliente o estado..."><span id="erp-count-ordenes" class="erp-subtitle">0 órdenes</span></div>
+                <div class="erp-table-wrap"><table class="erp-table"><thead><tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado</th><th>Detalle</th></tr></thead><tbody id="erp-ordenes-body"><tr><td colspan="6" class="erp-empty">Cargando...</td></tr></tbody></table></div></div>
+            </section>
+
+            <section id="seccion-erp-nueva" class="crud-section seccion-oculta" data-roles="admin,ventas">
+                <div class="erp-head"><div><h2>Nueva orden de cliente</h2><p class="erp-subtitle">Selecciona un cliente, agrega productos y confirma.</p></div><button type="button" class="erp-btn secondary" id="erp-cancelar-orden">Cancelar</button></div>
+                <div class="erp-card">
+                    <div class="erp-stepper"><div class="erp-step active" id="erp-indicador-1">1. Cliente</div><div class="erp-step" id="erp-indicador-2">2. Productos</div><div class="erp-step" id="erp-indicador-3">3. Confirmar</div></div>
+                    <div class="erp-step-content" id="erp-paso-1"><h3>Seleccionar cliente (CRM)</h3><div class="erp-toolbar"><input class="erp-input" style="max-width:400px;" id="erp-buscar-cliente" placeholder="Buscar cliente por nombre, empresa o correo..."><button type="button" class="erp-btn secondary" id="erp-abrir-nuevo-cliente">+ Crear cliente en CRM</button></div><label class="erp-label" for="erp-select-cliente">Cliente registrado</label><select class="erp-input" id="erp-select-cliente"><option value="">Selecciona un cliente...</option></select><div id="erp-cliente-seleccionado" class="erp-card" style="margin-top:15px; display:none;"></div><div class="erp-action-row"><button type="button" id="erp-cliente-siguiente" class="erp-btn primary">Siguiente <i class="bi bi-arrow-right"></i></button></div></div>
+                    <div class="erp-step-content" id="erp-paso-2" hidden><h3>Agregar productos (SCM)</h3><div class="erp-toolbar"><input class="erp-input" style="max-width:400px;" id="erp-buscar-producto" placeholder="Buscar producto..."><span class="erp-subtitle">Cantidades disponibles en inventario</span></div><div class="erp-table-wrap"><table class="erp-table"><thead><tr><th>Producto</th><th>Stock</th><th>Precio</th><th>Cantidad</th><th></th></tr></thead><tbody id="erp-productos-body"></tbody></table></div><h3 style="margin-top:20px;">Productos agregados</h3><div class="erp-table-wrap"><table class="erp-table"><thead><tr><th>Producto</th><th>Cantidad</th><th>Subtotal</th><th></th></tr></thead><tbody id="erp-carrito-body"></tbody></table></div><div class="erp-action-row"><button type="button" id="erp-productos-atras" class="erp-btn secondary">Anterior</button><button type="button" id="erp-productos-siguiente" class="erp-btn primary">Revisar orden</button></div></div>
+                    <div class="erp-step-content" id="erp-paso-3" hidden><h3>Resumen y confirmación</h3><div id="erp-resumen-cliente" style="margin-bottom:12px;"></div><div class="erp-table-wrap"><table class="erp-table"><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio unitario</th><th>Subtotal</th></tr></thead><tbody id="erp-resumen-body"></tbody></table></div><div class="erp-summary"><div><span>Subtotal</span><strong id="erp-resumen-subtotal">$0.00</strong></div><hr><div><strong>Total</strong><span id="erp-resumen-total" class="erp-highlight">$0.00</span></div></div><p class="erp-subtitle">Al confirmar, FastAPI validará el stock y actualizará el inventario y el Kardex en una sola transacción.</p><div class="erp-action-row"><button id="erp-resumen-atras" type="button" class="erp-btn secondary">Anterior</button><button id="erp-confirmar" type="button" class="erp-btn">Confirmar orden</button></div></div>
+                    <div class="erp-process" id="erp-procesando" hidden><div class="erp-spinner"></div><h3>Procesando orden...</h3><p class="erp-subtitle">Validando disponibilidad y registrando orden, stock y movimientos en Firestore.</p></div>
+                </div>
+            </section>
+
+            <section id="seccion-erp-exito" class="crud-section seccion-oculta" data-roles="admin,ventas">
+                <div class="erp-card" style="text-align:center; max-width:650px; margin:auto;"><i class="bi bi-check-circle-fill" style="font-size:4rem; color:#07916f;"></i><h2 style="color:#046347;">¡Orden registrada con éxito!</h2><p class="erp-subtitle">La orden y el Kardex ya quedaron guardados y el inventario fue descontado.</p><div class="erp-card" style="text-align:left; background:#f5f9fd;"><p><strong>Folio:</strong> <span id="erp-exito-folio"></span></p><p><strong>Cliente:</strong> <span id="erp-exito-cliente"></span></p><p><strong>Total:</strong> <span id="erp-exito-total"></span></p><p><strong>Fecha:</strong> <span id="erp-exito-fecha"></span></p></div><div class="erp-action-row" style="justify-content:center;"><button id="erp-exito-ver" class="erp-btn">Ver orden</button><button id="erp-exito-volver" class="erp-btn secondary">Ir a órdenes</button></div></div>
+            </section>
+
+            <section id="seccion-erp-detalle" class="crud-section seccion-oculta" data-roles="admin,ventas,logistica">
+                <div class="erp-head"><div><h2>Detalle de orden <span id="erp-detalle-folio"></span></h2><p class="erp-subtitle" id="erp-detalle-metadatos"></p></div><button id="erp-detalle-volver" class="erp-btn secondary">Volver a órdenes</button></div><div class="erp-card"><div class="erp-table-wrap"><table class="erp-table"><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody id="erp-detalle-body"></tbody></table></div><div class="erp-summary" style="margin-top:20px;"><div><strong>Total</strong><span id="erp-detalle-total" class="erp-highlight"></span></div></div></div>
+            </section>
+
+            <section id="seccion-erp-reportes" class="crud-section seccion-oculta" data-roles="admin,ventas,logistica">
+                <div class="erp-head"><div><h2><i class="bi bi-bar-chart"></i> Reportes ERP</h2><p class="erp-subtitle">Indicadores de ventas, productos y existencias en tiempo real.</p></div></div>
+                <div class="erp-grid"><div class="erp-card"><p class="erp-kpi-label">Ventas totales</p><p id="erp-reporte-ventas" class="erp-kpi-number">—</p></div><div class="erp-card"><p class="erp-kpi-label">Órdenes procesadas</p><p id="erp-reporte-ordenes" class="erp-kpi-number">—</p></div><div class="erp-card"><p class="erp-kpi-label">Unidades vendidas</p><p id="erp-reporte-unidades" class="erp-kpi-number">—</p></div><div class="erp-card"><p class="erp-kpi-label">Productos con stock disponible</p><p id="erp-reporte-disponibles" class="erp-kpi-number">—</p></div></div>
+                <div class="erp-two"><div class="erp-card"><h3>Ventas por mes</h3><div class="erp-chart"><canvas id="erp-chart-ventas-reporte"></canvas></div></div><div class="erp-card"><h3>Productos más vendidos (unidades)</h3><div class="erp-chart"><canvas id="erp-chart-top-reporte"></canvas></div></div></div>
+                <div class="erp-two"><div class="erp-card"><h3>Inventario disponible</h3><div class="erp-chart"><canvas id="erp-chart-inventario"></canvas></div></div><div class="erp-card"><h3>Integración entre módulos</h3><div class="erp-checklist"><div><i class="bi bi-people" style="color:#155eef;"></i> <strong>CRM:</strong> clientes y relaciones</div><div><i class="bi bi-receipt" style="color:#155eef;"></i> <strong>ERP:</strong> órdenes y reportes</div><div><i class="bi bi-box-seam" style="color:#155eef;"></i> <strong>SCM:</strong> productos, stock, Kardex y abastecimiento</div></div></div></div>
+            </section>
+
+            <section id="seccion-erp-nivel" class="crud-section seccion-oculta" data-roles="admin,ventas,logistica">
+                <div class="erp-head"><div><h2>Nivel de implementación ERP</h2><p class="erp-subtitle">Estado evaluado con los datos y capacidades disponibles.</p></div></div><div class="erp-card"><h3 id="erp-nivel-titulo">Evaluando integración...</h3><div class="erp-maturity" id="erp-madurez"><span>Básico</span><span>Integrado</span><span>Automatizado</span><span>Optimizado</span></div><div class="erp-checklist" id="erp-checklist"></div><p class="erp-subtitle" style="margin-top:15px;">Automatizado y optimizado requieren procesos adicionales verificados; no se marcan como completos por defecto.</p></div>
+            </section>
+
+            <section id="seccion-erp-roles" class="crud-section seccion-oculta" data-roles="admin">
+                <div class="erp-head"><div><h2>Panel por rol</h2><p class="erp-subtitle">Los accesos se obtienen del campo <code>rol</code> de los usuarios en Firestore, no de un selector del navegador.</p></div></div>
+                <div class="erp-grid" style="grid-template-columns:repeat(auto-fit,minmax(250px,1fr));"><div class="erp-card erp-role" data-rol-card="admin"><h3><i class="bi bi-person-gear"></i> Administrador</h3><ul><li>Dashboard CRM, clientes y staff</li><li>Productos, inventario y proveedores</li><li>Órdenes de compra SCM</li><li>Órdenes de clientes ERP</li><li>Reportes, nivel ERP y roles</li></ul></div><div class="erp-card erp-role" data-rol-card="ventas"><h3><i class="bi bi-person-badge"></i> Ventas</h3><ul><li>Clientes e interacciones CRM</li><li>Consulta de productos SCM</li><li>Crear y consultar órdenes ERP</li><li>Reportes ERP</li></ul></div><div class="erp-card erp-role" data-rol-card="logistica"><h3><i class="bi bi-box-seam"></i> Logística</h3><ul><li>Productos y proveedores SCM</li><li>Inventario, Kardex y órdenes de compra</li><li>Consulta de órdenes de clientes ERP</li><li>Reportes ERP</li></ul></div></div>
             </section>
         </div>
     </main>
@@ -296,7 +414,7 @@
     <div id="modal-usuario" class="modal-crm" style="display: none;">
         <div class="modal-crm-content"><div class="modal-crm-header"><h3>Editar Perfil de Usuario</h3><span class="close-crm" onclick="document.getElementById('modal-usuario').style.display='none'">&times;</span></div>
             <form id="form-editar-usuario">
-                <input type="hidden" id="usuario-id"><input type="email" id="usuario-correo" readonly disabled style="margin-bottom:15px; width:100%; padding:10px; background:#eee;"><input type="text" id="usuario-nombre" required placeholder="Nombre" style="margin-bottom:15px; width:100%; padding:10px;"><input type="text" id="usuario-telefono" required placeholder="Teléfono" style="margin-bottom:15px; width:100%; padding:10px;"><select id="usuario-rol" required style="margin-bottom:15px; width:100%; padding:10px;"><option value="cliente">Cliente Regular</option><option value="admin">Administrador</option></select>
+                <input type="hidden" id="usuario-id"><input type="email" id="usuario-correo" readonly disabled style="margin-bottom:15px; width:100%; padding:10px; background:#eee;"><input type="text" id="usuario-nombre" required placeholder="Nombre" style="margin-bottom:15px; width:100%; padding:10px;"><input type="text" id="usuario-telefono" required placeholder="Teléfono" style="margin-bottom:15px; width:100%; padding:10px;"><select id="usuario-rol" required style="margin-bottom:15px; width:100%; padding:10px;"><option value="cliente">Cliente Regular</option><option value="admin">Administrador</option><option value="ventas">Ventas</option><option value="logistica">Logística</option></select>
                 <div class="modal-crm-actions"><button type="submit" class="btn-guardar" style="background-color: #4F231C; width:100%;">Guardar Cambios</button></div>
             </form>
         </div>
@@ -381,6 +499,6 @@
 
      <!-- CONTENEDOR PARA NOTIFICACIONES FLOTANTES (TOASTS) -->
     <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
-    <script type="module" src="../js/admin.js?v=1.6"></script>
+    <script type="module" src="../js/admin.js?v=2.0"></script>
 </body>   
 </html>
