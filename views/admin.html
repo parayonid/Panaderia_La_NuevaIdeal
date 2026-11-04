@@ -74,48 +74,195 @@
         body[data-rol="ventas"] #btn-abrir-modal-producto { display:none!important; }
         @media(max-width:860px) { .erp-two {grid-template-columns:1fr;} .erp-step {font-size:.76rem;} }
         @media(max-width:520px) { .erp-kpi-number {font-size:1.5rem;} .erp-card {padding:14px;} }
+
+        /* ===== Nuevo layout del panel de administración ===== */
+        body.dashboard-body.admin-redesign {
+            --admin-ink:#272a35; --admin-soft:#778091;
+            --admin-border:#e7eaf0; --admin-bg:#f5f6f9;
+            --admin-accent:#6a352c;
+            display:grid !important; grid-template-columns:254px minmax(0,1fr);
+            grid-template-rows:76px minmax(0,1fr);
+            min-height:100vh; margin:0; background:var(--admin-bg);
+            color:var(--admin-ink); font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+        }
+        body.admin-redesign[data-admin-module="crm"] { --admin-accent:#864331; --admin-accent-soft:#f8eee9; }
+        body.admin-redesign[data-admin-module="scm"] { --admin-accent:#007e6a; --admin-accent-soft:#e7f7f1; }
+        body.admin-redesign[data-admin-module="erp"] { --admin-accent:#3858ac; --admin-accent-soft:#ecf1ff; }
+        .admin-redesign .admin-appbar {
+            grid-column:1 / -1; grid-row:1; position:sticky !important;
+            inset:0 0 auto 0 !important; z-index:1050;
+            box-sizing:border-box; display:flex; align-items:center; gap:28px;
+            height:76px; min-height:76px; padding:0 28px !important;
+            background:#fff !important; border-bottom:1px solid var(--admin-border);
+            box-shadow:0 2px 8px rgba(33,39,52,.025); width:100% !important;
+        }
+        .admin-redesign .admin-brand { display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--admin-ink); min-width:200px; }
+        .admin-redesign .admin-brand-logo { width:42px; height:42px; flex-shrink:0; border-radius:12px; background:#fbf4ec; display:grid; place-items:center; }
+        .admin-redesign .admin-brand-logo img { display:block; width:34px; height:34px; object-fit:contain; }
+        .admin-redesign .admin-brand strong { display:block; font-size:15px; line-height:1.25; font-weight:800; letter-spacing:-.025em; }
+        .admin-redesign .admin-brand small { display:block; font-size:11px; margin-top:3px; color:#9296a0; font-weight:600; }
+        .admin-redesign .admin-module-tabs { display:flex; align-self:stretch; align-items:center; gap:5px; margin-inline:auto; }
+        .admin-redesign .admin-module-tab { display:flex; align-items:center; gap:9px; padding:12px 21px; border-radius:10px; text-decoration:none; color:#697184; font-size:14px; font-weight:800; white-space:nowrap; transition:background .15s,color .15s; border:1px solid transparent; }
+        .admin-redesign .admin-module-tab i { font-size:17px; }
+        .admin-redesign .admin-module-tab:hover { background:#f5f6fa; color:#363d4a; }
+        .admin-redesign .admin-module-tab.is-active { color:var(--admin-accent); background:var(--admin-accent-soft); border-color:color-mix(in srgb, var(--admin-accent) 13%, white); }
+        .admin-redesign .admin-top-tools { display:flex; align-items:center; gap:17px; }
+        .admin-redesign .admin-top-tools .search-bar { display:flex; align-items:center; gap:8px; width:min(250px,20vw); min-width:150px; height:38px; border-radius:10px; background:#f7f8fa; border:1px solid #edf0f4; padding:0 12px; box-sizing:border-box; margin:0; }
+        .admin-redesign .admin-top-tools .search-bar input { width:100%; min-width:0; background:transparent; border:0; outline:0; box-shadow:none; font-size:12px; }
+        .admin-redesign .admin-top-tools .user-profile { display:flex; align-items:center; gap:9px; color:#4f5665; font-size:12px; font-weight:700; white-space:nowrap; }
+        .admin-redesign .admin-top-tools .user-profile i { font-size:23px; color:#865a4e; }
+        .admin-redesign .sidebar.admin-sidebar {
+            grid-column:1; grid-row:2; position:sticky !important;
+            inset:76px auto auto 0 !important; height:calc(100vh - 76px) !important;
+            width:254px !important; box-sizing:border-box; min-width:0;
+            margin:0 !important; padding:24px 13px 22px !important;
+            overflow-y:auto; overflow-x:hidden;
+            background:#241f22 !important; color:#f7f6f7;
+            box-shadow:none !important; border-right:1px solid #3d3438;
+            display:flex; flex-direction:column;
+        }
+        .admin-redesign .admin-sidebar .sidebar-header { margin:0 8px 20px !important; padding:0 4px 19px !important; border-bottom:1px solid rgba(255,255,255,.11); display:block !important; background:transparent !important; text-align:left !important; }
+        .admin-redesign .admin-sidebar .sidebar-header h2 { margin:6px 0 6px; font-size:18px; color:#fff; line-height:1.3; font-weight:800; }
+        .admin-redesign .admin-sidebar .sidebar-header p { margin:0; line-height:1.45; font-size:12px; color:#a89fa5; }
+        .admin-redesign .admin-sidebar .module-eyebrow { color:#d6ac8c; font-size:10px; letter-spacing:.15em; font-weight:800; }
+        .admin-redesign .admin-sidebar .sidebar-menu { list-style:none; margin:0 !important; padding:0 !important; display:block; flex:1; }
+        .admin-redesign .admin-sidebar .sidebar-menu li { list-style:none; margin:3px 0; padding:0; }
+        .admin-redesign .admin-sidebar .sidebar-menu li.menu-divider { padding:17px 13px 7px !important; color:#9e979b !important; font-size:10px !important; letter-spacing:.1em; font-weight:800; text-transform:uppercase; }
+        .admin-redesign .admin-sidebar .sidebar-menu li a { display:flex; gap:12px; align-items:center; border-radius:10px; padding:11px 13px; line-height:1.4; font-size:13px; font-weight:600; color:#d4ccd1 !important; background:transparent; text-decoration:none; border:1px solid transparent; transition:background .15s; }
+        .admin-redesign .admin-sidebar .sidebar-menu li a i { font-size:16px; width:18px; text-align:center; opacity:.9; }
+        .admin-redesign .admin-sidebar .sidebar-menu li a:hover { color:white !important; background:#362c32; }
+        .admin-redesign .admin-sidebar .sidebar-menu li.active a { background:#443036 !important; color:white !important; border-color:#65464e; }
+        .admin-redesign .admin-sidebar .sidebar-menu li.is-current a { background:rgba(255,255,255,.105) !important; color:#fff !important; border-color:rgba(255,255,255,.12); }
+        .admin-redesign .admin-sidebar .sidebar-menu li.is-current a:before { content:""; width:3px; height:18px; background:#e0ae90; border-radius:6px; margin-left:-7px; margin-right:4px; }
+        .admin-redesign .sidebar-footer { margin-top:24px; border-top:1px solid rgba(255,255,255,.1); padding:18px 8px 0; }
+        .admin-redesign .sidebar-footer a { display:flex; gap:12px; align-items:center; color:#c8bdc4; font-size:12px; text-decoration:none; padding:9px; border-radius:8px; }
+        .admin-redesign .sidebar-footer a:hover { background:rgba(255,255,255,.1); color:white; }
+        .admin-redesign .main-content.admin-main {
+            grid-column:2; grid-row:2; box-sizing:border-box;
+            position:relative !important; margin:0 !important; padding:32px clamp(20px,3.2vw,46px) 54px !important;
+            width:100% !important; max-width:none !important; min-width:0; background:transparent;
+        }
+        .admin-redesign .dashboard-container { width:100%; max-width:none !important; box-sizing:border-box; margin:0 !important; padding:0 !important; }
+        .admin-redesign .admin-page-heading { margin-bottom:27px; }
+        .admin-redesign .admin-breadcrumb { font-size:10px; font-weight:800; letter-spacing:.15em; color:var(--admin-accent); margin:0 0 10px; }
+        .admin-redesign .admin-page-heading h1 { font-size:clamp(24px,2.35vw,32px); letter-spacing:-.03em; line-height:1.2; color:#292630; margin:0 0 7px; }
+        .admin-redesign .admin-page-heading p:last-child { color:#858895; margin:0; font-size:13px; }
+        .admin-redesign .dashboard-container .card-metric,
+        .admin-redesign .dashboard-container .detalle-card,
+        .admin-redesign .dashboard-container .erp-card,
+        .admin-redesign .dashboard-container .table-container {
+            border-radius:14px; box-shadow:0 5px 18px rgba(33,39,52,.035);
+        }
+        .admin-redesign .erp-feature-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:13px; margin:0 0 24px; }
+        .admin-redesign .erp-feature-link { display:flex; align-items:center; gap:13px; padding:17px 18px; text-decoration:none; background:#fff; border:1px solid var(--admin-border); border-radius:13px; color:#293342; transition:transform .15s,border-color .15s,box-shadow .15s; }
+        .admin-redesign .erp-feature-link:hover { transform:translateY(-2px); border-color:#bac9ed; box-shadow:0 8px 20px rgba(40,66,130,.08); }
+        .admin-redesign .erp-feature-icon { display:grid; place-items:center; width:42px; height:42px; min-width:42px; border-radius:10px; background:#eef2fc; color:#3f5dab; font-size:18px; }
+        .admin-redesign .erp-feature-link strong { display:block; font-size:13px; margin-bottom:3px; }
+        .admin-redesign .erp-feature-link small { color:#8790a2; line-height:1.35; font-size:11px; display:block; }
+        .admin-redesign .erp-feature-link .bi-arrow-up-right { margin-left:auto; color:#9aa7c0; font-size:13px; }
+        .admin-redesign .erp-inventory-note { color:#7d8898; font-size:12px; }
+        .admin-redesign .inventory-mini-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; margin-bottom:20px; }
+        body.admin-redesign.admin-inventory-open .dashboard-container > :is(.metrics-section,.charts-section,.crud-section,.tracking-section):not(#seccion-erp-inventario) { display:none !important; }
+        body.admin-redesign:not(.admin-inventory-open) #seccion-erp-inventario { display:none !important; }
+        body.admin-redesign.admin-inventory-open #seccion-erp-inventario { display:block !important; }
+        @media(max-width:1200px) {
+            .admin-redesign .admin-brand { min-width:170px; }
+            .admin-redesign .admin-appbar { gap:15px; padding:0 19px !important; }
+            .admin-redesign .admin-module-tab { padding:10px 14px; }
+            .admin-redesign .admin-top-tools .search-bar { width:175px; }
+        }
+        @media(max-width:940px) {
+            body.dashboard-body.admin-redesign { display:grid !important; grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto 1fr; }
+            .admin-redesign .admin-appbar { grid-column:1; grid-row:1; height:auto; min-height:68px; flex-wrap:wrap; padding:10px 18px !important; position:relative !important; gap:10px; }
+            .admin-redesign .admin-module-tabs { margin:0 auto 0 0; }
+            .admin-redesign .admin-top-tools .search-bar { display:none; }
+            .admin-redesign .sidebar.admin-sidebar { grid-column:1; grid-row:2; width:100% !important; height:auto !important; min-height:0; position:relative !important; inset:auto !important; overflow:visible; padding:9px 12px !important; }
+            .admin-redesign .admin-sidebar .sidebar-header, .admin-redesign .sidebar-footer { display:none !important; }
+            .admin-redesign .admin-sidebar .sidebar-menu { display:flex !important; overflow-x:auto; scrollbar-width:thin; gap:4px; }
+            .admin-redesign .admin-sidebar .sidebar-menu li { flex:0 0 auto; }
+            .admin-redesign .admin-sidebar .sidebar-menu li.menu-divider { display:none !important; }
+            .admin-redesign .admin-sidebar .sidebar-menu li a { padding:9px 11px; font-size:12px; white-space:nowrap; }
+            .admin-redesign .main-content.admin-main { grid-column:1; grid-row:3; padding:25px 19px 45px !important; }
+        }
+        @media(max-width:600px) {
+            .admin-redesign .admin-appbar { justify-content:space-between; }
+            .admin-redesign .admin-brand { min-width:0; }
+            .admin-redesign .admin-brand small { display:none; }
+            .admin-redesign .admin-brand strong { font-size:13px; }
+            .admin-redesign .admin-module-tabs { order:3; width:100%; justify-content:space-between; margin:0; }
+            .admin-redesign .admin-module-tab { justify-content:center; flex:1; padding:10px 8px; }
+            .admin-redesign .admin-top-tools { margin-left:auto; }
+            .admin-redesign .admin-top-tools .user-profile span { display:none; }
+            .admin-redesign .erp-feature-grid, .admin-redesign .inventory-mini-stats { grid-template-columns:1fr; }
+            .admin-redesign #seccion-detalle-cliente > div[style*="grid-template-columns"],
+            .admin-redesign #seccion-logistica > div[style*="grid-template-columns"] { display:block !important; }
+        }
     </style>
 </head>
-<body class="dashboard-body">
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <img src="../images/images/new_ideal.svg" alt="Logo" class="sidebar-logo">
-            <h2>Panel de Gestión</h2>
+<body class="dashboard-body admin-redesign" data-admin-module="crm">
+    <header class="top-header admin-appbar">
+        <a href="../index.html" class="admin-brand" aria-label="La Nueva Ideal — ir a la tienda">
+            <span class="admin-brand-logo"><img src="../images/images/new_ideal.svg" alt=""></span>
+            <span><strong>La Nueva Ideal</strong><small>Centro de administración</small></span>
+        </a>
+        <nav class="admin-module-tabs" aria-label="Módulos del sistema">
+            <a href="#dashboard-crm" class="admin-module-tab is-active" data-module-tab="crm" data-roles="admin,ventas" aria-current="page"><i class="bi bi-people"></i> CRM</a>
+            <a href="#seccion-dashboard-scm" class="admin-module-tab" data-module-tab="scm" data-roles="admin,logistica"><i class="bi bi-box-seam"></i> SCM</a>
+            <a href="#seccion-erp-dashboard" class="admin-module-tab" data-module-tab="erp" data-roles="admin,ventas,logistica"><i class="bi bi-grid-1x2"></i> ERP</a>
+        </nav>
+        <div class="admin-top-tools">
+            <div class="search-bar"><i class="bi bi-search"></i><input type="text" id="global-search" placeholder="Buscar en la sección actual..." aria-label="Buscar en la sección actual"></div>
+            <div class="user-profile"><span id="rol-actual">Administrador</span><i class="bi bi-person-circle"></i></div>
         </div>
-        <ul class="sidebar-menu">
-            <li class="menu-divider" data-roles="admin,ventas" style="color: #f39c12; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; padding: 15px 20px 5px; letter-spacing: 1px;"> Módulo CRM</li>
-            <li class="active" data-roles="admin,ventas"><a href="#dashboard-crm"><i class="bi bi-grid-1x2"></i> Dashboard CRM</a></li>
-            <li data-roles="admin,ventas"><a href="#seccion-reportes"><i class="bi bi-bar-chart-line-fill"></i> Reportes</a></li>
-            <li data-roles="admin,ventas"><a href="#seccion-clientes"><i class="bi bi-person-lines-fill"></i> Clientes</a></li>
-            <li data-roles="admin,ventas"><a href="#seccion-interacciones"><i class="bi bi-chat-left-text"></i> Historial de Interacciones</a></li>
-            <li data-roles="admin"><a href="#seccion-usuarios"><i class="bi bi-people"></i> Staff (Usuarios)</a></li>
-            
-            <li class="menu-divider" data-roles="admin,ventas,logistica" style="color: #f39c12; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; padding: 25px 20px 5px; letter-spacing: 1px;"> Operaciones Tienda</li>
-            <li data-roles="admin,ventas,logistica"><a href="#seccion-productos"><i class="bi bi-box-seam"></i> Catálogo</a></li>
-            <li data-roles="admin"><a href="#seccion-pedidos"><i class="bi bi-bag-check"></i> Pedidos</a></li> 
-            
-            <li class="menu-divider" data-roles="admin,logistica" style="color: #f39c12; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; padding: 25px 20px 5px; letter-spacing: 1px;"> Módulo SCM</li>
-            <li data-roles="admin,logistica"><a href="#seccion-dashboard-scm"><i class="bi bi-activity"></i> Dashboard SCM</a></li>
-            <li data-roles="admin,logistica"><a href="#seccion-movimientos"><i class="bi bi-arrow-left-right"></i> Kardex (Movimientos)</a></li>
-            <li data-roles="admin,logistica"><a href="#seccion-ordenes"><i class="bi bi-cart-plus"></i> Órdenes de Compra</a></li>
-            <li data-roles="admin,logistica"><a href="#seccion-logistica"><i class="bi bi-diagram-3"></i> Logística</a></li>
-            <li data-roles="admin,logistica"><a href="#seccion-proveedores"><i class="bi bi-building"></i> Proveedores</a></li>
-            
-            <li class="menu-divider" style="color:#f39c12;font-size:.8rem;font-weight:bold;text-transform:uppercase;padding:25px 20px 5px;letter-spacing:1px;" data-roles="admin,ventas,logistica">Módulo ERP</li>
-            <li data-roles="admin,ventas,logistica"><a href="#seccion-erp-dashboard"><i class="bi bi-grid-1x2"></i> Dashboard ERP</a></li>
-            <li data-roles="admin,ventas,logistica"><a href="#seccion-erp-ordenes"><i class="bi bi-receipt"></i> Órdenes ERP</a></li>
-            <li data-roles="admin,ventas,logistica"><a href="#seccion-erp-reportes"><i class="bi bi-graph-up"></i> Reportes ERP</a></li>
-            <li data-roles="admin,ventas,logistica"><a href="#seccion-erp-nivel"><i class="bi bi-layers"></i> Nivel ERP</a></li>
-            <li data-roles="admin"><a href="#seccion-erp-roles"><i class="bi bi-person-lines-fill"></i> Panel por rol</a></li>
-            <li style="margin-top: 20px;"><a href="../index.html"><i class="bi bi-house-door"></i> Volver a Tienda</a></li>
+    </header>
+
+    <aside class="sidebar admin-sidebar">
+        <div class="sidebar-header">
+            <span id="admin-menu-eyebrow" class="module-eyebrow">MÓDULO CRM</span>
+            <h2 id="admin-menu-title">Relaciones con clientes</h2>
+            <p id="admin-menu-subtitle">Clientes, contactos y seguimiento comercial.</p>
+        </div>
+        <ul class="sidebar-menu" id="admin-menu">
+            <!-- CRM: se conservan los enlaces/IDs originales para admin.js -->
+            <li class="menu-divider" data-nav-module="crm" data-roles="admin,ventas">GESTIÓN CRM</li>
+            <li class="active" data-nav-module="crm" data-roles="admin,ventas"><a href="#dashboard-crm"><i class="bi bi-grid-1x2"></i> Dashboard</a></li>
+            <li data-nav-module="crm" data-roles="admin,ventas"><a href="#seccion-clientes"><i class="bi bi-person-lines-fill"></i> Clientes</a></li>
+            <li data-nav-module="crm" data-roles="admin,ventas"><a href="#seccion-interacciones"><i class="bi bi-chat-left-text"></i> Interacciones</a></li>
+            <li data-nav-module="crm" data-roles="admin,ventas"><a href="#seccion-reportes"><i class="bi bi-bar-chart-line-fill"></i> Reportes CRM</a></li>
+            <li class="menu-divider" data-nav-module="crm" data-roles="admin">ADMINISTRACIÓN</li>
+            <li data-nav-module="crm" data-roles="admin"><a href="#seccion-usuarios"><i class="bi bi-people"></i> Staff y usuarios</a></li>
+
+            <!-- SCM -->
+            <li class="menu-divider" data-nav-module="scm" data-roles="admin,logistica" hidden>CADENA DE SUMINISTRO</li>
+            <li data-nav-module="scm" data-roles="admin,logistica" hidden><a href="#seccion-dashboard-scm"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+            <li data-nav-module="scm" data-roles="admin,ventas,logistica" hidden><a href="#seccion-productos"><i class="bi bi-box-seam"></i> Productos y stock</a></li>
+            <li data-nav-module="scm" data-roles="admin,logistica" hidden><a href="#seccion-movimientos"><i class="bi bi-arrow-left-right"></i> Kardex</a></li>
+            <li data-nav-module="scm" data-roles="admin,logistica" hidden><a href="#seccion-ordenes"><i class="bi bi-cart-plus"></i> Órdenes de compra</a></li>
+            <li data-nav-module="scm" data-roles="admin,logistica" hidden><a href="#seccion-logistica"><i class="bi bi-diagram-3"></i> Logística PUSH / PULL</a></li>
+            <li data-nav-module="scm" data-roles="admin,logistica" hidden><a href="#seccion-proveedores"><i class="bi bi-building"></i> Proveedores</a></li>
+
+            <!-- ERP: clientes/productos son vistas compartidas; inventario una vista de consulta -->
+            <li class="menu-divider" data-nav-module="erp" data-roles="admin,ventas,logistica" hidden>GESTIÓN INTEGRAL</li>
+            <li data-nav-module="erp" data-roles="admin,ventas,logistica" hidden><a href="#seccion-erp-dashboard"><i class="bi bi-grid-1x2"></i> Dashboard</a></li>
+            <li data-nav-module="erp" data-roles="admin,ventas" hidden><a href="#seccion-clientes"><i class="bi bi-people"></i> Clientes</a></li>
+            <li data-nav-module="erp" data-roles="admin,ventas,logistica" hidden><a href="#seccion-productos"><i class="bi bi-box-seam"></i> Productos</a></li>
+            <li data-nav-module="erp" data-roles="admin,ventas,logistica" hidden><a href="#seccion-erp-inventario"><i class="bi bi-boxes"></i> Inventario</a></li>
+            <li data-nav-module="erp" data-roles="admin,ventas,logistica" hidden><a href="#seccion-erp-ordenes"><i class="bi bi-receipt"></i> Órdenes de clientes</a></li>
+            <li data-nav-module="erp" data-roles="admin" hidden><a href="#seccion-pedidos"><i class="bi bi-bag-check"></i> Pedidos de tienda</a></li>
+            <li data-nav-module="erp" data-roles="admin,ventas,logistica" hidden><a href="#seccion-erp-reportes"><i class="bi bi-graph-up"></i> Reportes ERP</a></li>
+            <li class="menu-divider" data-nav-module="erp" data-roles="admin,ventas,logistica" hidden>CONFIGURACIÓN ERP</li>
+            <li data-nav-module="erp" data-roles="admin,ventas,logistica" hidden><a href="#seccion-erp-nivel"><i class="bi bi-layers"></i> Nivel ERP</a></li>
+            <li data-nav-module="erp" data-roles="admin" hidden><a href="#seccion-erp-roles"><i class="bi bi-person-gear"></i> Panel por rol</a></li>
         </ul>
+        <div class="sidebar-footer"><a href="../index.html"><i class="bi bi-house-door"></i> Volver a la tienda</a></div>
     </aside>
 
-    <main class="main-content">
-        <header class="top-header">
-            <div class="search-bar"><i class="bi bi-search"></i><input type="text" id="global-search" placeholder="Buscar en la sección actual..."></div>
-            <div class="user-profile"><span id="rol-actual">Administrador</span><i class="bi bi-person-circle"></i></div>
-        </header>
+    <main class="main-content admin-main">
+        <div class="admin-page-heading">
+            <p class="admin-breadcrumb" id="admin-breadcrumb">ADMINISTRACIÓN / CRM</p>
+            <h1 id="admin-page-title">Relaciones con clientes</h1>
+            <p id="admin-page-description">Gestiona tus clientes y todas las interacciones desde un solo lugar.</p>
+        </div>
 
         <div class="dashboard-container">
             
@@ -336,6 +483,22 @@
             <!-- ERP: vista integrada, órdenes de venta, reportes y madurez -->
             <section id="seccion-erp-dashboard" class="crud-section seccion-oculta" data-roles="admin,ventas,logistica">
                 <div class="erp-head"><div><h2><i class="bi bi-grid-1x2"></i> Dashboard ERP</h2><p class="erp-subtitle">Integración de ventas, clientes (CRM) e inventario (SCM).</p></div><button class="erp-btn" id="erp-nueva-dashboard" data-roles="admin,ventas"><i class="bi bi-plus-lg"></i> Nueva orden</button></div>
+
+                <div class="erp-feature-grid" aria-label="Accesos de gestión ERP">
+                    <a class="erp-feature-link" href="#seccion-clientes" data-roles="admin,ventas">
+                        <span class="erp-feature-icon"><i class="bi bi-people"></i></span>
+                        <span><strong>Clientes</strong><small>Directorio compartido con CRM</small></span><i class="bi bi-arrow-up-right"></i>
+                    </a>
+                    <a class="erp-feature-link" href="#seccion-productos" data-roles="admin,ventas,logistica">
+                        <span class="erp-feature-icon"><i class="bi bi-box-seam"></i></span>
+                        <span><strong>Productos</strong><small>Catálogo compartido con SCM</small></span><i class="bi bi-arrow-up-right"></i>
+                    </a>
+                    <a class="erp-feature-link" href="#seccion-erp-inventario" data-roles="admin,ventas,logistica">
+                        <span class="erp-feature-icon"><i class="bi bi-boxes"></i></span>
+                        <span><strong>Inventario</strong><small>Existencias y stock mínimo del SCM</small></span><i class="bi bi-arrow-up-right"></i>
+                    </a>
+                </div>
+
                 <div class="erp-grid">
                     <div class="erp-card"><p class="erp-kpi-label">Clientes activos</p><p id="erp-kpi-clientes" class="erp-kpi-number">—</p></div>
                     <div class="erp-card"><p class="erp-kpi-label">Órdenes de clientes</p><p id="erp-kpi-ordenes" class="erp-kpi-number">—</p></div>
@@ -347,6 +510,34 @@
                     <div class="erp-card"><h3>Productos más vendidos</h3><div class="erp-chart"><canvas id="erp-chart-top"></canvas></div></div>
                 </div>
                 <div class="erp-card"><h3>Últimas órdenes</h3><div class="erp-table-wrap"><table class="erp-table"><thead><tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody id="erp-ultimas-body"><tr><td colspan="6" class="erp-empty">Cargando...</td></tr></tbody></table></div></div>
+            </section>
+
+
+            <!-- Inventario ERP: vista de solo lectura sincronizada con la tabla del SCM.
+                 Conserva una sola fuente de datos; no genera un segundo CRUD. -->
+            <section id="seccion-erp-inventario" class="crud-section seccion-oculta" data-roles="admin,ventas,logistica">
+                <div class="erp-head">
+                    <div><h2><i class="bi bi-boxes"></i> Inventario integrado</h2>
+                        <p class="erp-subtitle">Consulta las existencias registradas en el catálogo SCM sin duplicar productos.</p></div>
+                    <a href="#seccion-productos" class="erp-btn secondary erp-inv-open-catalog" style="text-decoration:none;"><i class="bi bi-box-seam"></i> Abrir catálogo</a>
+                </div>
+                <div class="inventory-mini-stats">
+                    <div class="erp-card"><p class="erp-kpi-label">Productos cargados</p><p id="erp-inv-total" class="erp-kpi-number">—</p></div>
+                    <div class="erp-card"><p class="erp-kpi-label">Productos en stock crítico</p><p id="erp-inv-low" class="erp-kpi-number">—</p></div>
+                    <div class="erp-card"><p class="erp-kpi-label">Valor de inventario (SCM)</p><p id="erp-inv-value" class="erp-kpi-number">—</p></div>
+                </div>
+                <div class="erp-card">
+                    <div class="erp-toolbar">
+                        <div><h3 style="margin:0 0 4px;">Existencias por producto</h3>
+                        <p class="erp-inventory-note">Lectura del mismo listado de stock usado por SCM.</p></div>
+                        <input id="erp-inv-search" class="erp-input" type="search" style="max-width:260px;" placeholder="Buscar producto...">
+                    </div>
+                    <div class="erp-table-wrap"><table class="erp-table">
+                        <thead><tr><th>Producto</th><th>Stock actual</th><th>Stock mínimo</th><th>Estado</th></tr></thead>
+                        <tbody id="erp-inv-body"><tr><td colspan="4" class="erp-empty">Esperando productos del catálogo SCM...</td></tr></tbody>
+                    </table></div>
+                    <p class="erp-inventory-note" style="margin:14px 0 0;">Para registrar entradas, salidas o editar existencias utiliza Productos o Kardex en el módulo SCM.</p>
+                </div>
             </section>
 
             <section id="seccion-erp-ordenes" class="crud-section seccion-oculta" data-roles="admin,ventas,logistica">
@@ -500,5 +691,246 @@
      <!-- CONTENEDOR PARA NOTIFICACIONES FLOTANTES (TOASTS) -->
     <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
     <script type="module" src="../js/admin.js?v=2.0"></script>
+
+    <script>
+    /* Navegación visual por módulos; conserva los IDs y eventos del admin.js original. */
+    (() => {
+        "use strict";
+        const MOD = {
+            crm: {
+                title:"Relaciones con clientes", eyebrow:"MÓDULO CRM",
+                subtitle:"Clientes, contactos y seguimiento comercial.",
+                description:"Gestiona tus clientes y todas las interacciones desde un solo lugar.",
+                home:"#dashboard-crm", roles:["admin","ventas"]
+            },
+            scm: {
+                title:"Cadena de suministro", eyebrow:"MÓDULO SCM",
+                subtitle:"Productos, compras, proveedores y logística.",
+                description:"Controla existencias, movimientos y abastecimiento.",
+                home:"#seccion-dashboard-scm", roles:["admin","logistica"]
+            },
+            erp: {
+                title:"Gestión integral del negocio", eyebrow:"MÓDULO ERP",
+                subtitle:"Ventas, clientes, productos e inventario conectados.",
+                description:"Una vista integrada de clientes, productos, inventario y órdenes.",
+                home:"#seccion-erp-dashboard", roles:["admin","ventas","logistica"]
+            }
+        };
+        const body = document.body;
+        const sidebar = document.getElementById("admin-menu");
+        const tabs = [...document.querySelectorAll("[data-module-tab]")];
+        const menuItems = [...sidebar.querySelectorAll("li[data-nav-module]")];
+        const title = document.getElementById("admin-page-title");
+        const description = document.getElementById("admin-page-description");
+        const breadcrumb = document.getElementById("admin-breadcrumb");
+        let current = "crm";
+        let lastMenuHash = "#dashboard-crm";
+
+        const role = () => (body.dataset.rol || "").toLowerCase().trim();
+        const canAccess = (module) => !role() || MOD[module].roles.includes(role());
+        const moduleFromHash = (hash) => {
+            if (hash === "#seccion-erp-inventario" || hash.startsWith("#seccion-erp-")) return "erp";
+            if (["#seccion-dashboard-scm","#seccion-movimientos","#seccion-ordenes","#seccion-logistica","#seccion-proveedores"].includes(hash)) return "scm";
+            if (["#dashboard-crm","#seccion-reportes","#seccion-interacciones","#seccion-usuarios","#seccion-detalle-cliente"].includes(hash)) return "crm";
+            // Clientes y productos son vistas compartidas y conservan el módulo actual.
+            if (["#seccion-clientes","#seccion-productos","#seccion-pedidos"].includes(hash)) return current;
+            return current;
+        };
+        function updateHeading(hash) {
+            const cfg = MOD[current];
+            const menuLink = [...sidebar.querySelectorAll(`li[data-nav-module="${current}"] a[href^="#"]`)]
+                .find(link => link.getAttribute("href") === hash);
+            const isDashboard = hash === cfg.home || !menuLink;
+            const sectionName = isDashboard ? cfg.title : menuLink.textContent.trim();
+            title.textContent = sectionName;
+            description.textContent = (hash === "#seccion-erp-inventario")
+                ? "Revisa existencias del catálogo SCM desde el ERP, con datos compartidos."
+                : cfg.description;
+            breadcrumb.textContent = "ADMINISTRACIÓN / " + current.toUpperCase() +
+                (isDashboard ? "" : " / " + sectionName.toUpperCase());
+            document.getElementById("admin-menu-eyebrow").textContent = cfg.eyebrow;
+            document.getElementById("admin-menu-title").textContent = cfg.title;
+            document.getElementById("admin-menu-subtitle").textContent = cfg.subtitle;
+        }
+        function markActive(hash) {
+            for (const li of menuItems) {
+                if (li.classList.contains("menu-divider")) continue;
+                const anchor = li.querySelector("a[href^='#']");
+                li.classList.toggle("is-current",
+                    li.dataset.navModule === current && anchor && anchor.getAttribute("href") === hash);
+            }
+            updateHeading(hash);
+        }
+        function displayModule(module, hash = MOD[module].home) {
+            if (!MOD[module] || !canAccess(module)) return false;
+            current = module;
+            body.dataset.adminModule = module;
+            for (const li of menuItems) {
+                li.hidden = li.dataset.navModule !== module;
+            }
+            for (const tab of tabs) {
+                const active = tab.dataset.moduleTab === module;
+                tab.hidden = !canAccess(tab.dataset.moduleTab);
+                tab.classList.toggle("is-active", active);
+                if (active) tab.setAttribute("aria-current", "page");
+                else tab.removeAttribute("aria-current");
+            }
+            markActive(hash);
+            return true;
+        }
+        function setInventoryState(hash) {
+            body.classList.toggle("admin-inventory-open", hash === "#seccion-erp-inventario");
+            if (hash === "#seccion-erp-inventario") refreshInventory();
+        }
+        function navigateViaSidebar(module, hash) {
+            if (!displayModule(module, hash)) return;
+            lastMenuHash = hash;
+            setInventoryState(hash);
+            const selector = `li[data-nav-module="${module}"] a[href="${hash}"]`;
+            const target = sidebar.querySelector(selector);
+            if (target) {
+                target.click(); // admin.js maneja la sección, datos y gráficos existentes.
+            } else {
+                window.location.hash = hash;
+            }
+            // La vista de inventario es nueva; se asegura aun si admin.js no conoce el ID.
+            if (hash === "#seccion-erp-inventario") {
+                if (window.location.hash !== hash) window.location.hash = hash;
+                setInventoryState(hash);
+            }
+        }
+        tabs.forEach(tab => tab.addEventListener("click", (event) => {
+            event.preventDefault();
+            const module = tab.dataset.moduleTab;
+            if (canAccess(module)) navigateViaSidebar(module, MOD[module].home);
+        }));
+        // Captura también los enlaces al inventario ERP y los accesos compartidos.
+        document.addEventListener("click", (event) => {
+            const link = event.target.closest("a[href^='#']");
+            if (!link) return;
+            const hash = link.getAttribute("href");
+            if (!hash || hash === "#") return;
+            if (link.closest(".admin-module-tabs")) return; // manejados arriba
+            const li = link.closest("li[data-nav-module]");
+            if (li) {
+                const module = li.dataset.navModule;
+                if (!canAccess(module)) {
+                    event.preventDefault();
+                    return;
+                }
+                displayModule(module, hash);
+                lastMenuHash = hash;
+                setInventoryState(hash);
+                if (hash === "#seccion-erp-inventario" && window.location.hash !== hash) {
+                    // El hashchange permite usar Atrás/Adelante del navegador.
+                    window.location.hash = hash;
+                }
+                return; // permite al admin.js procesar el clic.
+            }
+            if (link.closest(".erp-feature-grid") || link.classList.contains("erp-inv-open-catalog")) {
+                event.preventDefault();
+                navigateViaSidebar("erp", hash);
+                return;
+            }
+            const inferredModule = moduleFromHash(hash);
+            displayModule(inferredModule, hash);
+            lastMenuHash = hash;
+            setInventoryState(hash);
+        }, true);
+        window.addEventListener("hashchange", () => {
+            const hash = location.hash || lastMenuHash;
+            displayModule(moduleFromHash(hash), hash);
+            lastMenuHash = hash;
+            setInventoryState(hash);
+        });
+
+        // Tabla ERP de solo lectura: usa el DOM que admin.js ya llena para el SCM.
+        const sourceStock = document.getElementById("stock-body");
+        const inventoryBody = document.getElementById("erp-inv-body");
+        const inventorySearch = document.getElementById("erp-inv-search");
+        const snapshot = () => [...(sourceStock?.rows || [])]
+            .filter(row => row.cells && row.cells.length >= 5)
+            .map(row => ({
+                name: row.cells[1].textContent.trim(),
+                stock: row.cells[2].textContent.trim(),
+                minimum: row.cells[3].textContent.trim(),
+                status: row.cells[4].textContent.trim()
+            }));
+        const asQuantity = (value) => {
+            const number = Number(String(value).replace(/\s/g, "").replace(/,/g,""));
+            return Number.isFinite(number) ? number : null;
+        };
+        function refreshInventory() {
+            if (!inventoryBody) return;
+            const all = snapshot();
+            const term = (inventorySearch?.value || "").trim().toLocaleLowerCase("es");
+            const rows = all.filter(item => item.name.toLocaleLowerCase("es").includes(term));
+            const low = all.filter(item => {
+                const a = asQuantity(item.stock);
+                const b = asQuantity(item.minimum);
+                return a !== null && b !== null && a <= b;
+            });
+            document.getElementById("erp-inv-total").textContent = String(all.length);
+            document.getElementById("erp-inv-low").textContent = String(low.length);
+            const scmValue = document.getElementById("scm-valor-inv")?.textContent.trim();
+            document.getElementById("erp-inv-value").textContent =
+                scmValue && scmValue !== "$0.00" ? scmValue : (all.length ? (scmValue || "—") : "—");
+            inventoryBody.replaceChildren();
+            if (!rows.length) {
+                const tr = document.createElement("tr");
+                const td = document.createElement("td");
+                td.colSpan = 4; td.className = "erp-empty";
+                td.textContent = all.length
+                    ? "No se encontraron productos con esa búsqueda."
+                    : "Aún no se han cargado existencias. Abre Productos para consultar el catálogo SCM.";
+                tr.append(td); inventoryBody.append(tr); return;
+            }
+            for (const item of rows) {
+                const tr = document.createElement("tr");
+                for (const field of ["name","stock","minimum","status"]) {
+                    const td = document.createElement("td");
+                    td.textContent = item[field];
+                    if (field === "status" && /bajo|cr[ií]tico|agotado/i.test(item.status)) {
+                        td.style.color = "#ba4339"; td.style.fontWeight = "700";
+                    }
+                    tr.append(td);
+                }
+                inventoryBody.append(tr);
+            }
+        }
+        inventorySearch?.addEventListener("input", refreshInventory);
+        if (sourceStock) {
+            new MutationObserver(refreshInventory).observe(sourceStock, {childList:true, subtree:true, characterData:true});
+        }
+        const scmValue = document.getElementById("scm-valor-inv");
+        if (scmValue) {
+            new MutationObserver(refreshInventory).observe(scmValue, {childList:true, subtree:true, characterData:true});
+        }
+
+        function refreshAccessAfterLogin() {
+            const permitted = Object.keys(MOD).filter(canAccess);
+            tabs.forEach(tab => tab.hidden = !canAccess(tab.dataset.moduleTab));
+            if (!permitted.includes(current) && permitted.length) {
+                navigateViaSidebar(permitted[0], MOD[permitted[0]].home);
+            } else {
+                displayModule(current, lastMenuHash);
+            }
+        }
+        new MutationObserver(refreshAccessAfterLogin)
+            .observe(body, {attributes:true, attributeFilter:["data-rol"]});
+        // Deep links: un módulo compartido conserva su contexto actual.
+        const firstHash = location.hash || "#dashboard-crm";
+        const defaultModule = location.hash
+            ? (firstHash === "#seccion-productos" ? "scm" :
+               firstHash === "#seccion-clientes" ? "crm" : moduleFromHash(firstHash))
+            : "crm";
+        displayModule(defaultModule, firstHash);
+        lastMenuHash = firstHash;
+        setInventoryState(firstHash);
+        refreshInventory();
+        document.addEventListener("DOMContentLoaded", refreshAccessAfterLogin, {once:true});
+    })();
+    </script>
+
 </body>   
 </html>
