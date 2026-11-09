@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formRegister) {
         formRegister.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('reg-email').value.trim();
+            const email = document.getElementById('reg-email').value.trim().toLowerCase();
             const pass = regPassword.value;
             const nombre = document.getElementById('reg-name').value.trim();
             const telefono = document.getElementById('reg-phone').value.trim();
@@ -164,9 +164,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             try {
-                await setDoc(doc(db,'usuarios',credencial.user.uid),{
-                    nombre,telefono,correo:email,rol:'cliente',fechaRegistro:new Date()
-                });
+                await setDoc(doc(db, "usuarios", userCredential.user.uid), {
+    nombre,
+    telefono,
+    correo: userCredential.user.email,
+    rol: "cliente",
+    fechaRegistro: new Date()
+});
                 localStorage.setItem('isLoggedIn','true');
                 if (loginModal) loginModal.style.display='none';
                 window.location.href='views/user.html';

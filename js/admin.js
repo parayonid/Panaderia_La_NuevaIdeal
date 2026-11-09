@@ -456,15 +456,57 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function mostrarOrdenes() {
-            const tabla=document.getElementById('ordenes-body');
-            if(tabla) tabla.innerHTML=estado.ordenes.map(o=>{
-                const p=estado.productos.find(p=>p.id===o.producto_id);
-                const prov=estado.proveedores.find(p=>p.id===o.proveedor_id);
-                const pendiente=o.estado==='Pendiente';
-                return `<tr><td>${textoSeguro(o.fecha)}</td><td>${textoSeguro(prov?.nombre||'Sin proveedor')}</td>
-                <td>${textoSeguro(p?.nombre||o.producto_id)}</td><td>${Number(o.cantidad)||0} pcs</td>
-                <td>${textoSeguro(o.tipo||o.estado)}</td><td>${pendiente?`<button class="btn-aprobar-orden" type="button"
-                data-id="${textoSeguro(o.id)}" style="background:#0d6efd;color:white;border:0;padding:7px 10px;border-radius:5px;cursor:pointer">Aprobar reabastecimiento</button>`:'Completada'}</td></tr>`;
+            const tabla = document.getElementById('ordenes-body');
+            if (!tabla) return;
+
+            // Los documentos historicos de ordenes_compra guardan producto_id.
+            // Buscar su nombre en el catalogo actual y priorizar cualquier nombre
+            // que se hubiera guardado en la propia orden (snapshot historico).
+            const porProducto = new Map(estado.productos.map(p => [String(p.id), p]));
+            const porProveedor = new Map(estado.proveedores.map(p => [String(p.id), p]));
+            const idVisible = id => `<small style="display:block;color:#64748b;overflow-wrap:anywhere;font-size:.76rem;">ID: ${textoSeguro(id)}</small>`;
+
+            tabla.innerHTML = estado.ordenes.map(o => {
+                const idProducto = String(o.producto_id ?? '').trim();
+                const producto = porProducto.get(idProducto);
+                const nombreProducto = o.producto_nombre || o.nombre_producto || producto?.nombre;
+                let celdaProducto;
+                if (nombreProducto) {
+                    celdaProducto = `<strong>${textoSeguro(nombreProducto)}</strong>`;
+                } else if (!estado.productosCargados) {
+                    celdaProducto = '<span style="color:#64748b">Buscando en el catálogo…</span>';
+                } else {
+                    celdaProducto = `<strong style="color:#874a27">Producto sin coincidencia en catálogo</strong>${idVisible(idProducto || 'sin ID')}`;
+                }
+
+                // En ordenes viejas puede faltar proveedor_id. Consultar el
+                // proveedor actual del producto como ultimo recurso, sin asumir
+                // que necesariamente era el proveedor historico de esa orden.
+                const idProveedor = String(o.proveedor_id || producto?.proveedor_id || '').trim();
+                const proveedor = porProveedor.get(idProveedor);
+                const nombreProveedor = o.proveedor_nombre || o.nombre_proveedor || proveedor?.nombre;
+                let celdaProveedor;
+                if (nombreProveedor) {
+                    celdaProveedor = textoSeguro(nombreProveedor);
+                    if (!o.proveedor_id && producto?.proveedor_id && !o.proveedor_nombre && !o.nombre_proveedor) {
+                        celdaProveedor += '<small style="display:block;color:#64748b">Proveedor actual del producto</small>';
+                    }
+                } else if (!estado.proveedoresCargados) {
+                    celdaProveedor = '<span style="color:#64748b">Buscando proveedor…</span>';
+                } else if (idProveedor) {
+                    celdaProveedor = `<span style="color:#874a27">Proveedor sin coincidencia</span>${idVisible(idProveedor)}`;
+                } else {
+                    celdaProveedor = '<span style="color:#64748b">Sin proveedor asignado</span>';
+                }
+
+                const pendiente = o.estado === 'Pendiente';
+                return `<tr><td>${textoSeguro(o.fecha)}</td><td>${celdaProveedor}</td>
+                    <td style="min-width:185px;overflow-wrap:anywhere">${celdaProducto}</td>
+                    <td>${Number(o.cantidad) || 0} pcs</td>
+                    <td>${textoSeguro(o.tipo || o.estado)}</td><td>${pendiente ?
+                    `<button class="btn-aprobar-orden" type="button" data-id="${textoSeguro(o.id)}"
+                        style="background:#0d6efd;color:white;border:0;padding:7px 10px;border-radius:5px;cursor:pointer">Aprobar reabastecimiento</button>`:
+                    'Completada'}</td></tr>`;
             }).join('') || '<tr><td colspan="6">No hay órdenes de compra.</td></tr>';
         }
 
@@ -473,6 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(!vigente()) return;
                 if(!Array.isArray(datos)) throw new Error(`Formato incorrecto en ${ruta}: se esperaba una lista`);
                 estado[nombre]=datos;
+                estado[nombre+'Cargados']=true;
                 alCargar();
                 if(nombre==='productos') {
                     if(estado.movimientosCargados) mostrarMovimientos();
@@ -480,7 +523,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderizarInventarioERP();
                 }
                 if(nombre==='proveedores' && estado.ordenesCargadas) mostrarOrdenes();
-                estado[nombre+'Cargados']=true;
             }).catch(error=>{
                 if(!vigente()) return;
                 console.error(`[SCM] ${nombre}:`,error);
