@@ -27,7 +27,7 @@ else:
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-app = FastAPI(title="API CRM y SCM La Nueva Ideal")
+app = FastAPI(title="API CRM, SCM y ERP La Nueva Ideal", version="3.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -79,7 +79,12 @@ verificar_token_erp_lectura = permitir_roles("admin", "ventas", "logistica")
 verificar_token_catalogo = permitir_roles("admin", "ventas", "logistica")
 
 @app.get("/")
-def raiz(): return {"mensaje": "API de La Nueva Ideal funcionando al 100%"}
+def raiz(): return {"mensaje": "API de La Nueva Ideal en línea"}
+
+@app.get("/health")
+def salud():
+    """Permite verificar el despliegue de Render sin exponer datos o credenciales."""
+    return {"estado":"ok", "version":"3.1.0"}
 
 @app.post("/clientes", status_code=201, dependencies=[Depends(verificar_token_crm)])
 async def crear_cliente(cliente: Cliente):

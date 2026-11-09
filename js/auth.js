@@ -148,37 +148,37 @@ document.addEventListener('DOMContentLoaded', () => {
             if (btnSubmitReg) btnSubmitReg.textContent = "Registrando...";
             if (errorReg) errorReg.style.display = "none";
 
+            let credencial;
             try {
-                // Registro en Firebase Authentication
-                const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-                
-                // Guardado de metadatos en Cloud Firestore
-                await setDoc(doc(db, "usuarios", userCredential.user.uid), {
-                    nombre,
-                    telefono,
-                    correo: email,
-                    rol: "cliente",
-                    fechaRegistro: new Date()
-                });
-
-                localStorage.setItem('isLoggedIn', 'true');
-                alert("¡Cuenta registrada con éxito!");
-                if (loginModal) loginModal.style.display = 'none';
-                window.location.href = 'views/user.html';
-
+                credencial = await createUserWithEmailAndPassword(auth, email, pass);
             } catch (error) {
+                console.error('[Registro/Auth]',error.code,error);
                 if (errorReg) {
-                    errorReg.style.display = "block";
-                    if (error.code === 'auth/email-already-in-use') {
-                        errorReg.textContent = "Este correo ya está registrado. Inicia sesión.";
-                    } else if (error.code === 'auth/invalid-email') {
-                        errorReg.textContent = "El formato de correo no es válido.";
-                    } else {
-                        errorReg.textContent = "Error al crear la cuenta. Intenta de nuevo.";
-                    }
+                    errorReg.style.display='block';
+                    errorReg.textContent = error.code==='auth/email-already-in-use'
+                        ? 'Este correo ya existe en Authentication. Inicia sesión; no crees otra cuenta.'
+                        : error.code==='auth/invalid-email' ? 'Correo no válido.'
+                        : `No se pudo crear la cuenta en Authentication (${error.code || 'error de conexión'}).`;
+                }
+                if (btnSubmitReg) btnSubmitReg.textContent='Registrarme';
+                return;
+            }
+            try {
+                await setDoc(doc(db,'usuarios',credencial.user.uid),{
+                    nombre,telefono,correo:email,rol:'cliente',fechaRegistro:new Date()
+                });
+                localStorage.setItem('isLoggedIn','true');
+                if (loginModal) loginModal.style.display='none';
+                window.location.href='views/user.html';
+            } catch(error) {
+                console.error('[Registro/Firestore]',error.code,error);
+                // Authentication ya creó la cuenta. No se elimina ni se vuelve a crear.
+                if(errorReg) {
+                    errorReg.style.display='block';
+                    errorReg.textContent=`Cuenta creada en Authentication, pero no se pudo guardar el perfil en Firestore (${error.code || 'error desconocido'}). No vuelvas a registrarla; revisa Rules / usuarios y entra con el mismo correo.`;
                 }
             } finally {
-                if (btnSubmitReg) btnSubmitReg.textContent = "Registrarme";
+                if (btnSubmitReg) btnSubmitReg.textContent='Registrarme';
             }
         });
     }
@@ -297,19 +297,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             snapshot.forEach((docSnap) => {
                 const p = docSnap.data();
+                const escapar = valor => String(valor ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
                 const img = p.imagen || 'images/images/muffin.jpg';
-                const precio = p.precio ? `$${p.precio}` : '$10'; // Usa el precio real
+                const imgSeguro = /^https?:\/\//i.test(img) || /^images\//.test(img) ? img : 'images/images/muffin.jpg';
+                const precio = p.precio !== undefined && p.precio !== null && Number.isFinite(Number(p.precio)) ? new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(Number(p.precio)) : 'Precio no disponible';
                 const categoria = p.categoria || 'Panes';
 
                 // Plantilla HTML del producto
                 const htmlProducto = `
                     <div class="product">
-                        <img src="${img}" alt="${p.nombre}">
+                        <img src="${escapar(imgSeguro)}" alt="${escapar(p.nombre)}">
                         <div class="product-txt">
-                            <h3>${p.nombre}</h3>
-                            <p>Disponible: ${p.cantidad} pz</p>
+                            <h3>${escapar(p.nombre)}</h3>
+                            <p>Disponible: ${p.stock_actual ?? p.cantidad ?? 0} pz</p>
                             <p class="precio">${precio}</p>
-                            <a href="#" class="agregar-carrito btn-2" data-id="${docSnap.id}">agregar al carrito</a>
+                            <a href="#" class="agregar-carrito btn-2" data-id="${escapar(docSnap.id)}">agregar al carrito</a>
                         </div>
                     </div>`;
 
@@ -321,6 +323,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     contenedorPanes.innerHTML += htmlProducto;
                 }
             });
+        }, (error) => {
+            console.error('[Catálogo Firestore]', error.code, error);
+            const mensaje = 'No se pudo cargar el catálogo. Revisa los permisos de lectura de productos en Firestore.';
+            if (contenedorPanes) contenedorPanes.textContent = mensaje;
+            if (contenedorCafes) contenedorCafes.textContent = mensaje;
         });
     }
 // ==========================================
