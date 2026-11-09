@@ -163,27 +163,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (btnSubmitReg) btnSubmitReg.textContent='Registrarme';
                 return;
             }
-            try {
-                await setDoc(doc(db, "usuarios", userCredential.user.uid), {
-    nombre,
-    telefono,
-    correo: userCredential.user.email,
-    rol: "cliente",
-    fechaRegistro: new Date()
-});
-                localStorage.setItem('isLoggedIn','true');
-                if (loginModal) loginModal.style.display='none';
-                window.location.href='views/user.html';
-            } catch(error) {
-                console.error('[Registro/Firestore]',error.code,error);
-                // Authentication ya creó la cuenta. No se elimina ni se vuelve a crear.
-                if(errorReg) {
-                    errorReg.style.display='block';
-                    errorReg.textContent=`Cuenta creada en Authentication, pero no se pudo guardar el perfil en Firestore (${error.code || 'error desconocido'}). No vuelvas a registrarla; revisa Rules / usuarios y entra con el mismo correo.`;
-                }
-            } finally {
-                if (btnSubmitReg) btnSubmitReg.textContent='Registrarme';
-            }
+          
+try {
+    await setDoc(doc(db, "usuarios", credencial.user.uid), {
+        nombre,
+        telefono,
+        correo: credencial.user.email,
+        rol: "cliente",
+        fechaRegistro: new Date()
+    });
+
+    localStorage.setItem('isLoggedIn', 'true');
+
+    if (loginModal) {
+        loginModal.style.display = 'none';
+    }
+
+    window.location.href = 'views/user.html';
+
+} catch (error) {
+    console.error('[Registro/Firestore]', error.code, error);
+
+    if (errorReg) {
+        errorReg.style.display = 'block';
+        errorReg.textContent =
+            `No se pudo guardar el perfil (${error.code || error.message}).`;
+    }
+}
+
         });
     }
 
