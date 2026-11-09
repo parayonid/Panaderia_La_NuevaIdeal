@@ -420,7 +420,7 @@ body.dashboard-body.admin-redesign .dashboard-container > section[hidden] {
             <li data-nav-module="crm" data-roles="admin,ventas"><a href="#seccion-clientes"><i class="bi bi-person-lines-fill"></i> Clientes</a></li>
             <li data-nav-module="crm" data-roles="admin,ventas"><a href="#seccion-interacciones"><i class="bi bi-chat-left-text"></i> Interacciones</a></li>
             <li data-nav-module="crm" data-roles="admin,ventas"><a href="#seccion-reportes"><i class="bi bi-bar-chart-line-fill"></i> Reportes CRM</a></li>
-            <li data-nav-module="crm" data-roles="ventas" hidden><a href="#seccion-mi-actividad"><i class="bi bi-clock-history"></i> Mi actividad</a></li>
+            <li data-nav-module="crm" data-roles="admin,ventas"><a href="#seccion-mi-actividad"><i class="bi bi-clock-history"></i> Mi actividad</a></li>
             <li class="menu-divider" data-nav-module="crm" data-roles="admin">ADMINISTRACIÓN</li>
             <li data-nav-module="crm" data-roles="admin"><a href="#seccion-usuarios"><i class="bi bi-people"></i> Staff y usuarios</a></li>
             <li data-nav-module="crm" data-roles="admin"><a href="#seccion-configuracion"><i class="bi bi-gear"></i> Configuración</a></li>
@@ -433,6 +433,7 @@ body.dashboard-body.admin-redesign .dashboard-container > section[hidden] {
             <li data-nav-module="scm" data-roles="admin,logistica" hidden><a href="#seccion-ordenes"><i class="bi bi-cart-plus"></i> Órdenes de compra</a></li>
             <li data-nav-module="scm" data-roles="admin,logistica" hidden><a href="#seccion-logistica"><i class="bi bi-diagram-3"></i> Logística PUSH / PULL</a></li>
             <li data-nav-module="scm" data-roles="admin,logistica" hidden><a href="#seccion-proveedores"><i class="bi bi-building"></i> Proveedores</a></li>
+            <li data-nav-module="scm" data-roles="admin,logistica" hidden><a href="#seccion-mi-actividad"><i class="bi bi-clock-history"></i> Mi actividad</a></li>
 
             <!-- ERP: clientes/productos son vistas compartidas; inventario una vista de consulta -->
             <li class="menu-divider" data-nav-module="erp" data-roles="admin,ventas,logistica" hidden>GESTIÓN INTEGRAL</li>
@@ -443,6 +444,7 @@ body.dashboard-body.admin-redesign .dashboard-container > section[hidden] {
             <li data-nav-module="erp" data-roles="admin,ventas,logistica" hidden><a href="#seccion-erp-ordenes"><i class="bi bi-receipt"></i> Órdenes de clientes</a></li>
             <li data-nav-module="erp" data-roles="admin" hidden><a href="#seccion-pedidos"><i class="bi bi-bag-check"></i> Pedidos de tienda</a></li>
             <li data-nav-module="erp" data-roles="admin,ventas,logistica" hidden><a href="#seccion-erp-reportes"><i class="bi bi-graph-up"></i> Reportes ERP</a></li>
+            <li data-nav-module="erp" data-roles="admin,ventas,logistica" hidden><a href="#seccion-mi-actividad"><i class="bi bi-clock-history"></i> Mi actividad</a></li>
             <li class="menu-divider" data-nav-module="erp" data-roles="admin,ventas,logistica" hidden>CONFIGURACIÓN ERP</li>
             <li data-nav-module="erp" data-roles="admin" hidden><a href="#seccion-erp-nivel"><i class="bi bi-layers"></i> Nivel ERP</a></li>
             <li data-nav-module="erp" data-roles="admin" hidden><a href="#seccion-erp-roles"><i class="bi bi-person-gear"></i> Panel por rol</a></li>
@@ -531,11 +533,26 @@ body.dashboard-body.admin-redesign .dashboard-container > section[hidden] {
                 <div class="table-container"><table class="crm-table"><thead><tr><th>Fecha</th><th>Cliente Asignado</th><th>Tipo</th><th>Descripción</th><th>Admin (Staff)</th></tr></thead><tbody id="interacciones-body"></tbody></table></div>
             </section>
 
-            <section id="seccion-mi-actividad" class="crud-section seccion-oculta" data-roles="ventas">
-                <div class="section-header"><h2>Mi actividad</h2><span id="actividad-total" style="font-weight:600;color:#495566">Actividad reciente</span></div>
-                <p style="color:#495566;margin-bottom:15px">Interacciones CRM y órdenes ERP registradas por tu cuenta.</p>
-                <div class="table-container"><table class="crm-table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th></tr></thead>
-                <tbody id="actividad-body"><tr><td colspan="3">Selecciona Mi actividad para consultar tus registros.</td></tr></tbody></table></div>
+            <section id="seccion-mi-actividad" class="crud-section seccion-oculta" data-roles="admin,ventas,logistica">
+                <div class="section-header" style="display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+                    <div><h2 style="margin-bottom:8px">Mi actividad</h2>
+                        <p id="actividad-alcance" style="margin:0;color:#495566">Historial de acciones registradas en el sistema.</p></div>
+                    <button type="button" class="erp-btn secondary" id="actividad-refrescar"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0">
+                    <label for="actividad-filtro-modulo" style="font-weight:650;color:#334155">Módulo:</label>
+                    <select id="actividad-filtro-modulo" class="erp-input" style="width:auto;min-width:155px">
+                        <option value="todos">Todos</option><option value="CRM">CRM</option>
+                        <option value="SCM">SCM</option><option value="ERP">ERP</option>
+                        <option value="Sistema">Sistema</option>
+                    </select>
+                    <span id="actividad-total" style="color:#495566;font-weight:650">Actividad reciente</span>
+                </div>
+                <div class="table-container">
+                    <table class="crm-table"><thead><tr><th>Fecha y hora</th><th>Quién</th><th>Rol</th><th>Módulo</th><th>Acción</th><th>Detalle</th></tr></thead>
+                        <tbody id="actividad-body"><tr><td colspan="6">Selecciona Mi actividad para consultar el historial.</td></tr></tbody>
+                    </table>
+                </div>
             </section>
 
             <section id="seccion-usuarios" class="crud-section seccion-oculta">
@@ -899,6 +916,6 @@ body.dashboard-body.admin-redesign .dashboard-container > section[hidden] {
 
      <!-- CONTENEDOR PARA NOTIFICACIONES FLOTANTES (TOASTS) -->
     <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
-    <script type="module" src="../js/admin.js?v=3.3"></script>
+    <script type="module" src="../js/admin.js?v=3.4"></script>
 </body>   
 </html>

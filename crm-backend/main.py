@@ -1,8 +1,8 @@
-from fastapi import FastAPI, HTTPException, Header, Depends, Security
+from fastapi import FastAPI, HTTPException, Header, Depends, Security, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Literal
 import firebase_admin
 import os
 import json
@@ -27,7 +27,7 @@ else:
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-app = FastAPI(title="API CRM, SCM y ERP La Nueva Ideal", version="3.1.0")
+app = FastAPI(title="API CRM, SCM y ERP La Nueva Ideal", version="3.4.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -56,17 +56,24 @@ class OrdenCompra(BaseModel):
 security = HTTPBearer()
 
 def permitir_roles(*roles_permitidos):
-    async def comprobar(credenciales: HTTPAuthorizationCredentials = Security(security)):
+    async def comprobar(request: Request, credenciales: HTTPAuthorizationCredentials = Security(security)):
         try:
             usuario_jwt = auth.verify_id_token(credenciales.credentials)
         except Exception:
             raise HTTPException(status_code=401, detail="Token de Firebase inválido o vencido")
         uid = usuario_jwt.get("uid")
         usuario_doc = db.collection("usuarios").document(uid).get()
-        rol_efectivo = usuario_doc.to_dict().get("rol") if usuario_doc.exists else None
+        perfil = (usuario_doc.to_dict() or {}) if usuario_doc.exists else {}
+        rol_efectivo = str(perfil.get("rol") or "").strip().lower()
         if rol_efectivo not in roles_permitidos:
             raise HTTPException(status_code=403, detail="No tienes permisos para esta operación")
-        # El rol proviene del perfil guardado en el servidor, nunca del navegador.
+        # El actor siempre se deriva de Firebase Auth y Firestore, nunca del body.
+        request.state.actor = {
+            "uid": uid,
+            "nombre": perfil.get("nombre") or usuario_jwt.get("name") or usuario_jwt.get("email") or "Usuario",
+            "correo": usuario_jwt.get("email") or perfil.get("correo") or "",
+            "rol": rol_efectivo,
+        }
         return {**usuario_jwt, "rol_verificado": rol_efectivo}
     return comprobar
 
@@ -78,18 +85,140 @@ verificar_token_erp_lectura = permitir_roles("admin", "ventas", "logistica")
 # Ventas puede consultar el catálogo de productos, pero no modificarlo.
 verificar_token_catalogo = permitir_roles("admin", "ventas", "logistica")
 
+# =============================================================
+# BITÁCORA DE ACTIVIDAD (ACTOR VERIFICADO EN EL SERVIDOR)
+# =============================================================
+# Acciones de negocio; no registra cada clic o lectura del dashboard.
+# La fecha y la identidad las define FastAPI. Los cambios antiguos no se
+# pueden atribuir retrospectivamente sin evidencia histórica.
+
+def clasificar_evento(metodo: str, ruta: str):
+    segmentos = [seg for seg in ruta.split("/") if seg]
+    if not segmentos:
+        return None
+    raiz = segmentos[0]
+    if raiz == "actividad" and ruta == "/actividad/acceso" and metodo == "POST":
+        return ("Sistema", "Acceso al panel", "Abrió el panel de administración")
+    definiciones = {
+        "clientes": ("CRM", "cliente"),
+        "interacciones": ("CRM", "interacción"),
+        "proveedores": ("SCM", "proveedor"),
+        "productos": ("SCM", "producto"),
+        "movimientos": ("SCM", "movimiento de inventario"),
+        "ordenes_compra": ("SCM", "orden de compra"),
+        "ordenes_clientes": ("ERP", "orden de cliente"),
+        "usuarios": ("Sistema", "usuario"),
+    }
+    if raiz not in definiciones:
+        return None
+    modulo, objeto = definiciones[raiz]
+    if metodo == "POST":
+        verbo = "Registró" if raiz in {"movimientos", "interacciones", "ordenes_clientes"} else "Creó"
+    elif metodo in {"PUT", "PATCH"}:
+        verbo = "Aprobó" if raiz == "ordenes_compra" and ruta.endswith("/estado") else "Actualizó"
+    elif metodo == "DELETE":
+        verbo = "Dio de baja" if raiz == "clientes" else "Eliminó"
+    else:
+        return None
+    nombre = f"{verbo} {objeto}"
+    referencia = segmentos[1] if len(segmentos) > 1 else ""
+    descripcion = f"{nombre.capitalize()}" + (f" · ID: {referencia}" if referencia else "")
+    return (modulo, nombre, descripcion)
+
+
+def guardar_evento(actor: dict, modulo: str, accion: str, detalle: str, referencia: str = ""):
+    db.collection("bitacora_actividad").document().set({
+        "actor_uid": actor["uid"],
+        "actor_nombre": actor["nombre"],
+        "actor_correo": actor["correo"],
+        "actor_rol": actor["rol"],
+        "modulo": modulo,
+        "accion": accion,
+        "detalle": detalle[:400],
+        "referencia": referencia,
+        "fecha": datetime.now(timezone.utc).isoformat(),
+    })
+
+
+@app.middleware("http")
+async def auditoria_cambios(request: Request, call_next):
+    respuesta = await call_next(request)
+    evento = clasificar_evento(request.method, request.url.path)
+    actor = getattr(request.state, "actor", None)
+    if evento and actor and not getattr(request.state, "suprimir_auditoria", False) and 200 <= respuesta.status_code < 300:
+        modulo, accion, detalle = evento
+        detalle = getattr(request.state, "detalle_actividad", detalle)
+        segmentos = request.url.path.strip("/").split("/")
+        referencia = segmentos[1] if len(segmentos) > 1 else ""
+        try:
+            guardar_evento(actor, modulo, accion, detalle, referencia)
+        except Exception:
+            # El cambio de negocio ya sucedió; registrar el fallo explícitamente.
+            logging.getLogger("uvicorn.error").exception(
+                "[BITÁCORA] No se pudo registrar %s %s", request.method, request.url.path
+            )
+    return respuesta
+
+
+@app.get("/actividad")
+def obtener_actividad(usuario=Depends(verificar_token_erp_lectura)):
+    rol = usuario["rol_verificado"]
+    uid = usuario["uid"]
+    coleccion = db.collection("bitacora_actividad")
+    if rol == "admin":
+        documentos = coleccion.order_by("fecha", direction=firestore.Query.DESCENDING).limit(150).stream()
+        registros = [{"id": d.id, **(d.to_dict() or {})} for d in documentos]
+    else:
+        # En el proyecto escolar evitamos un índice compuesto para esta consulta.
+        # Si la bitácora crece, añadir índice actor_uid+fecha y paginación.
+        documentos = coleccion.where("actor_uid", "==", uid).stream()
+        registros = [{"id": d.id, **(d.to_dict() or {})} for d in documentos]
+        registros.sort(key=lambda a: str(a.get("fecha") or ""), reverse=True)
+        registros = registros[:150]
+    return {"alcance": "equipo" if rol == "admin" else "personal", "registros": registros}
+
+
+@app.post("/actividad/acceso")
+def registrar_acceso(usuario=Depends(verificar_token_erp_lectura)):
+    # Este endpoint registra que se abrió el panel, no garantiza un login nuevo.
+    return {"mensaje": "Acceso al panel registrado"}
+
+
+class UsuarioEdicion(BaseModel):
+    nombre: str = Field(min_length=1, max_length=150)
+    telefono: str = Field(max_length=30)
+    rol: Literal["admin", "ventas", "logistica", "cliente"]
+
+
+@app.put("/usuarios/{uid}")
+def editar_usuario(uid: str, payload: UsuarioEdicion, request: Request, usuario=Depends(verificar_token_admin)):
+    ref = db.collection("usuarios").document(uid)
+    existente = ref.get()
+    if not existente.exists:
+        raise HTTPException(status_code=404, detail="El usuario no existe en Firestore")
+    anterior = existente.to_dict() or {}
+    ref.update(payload.model_dump())
+    request.state.detalle_actividad = (
+        f"Actualizó usuario {anterior.get('nombre', uid)}: "
+        f"rol {anterior.get('rol', 'sin rol')} → {payload.rol}"
+    )
+    return {"mensaje": "Usuario actualizado"}
+
+
 @app.get("/")
 def raiz(): return {"mensaje": "API de La Nueva Ideal en línea"}
 
 @app.get("/health")
 def salud():
     """Permite verificar el despliegue de Render sin exponer datos o credenciales."""
-    return {"estado":"ok", "version":"3.1.0"}
+    return {"estado":"ok", "version":"3.4.0"}
 
 @app.post("/clientes", status_code=201, dependencies=[Depends(verificar_token_crm)])
-async def crear_cliente(cliente: Cliente):
+async def crear_cliente(cliente: Cliente, request: Request):
     nuevo = cliente.model_dump(); nuevo["fecha_registro"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    doc_ref = db.collection("clientes").document(); doc_ref.set(nuevo); return {"id": doc_ref.id}
+    doc_ref = db.collection("clientes").document(); doc_ref.set(nuevo)
+    request.state.detalle_actividad = f"Creó cliente: {cliente.nombre}"
+    return {"id": doc_ref.id}
 @app.get("/clientes", dependencies=[Depends(verificar_token_crm)])
 def obtener_clientes(): return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("clientes").get()]
 @app.get("/clientes/{id}", dependencies=[Depends(verificar_token_crm)])
@@ -98,38 +227,55 @@ async def obtener_cliente(id: str):
     if not doc_ref.exists: raise HTTPException(status_code=404)
     return {"id": id, **doc_ref.to_dict()}
 @app.put("/clientes/{id}", dependencies=[Depends(verificar_token_crm)])
-async def actualizar_cliente(id: str, cliente: Cliente): db.collection("clientes").document(id).update(cliente.model_dump()); return {"mensaje": "Ok"}
+async def actualizar_cliente(id: str, cliente: Cliente, request: Request):
+    db.collection("clientes").document(id).update(cliente.model_dump())
+    request.state.detalle_actividad = f"Actualizó cliente: {cliente.nombre}"
+    return {"mensaje": "Ok"}
 @app.delete("/clientes/{id}", dependencies=[Depends(verificar_token_crm)])
-async def eliminar_cliente(id: str): db.collection("clientes").document(id).update({"estado": "inactivo"}); return {"mensaje": "Ok"}
+async def eliminar_cliente(id: str, request: Request):
+    db.collection("clientes").document(id).update({"estado": "inactivo"})
+    request.state.detalle_actividad = f"Dio de baja cliente: {id}"
+    return {"mensaje": "Ok"}
 
 @app.get("/interacciones", dependencies=[Depends(verificar_token_crm)])
 def obtener_interacciones(): return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("interacciones").get()]
-@app.post("/interacciones", status_code=201, dependencies=[Depends(verificar_token_crm)])
-async def crear_interaccion(interaccion: Interaccion):
+@app.post("/interacciones", status_code=201)
+async def crear_interaccion(interaccion: Interaccion, request: Request, usuario=Depends(verificar_token_crm)):
     nueva = interaccion.model_dump(); nueva["fecha"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    db.collection("interacciones").add(nueva); return {"mensaje": "Ok"}
+    nueva["usuario_id"] = usuario.get("email") or usuario["uid"]
+    db.collection("interacciones").add(nueva)
+    request.state.detalle_actividad = f"Registró interacción {interaccion.tipo} para cliente {interaccion.cliente_id}"
+    return {"mensaje": "Ok"}
 @app.get("/clientes/{cliente_id}/interacciones", dependencies=[Depends(verificar_token_crm)])
 def obtener_interacciones_cliente(cliente_id: str): return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("interacciones").where("cliente_id", "==", cliente_id).get()]
 
 @app.post("/proveedores", status_code=201, dependencies=[Depends(verificar_token_scm)])
-async def crear_proveedor(proveedor: Proveedor): doc_ref = db.collection("proveedores").document(); doc_ref.set(proveedor.model_dump()); return {"id": doc_ref.id}
+async def crear_proveedor(proveedor: Proveedor, request: Request):
+    doc_ref = db.collection("proveedores").document(); doc_ref.set(proveedor.model_dump())
+    request.state.detalle_actividad = f"Creó proveedor: {proveedor.nombre}"
+    return {"id": doc_ref.id}
 @app.get("/proveedores", dependencies=[Depends(verificar_token_scm)])
 def obtener_proveedores(): return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("proveedores").get()]
 @app.put("/proveedores/{id}", dependencies=[Depends(verificar_token_scm)])
-async def actualizar_proveedor(id: str, proveedor: Proveedor):
+async def actualizar_proveedor(id: str, proveedor: Proveedor, request: Request):
     doc_ref = db.collection("proveedores").document(id)
     if not doc_ref.get().exists:
         raise HTTPException(status_code=404, detail="Proveedor no encontrado")
     doc_ref.update(proveedor.model_dump())
+    request.state.detalle_actividad = f"Actualizó proveedor: {proveedor.nombre}"
     return {"mensaje": "Proveedor actualizado"}
 
 @app.delete("/proveedores/{id}", dependencies=[Depends(verificar_token_scm)])
-async def eliminar_proveedor(id: str):
+async def eliminar_proveedor(id: str, request: Request):
     db.collection("proveedores").document(id).delete()
+    request.state.detalle_actividad = f"Eliminó proveedor: {id}"
     return {"mensaje": "Proveedor eliminado"}
 
 @app.post("/productos", status_code=201, dependencies=[Depends(verificar_token_scm)])
-async def crear_producto(producto: Producto): doc_ref = db.collection("productos").document(); doc_ref.set(producto.model_dump()); return {"id": doc_ref.id}
+async def crear_producto(producto: Producto, request: Request):
+    doc_ref = db.collection("productos").document(); doc_ref.set(producto.model_dump())
+    request.state.detalle_actividad = f"Creó producto: {producto.nombre}"
+    return {"id": doc_ref.id}
 @app.get("/productos")
 def obtener_productos(usuario=Depends(verificar_token_catalogo)):
     productos = [{"id": documento.id, **documento.to_dict()} for documento in db.collection("productos").get()]
@@ -157,16 +303,24 @@ def catalogo_publico():
     ]
 
 @app.put("/productos/{id}", dependencies=[Depends(verificar_token_scm)])
-async def actualizar_producto(id: str, producto: Producto): db.collection("productos").document(id).update(producto.model_dump()); return {"mensaje": "Ok"}
+async def actualizar_producto(id: str, producto: Producto, request: Request):
+    db.collection("productos").document(id).update(producto.model_dump())
+    request.state.detalle_actividad = f"Actualizó producto: {producto.nombre}"
+    return {"mensaje": "Ok"}
 @app.delete("/productos/{id}", dependencies=[Depends(verificar_token_scm)])
-async def eliminar_producto(id: str): db.collection("productos").document(id).delete(); return {"mensaje": "Ok"}
+async def eliminar_producto(id: str, request: Request):
+    db.collection("productos").document(id).delete()
+    request.state.detalle_actividad = f"Eliminó producto: {id}"
+    return {"mensaje": "Ok"}
 
 @app.get("/movimientos", dependencies=[Depends(verificar_token_scm)])
 def obtener_movimientos():
     return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("movimientos").order_by("fecha", direction=firestore.Query.DESCENDING).limit(50).get()]
 
-@app.post("/movimientos", status_code=201, dependencies=[Depends(verificar_token_scm)])
-async def registrar_movimiento(mov: Movimiento):
+@app.post("/movimientos", status_code=201)
+async def registrar_movimiento(mov: Movimiento, request: Request, usuario=Depends(verificar_token_scm)):
+    # El usuario_id enviado por el cliente no es autoritativo.
+    mov.usuario_id = usuario.get("email") or usuario["uid"]
     if mov.tipo not in ('Entrada', 'Salida') or mov.cantidad <= 0:
         raise HTTPException(status_code=400, detail='El movimiento debe ser Entrada o Salida con cantidad positiva.')
     prod_ref = db.collection('productos').document(mov.producto_id)
@@ -204,10 +358,12 @@ async def registrar_movimiento(mov: Movimiento):
             })
         return {'mensaje': 'Movimiento registrado.', 'stock_resultante': nuevo_stock}
 
-    return aplicar(transaccion)
+    resultado = aplicar(transaccion)
+    request.state.detalle_actividad = f"Movimiento {mov.tipo}: {mov.cantidad} piezas · producto {mov.producto_id}"
+    return resultado
 
 @app.post("/ordenes_compra", status_code=201, dependencies=[Depends(verificar_token_scm)])
-async def crear_orden_manual(orden: OrdenCompra):
+async def crear_orden_manual(orden: OrdenCompra, request: Request):
     if orden.cantidad <= 0:
         raise HTTPException(status_code=400, detail='La cantidad debe ser mayor que cero')
     transaction = db.transaction()
@@ -226,7 +382,9 @@ async def crear_orden_manual(orden: OrdenCompra):
         })
         return {'mensaje': 'Orden manual generada'}
 
-    return registrar(transaction)
+    resultado = registrar(transaction)
+    request.state.detalle_actividad = f"Orden de compra manual: {orden.cantidad} piezas · producto {orden.producto_id}"
+    return resultado
 
 @app.get("/ordenes_compra", dependencies=[Depends(verificar_token_scm)])
 def obtener_ordenes_compra():
@@ -234,7 +392,7 @@ def obtener_ordenes_compra():
             .order_by('fecha', direction=firestore.Query.DESCENDING).stream()]
 
 @app.put("/ordenes_compra/{id}/estado", dependencies=[Depends(verificar_token_scm)])
-async def actualizar_orden_compra(id: str, data: dict):
+async def actualizar_orden_compra(id: str, data: dict, request: Request):
     if data.get('estado') != 'Aprobada':
         raise HTTPException(status_code=400, detail='Esta acción solo permite aprobar órdenes de compra.')
     orden_ref = db.collection('ordenes_compra').document(id)
@@ -267,36 +425,26 @@ async def actualizar_orden_compra(id: str, data: dict):
         transaction.update(orden_ref, {'estado':'Completada'})
         return {'mensaje':'Orden aprobada e inventario actualizado', 'estado':'Completada'}
 
-    return aprobar(transaccion)
+    resultado = aprobar(transaccion)
+    if resultado.get("mensaje") == "La orden ya fue procesada.":
+        request.state.suprimir_auditoria = True
+    else:
+        request.state.detalle_actividad = f"Aprobó reabastecimiento de orden {id}"
+    return resultado
 
 # =============================================================
 # VENTAS: ACTIVIDAD DEL EMPLEADO AUTENTICADO
 # =============================================================
 @app.get("/mi-actividad")
-def mi_actividad(usuario=Depends(permitir_roles("ventas"))):
-    # Derivar el correo exclusivamente del token ya verificado.
-    correo = usuario.get("email", "")
-    if not correo:
-        raise HTTPException(status_code=400, detail="La cuenta no tiene correo asociado")
-    registros = []
-    for documento in db.collection("interacciones").where("usuario_id", "==", correo).stream():
-        item = documento.to_dict() or {}
-        registros.append({
-            "tipo": "Interacción CRM",
-            "fecha": item.get("fecha", ""),
-            "descripcion": item.get("descripcion", ""),
-            "referencia": documento.id,
-        })
-    for documento in db.collection("ordenes_clientes").where("usuario_id", "==", correo).stream():
-        item = documento.to_dict() or {}
-        registros.append({
-            "tipo": "Orden ERP",
-            "fecha": item.get("fecha", ""),
-            "descripcion": f"{item.get('folio', documento.id)} · {item.get('cliente_nombre', 'Cliente')}",
-            "referencia": documento.id,
-        })
-    registros.sort(key=lambda item: str(item.get("fecha") or "").replace(" ", "T"), reverse=True)
-    return {"registros": registros[:40]}
+def mi_actividad_compatibilidad(usuario=Depends(verificar_token_erp_lectura)):
+    """Ruta anterior para la pantalla 3.3 de Ventas."""
+    datos = obtener_actividad(usuario)
+    return {"registros": [{
+        "tipo": e.get("accion", "Actividad"),
+        "fecha": e.get("fecha", ""),
+        "descripcion": e.get("detalle", ""),
+        "referencia": e.get("referencia", "")
+    } for e in datos["registros"]]}
 
 # =============================================================
 # ERP: ÓRDENES DE CLIENTES Y SINCRONIZACIÓN CRM + SCM
@@ -398,6 +546,7 @@ def detalle_orden_cliente(orden_id: str):
 @app.post("/ordenes_clientes", status_code=201)
 def crear_orden_cliente(
     payload: OrdenClienteNueva,
+    request: Request,
     usuario=Depends(verificar_token_erp_escritura)
 ):
 
@@ -471,7 +620,8 @@ def crear_orden_cliente(
         if anterior.exists:
             return {
                 "id": anterior.id,
-                **anterior.to_dict()
+                **anterior.to_dict(),
+                "_ya_existia": True
             }
 
         # -------------------------------------
@@ -776,7 +926,16 @@ def crear_orden_cliente(
     # =========================================
 
     try:
-        return registrar(tx)
+        resultado = registrar(tx)
+        if resultado.pop("_ya_existia", False):
+            # Reintento idempotente: no generar un evento de nueva venta.
+            request.state.suprimir_auditoria = True
+        else:
+            request.state.detalle_actividad = (
+                f"Registró orden ERP {resultado.get('folio', '')}: "
+                f"{resultado.get('cliente_nombre', 'Cliente')} · ${resultado.get('total', 0):.2f}"
+            )
+        return resultado
 
     except HTTPException:
         # Conservar errores de validación:

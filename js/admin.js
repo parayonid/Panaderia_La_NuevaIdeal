@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-import { getFirestore, collection, updateDoc, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBns2UIA_ED5CsjBMEmJxUYLqxp1PRXlGo",
@@ -40,7 +40,7 @@ const PERMISOS_VISTAS = Object.freeze({
     '#seccion-erp-nivel': ['admin'],
     '#seccion-erp-roles': ['admin'],
     '#seccion-erp-inventario': ['admin','logistica'],
-    '#seccion-mi-actividad': ['ventas'],
+    '#seccion-mi-actividad': ['admin','ventas','logistica'],
     '#seccion-configuracion': ['admin'],
 });
 const puedeVer = destino => Boolean(globalRol && PERMISOS_VISTAS[destino]?.includes(globalRol));
@@ -147,6 +147,14 @@ document.addEventListener('DOMContentLoaded', () => {
             globalToken = await user.getIdToken();
             globalUserEmail = user.email;
             document.body.dataset.rol = globalRol;
+            // Registrar apertura del panel (no se considera un nuevo login).
+            // Evitar duplicados por refresh dentro de la misma pestaña.
+            const marcaAcceso = `actividad-acceso-${user.uid}`;
+            if (sessionStorage.getItem(marcaAcceso) !== 'registrado') {
+                peticionSegura(`${API_URL}/actividad/acceso`, {method:'POST'})
+                    .then(()=>sessionStorage.setItem(marcaAcceso, 'registrado'))
+                    .catch(error=>console.warn('[Actividad] No se registró el acceso:',error.message));
+            }
             document.getElementById('rol-actual').textContent = { admin:'Administrador', ventas:'Ventas', logistica:'Logística' }[globalRol];
             // Todas las entradas con data-roles deben respetar el rol.
             // El script de navegación del HTML también lo vuelve a comprobar.
@@ -346,8 +354,22 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         if (globalRol !== 'admin') return mostrarNotificacion('Solo el administrador puede editar usuarios.');
         const btn = e.target.querySelector('button'); btn.textContent = "..."; btn.disabled = true;
-        try { await updateDoc(doc(db, "usuarios", document.getElementById('usuario-id').value), { rol: document.getElementById('usuario-rol').value, nombre: document.getElementById('usuario-nombre').value.trim(), telefono: document.getElementById('usuario-telefono').value.trim() }); document.getElementById('modal-usuario').style.display = 'none';
-        } catch (e) { mostrarNotificacion(`No se pudieron guardar los cambios: ${e.message}`); } finally { btn.textContent = "Guardar Cambios"; btn.disabled = false; }
+        try {
+            const uid = document.getElementById('usuario-id').value;
+            const payload = {
+                rol: document.getElementById('usuario-rol').value,
+                nombre: document.getElementById('usuario-nombre').value.trim(),
+                telefono: document.getElementById('usuario-telefono').value.trim()
+            };
+            await peticionSegura(`${API_URL}/usuarios/${encodeURIComponent(uid)}`, {
+                method: 'PUT',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(payload)
+            });
+            document.getElementById('modal-usuario').style.display = 'none';
+            mostrarNotificacion('Usuario actualizado y acción registrada.', 'exito');
+        } catch (e) { mostrarNotificacion(`No se pudieron guardar los cambios: ${e.message}`); }
+        finally { btn.textContent = "Guardar Cambios"; btn.disabled = false; }
     });
 
     if (document.getElementById('tracking-container')) {
@@ -1207,25 +1229,43 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.disabled = false; 
         }
     });
-    async function cargarMiActividad() {
-        if (globalRol !== 'ventas') return;
+    // Bitácora verificable: admin recibe eventos de todos; staff solo los propios.
+    let registrosActividad = [];
+    const nombresRol = {admin:'Administrador', ventas:'Ventas', logistica:'Logística', cliente:'Cliente'};
+    function dibujarActividad() {
         const cuerpo = document.getElementById('actividad-body');
         if (!cuerpo) return;
-        cuerpo.innerHTML = '<tr><td colspan="3" class="erp-empty">Cargando actividad…</td></tr>';
+        const filtro = document.getElementById('actividad-filtro-modulo')?.value || 'todos';
+        const registros = registrosActividad.filter(a => filtro === 'todos' || a.modulo === filtro);
+        erpTexto('actividad-total', `${registros.length} eventos mostrados`);
+        cuerpo.innerHTML = registros.length ? registros.map(a => {
+            const usuario = `${erpEsc(a.actor_nombre || a.actor_correo || 'Usuario')}<small style="display:block;color:#64748b">${erpEsc(a.actor_correo || '')}</small>`;
+            const rol = nombresRol[a.actor_rol] || a.actor_rol || '—';
+            const modulo = a.modulo || 'Sistema';
+            return `<tr><td style="white-space:nowrap">${erpEsc(erpFecha(a.fecha))}</td>` +
+                `<td>${usuario}</td><td>${erpEsc(rol)}</td><td>${erpEsc(modulo)}</td>` +
+                `<td><strong>${erpEsc(a.accion || 'Actividad')}</strong></td>` +
+                `<td>${erpEsc(a.detalle || '—')}</td></tr>`;
+        }).join('') : '<tr><td colspan="6" class="erp-empty">No hay movimientos registrados para este filtro.</td></tr>';
+    }
+    async function cargarMiActividad() {
+        if (!['admin','ventas','logistica'].includes(globalRol)) return;
+        const cuerpo = document.getElementById('actividad-body');
+        if (!cuerpo) return;
+        cuerpo.innerHTML = '<tr><td colspan="6" class="erp-empty">Cargando bitácora…</td></tr>';
         try {
-            const datos = await erpApi('/mi-actividad');
-            const registros = Array.isArray(datos?.registros) ? datos.registros : [];
-            const escapar = erpEsc;
-            erpTexto('actividad-total', `${registros.length} movimientos recientes`);
-            cuerpo.innerHTML = registros.length
-                ? registros.map(a => `<tr><td>${escapar(erpFecha(a.fecha))}</td>` +
-                    `<td>${escapar(a.tipo)}</td><td>${escapar(a.descripcion)}</td></tr>`).join('')
-                : '<tr><td colspan="3" class="erp-empty">Aún no tienes interacciones u órdenes registradas.</td></tr>';
+            const datos = await erpApi('/actividad');
+            registrosActividad = Array.isArray(datos?.registros) ? datos.registros : [];
+            const alcance = datos?.alcance === 'equipo' ? 'Actividad de todos los perfiles' : 'Solo tus acciones registradas';
+            erpTexto('actividad-alcance', alcance);
+            dibujarActividad();
         } catch (error) {
             console.error('[Mi actividad] Error:', error);
-            cuerpo.innerHTML = '<tr><td colspan="3" class="erp-empty">No se pudo cargar tu actividad.</td></tr>';
+            cuerpo.innerHTML = `<tr><td colspan="6" class="erp-empty" style="color:#b42318">${erpEsc(error.message || 'No se pudo cargar la bitácora.')}</td></tr>`;
         }
     }
+    document.getElementById('actividad-refrescar')?.addEventListener('click', cargarMiActividad);
+    document.getElementById('actividad-filtro-modulo')?.addEventListener('change', dibujarActividad);
 
     // =============================================
     // NAVEGACIÓN ÚNICA: CRM / SCM / ERP + RUTAS
@@ -1255,7 +1295,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function inferirModulo(destino) {
         if (destino.startsWith('#seccion-erp-')) return 'erp';
         if (['#seccion-dashboard-scm','#seccion-movimientos','#seccion-ordenes','#seccion-logistica','#seccion-proveedores'].includes(destino)) return 'scm';
-        if (['#dashboard-crm','#seccion-reportes','#seccion-interacciones','#seccion-usuarios','#seccion-configuracion','#seccion-detalle-cliente','#seccion-mi-actividad'].includes(destino)) return 'crm';
+        if (destino==='#seccion-mi-actividad') return globalRol==='logistica' ? 'scm' : (moduloPermitido(moduloActual) ? moduloActual : 'erp');
+        if (['#dashboard-crm','#seccion-reportes','#seccion-interacciones','#seccion-usuarios','#seccion-configuracion','#seccion-detalle-cliente'].includes(destino)) return 'crm';
         // clientes y productos conservan contexto del menú del que procede el clic.
         return moduloActual;
     }
