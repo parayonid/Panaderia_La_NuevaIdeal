@@ -3,7 +3,8 @@ import {
     getAuth, 
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword,
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import { 
     getFirestore, 
@@ -28,6 +29,15 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// Tres perfiles del panel; los compradores siguen siendo "cliente".
+const ROLES_PANEL = new Set(["admin", "ventas", "logistica"]);
+const ROLES_VALIDOS = new Set([...ROLES_PANEL, "cliente"]);
+
+function normalizarRol(valor) {
+    return typeof valor === "string" ? valor.trim().toLowerCase() : "";
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
 
     // ==========================================
@@ -38,6 +48,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const formLogin = document.getElementById('login-form');
     const formRegister = document.getElementById('register-form');
     const loginModal = document.getElementById('login-modal');
+
+    // El enlace al panel se oculta por defecto en index.html.
+    // Esta visibilidad es UX; la autorización real depende de Firestore/API.
+    const enlaceAdmin = document.getElementById('nav-admin');
+    onAuthStateChanged(auth, async (usuario) => {
+        if (enlaceAdmin) enlaceAdmin.hidden = true;
+        if (!usuario) {
+            localStorage.removeItem('usuarioActual');
+            localStorage.removeItem('isLoggedIn');
+            return;
+        }
+        try {
+            const perfil = await getDoc(doc(db, 'usuarios', usuario.uid));
+            // Evitar actualizar el menú con el resultado de una sesión antigua.
+            if (auth.currentUser?.uid !== usuario.uid) return;
+            const rol = perfil.exists() ? normalizarRol(perfil.data().rol) : '';
+            if (!ROLES_VALIDOS.has(rol)) return;
+            if (enlaceAdmin) enlaceAdmin.hidden = !ROLES_PANEL.has(rol);
+        } catch (error) {
+            console.error('[Navegación] No se pudo consultar el rol:', error.code || error);
+            if (enlaceAdmin) enlaceAdmin.hidden = true;
+        }
+    });
 
     if (tabLogin && tabRegister) {
         tabLogin.addEventListener('click', () => {
@@ -223,8 +256,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                const userRole = userDoc.data().rol;
-                if (!['admin', 'ventas', 'logistica', 'cliente'].includes(userRole)) {
+                const userRole = normalizarRol(userDoc.data().rol);
+                if (!ROLES_VALIDOS.has(userRole)) {
                     console.warn('[Login] Rol inválido:', userRole);
                     mostrarErrorLogin('Tu cuenta inició sesión, pero tiene un rol sin configurar correctamente en Firestore.');
                     return;
@@ -236,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     rol: userRole
                 }));
                 if (loginModal) loginModal.style.display = 'none';
-                window.location.href = ['admin', 'ventas', 'logistica'].includes(userRole)
+                window.location.href = ROLES_PANEL.has(userRole)
                     ? 'views/admin.html'
                     : 'views/user.html';
             } finally {

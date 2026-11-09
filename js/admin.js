@@ -17,6 +17,43 @@ const db = getFirestore(app);
 const usuariosRef = collection(db,"usuarios");
 const API_URL = "https://panaderia-la-nuevaideal.onrender.com";
 
+const PERMISOS_VISTAS = Object.freeze({
+    '#dashboard-crm': ['admin','ventas'],
+    '#seccion-reportes': ['admin','ventas'],
+    '#seccion-clientes': ['admin','ventas'],
+    '#seccion-detalle-cliente': ['admin','ventas'],
+    '#seccion-interacciones': ['admin','ventas'],
+    '#seccion-usuarios': ['admin'],
+    '#seccion-productos': ['admin','ventas','logistica'],
+    '#seccion-pedidos': ['admin'],
+    '#seccion-dashboard-scm': ['admin','logistica'],
+    '#seccion-movimientos': ['admin','logistica'],
+    '#seccion-ordenes': ['admin','logistica'],
+    '#seccion-logistica': ['admin','logistica'],
+    '#seccion-proveedores': ['admin','logistica'],
+    '#seccion-erp-dashboard': ['admin','ventas','logistica'],
+    '#seccion-erp-ordenes': ['admin','ventas','logistica'],
+    '#seccion-erp-nueva': ['admin','ventas'],
+    '#seccion-erp-detalle': ['admin','ventas','logistica'],
+    '#seccion-erp-exito': ['admin','ventas'],
+    '#seccion-erp-reportes': ['admin','ventas','logistica'],
+    '#seccion-erp-nivel': ['admin'],
+    '#seccion-erp-roles': ['admin'],
+    '#seccion-erp-inventario': ['admin','logistica'],
+    '#seccion-mi-actividad': ['ventas'],
+    '#seccion-configuracion': ['admin'],
+});
+const puedeVer = destino => Boolean(globalRol && PERMISOS_VISTAS[destino]?.includes(globalRol));
+
+async function consultarConToken(ruta) {
+    const usuario = getAuth().currentUser;
+    if (!usuario) throw new Error('Sesión no disponible');
+    const token = await usuario.getIdToken();
+    const respuesta = await fetch(`${API_URL}${ruta}`, {headers:{Authorization:`Bearer ${token}`}});
+    if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status} al consultar ${ruta}`);
+    return respuesta.json();
+}
+
 let globalToken = null; let globalUserEmail = null; let globalRol = null;
 let interaccionesChart = null; let repBarChart = null; let repPieChart = null; let chartSalud = null; let chartMov = null;
 let productosGlobal = []; let proveedoresGlobal = [];
@@ -73,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Tu cuenta no tiene perfil en Firestore. Revisa usuarios/{UID}.');
                 return window.location.href = '../index.html';
             }
-            const usuarioRol = usuarioDoc.data().rol;
+            const usuarioRol = String(usuarioDoc.data().rol || '').toLowerCase().trim();
             if (!['admin', 'ventas', 'logistica'].includes(usuarioRol)) {
                 alert('Acceso denegado: usuario sin rol de gestión.');
                 return window.location.href = '../index.html';
@@ -83,16 +120,21 @@ document.addEventListener('DOMContentLoaded', () => {
             globalUserEmail = user.email;
             document.body.dataset.rol = globalRol;
             document.getElementById('rol-actual').textContent = { admin:'Administrador', ventas:'Ventas', logistica:'Logística' }[globalRol];
-            document.querySelectorAll('.sidebar-menu li[data-roles], button[data-roles]').forEach(elemento => {
-                if (!elemento.dataset.roles.split(',').includes(globalRol)) elemento.hidden = true;
+            // Todas las entradas con data-roles deben respetar el rol.
+            // El script de navegación del HTML también lo vuelve a comprobar.
+            document.querySelectorAll('[data-roles]').forEach(elemento => {
+                const roles = elemento.dataset.roles.split(',').map(r => r.trim());
+                if (!roles.includes(globalRol)) elemento.hidden = true;
             });
             document.querySelectorAll('[data-rol-card]').forEach(elemento => elemento.classList.toggle('current', elemento.dataset.rolCard === globalRol));
             if (['admin','ventas'].includes(globalRol)) { inicializarGraficasCRM(); recargarDatosCRM(); }
             if (globalRol === 'admin') iniciarEscuchaUsuarios();
-            cargarTodoSCM();
+            if (['admin','logistica'].includes(globalRol)) cargarTodoSCM();
+            if (globalRol === 'ventas') cargarCatalogoVentas();
             cargarERP();
-            if (globalRol === 'ventas') mostrarSeccion('#seccion-erp-dashboard');
-            if (globalRol === 'logistica') mostrarSeccion('#seccion-dashboard-scm');
+            const inicio = globalRol === 'logistica' ? '#seccion-dashboard-scm' : '#dashboard-crm';
+            const solicitado = window.location.hash;
+            mostrarSeccion(puedeVer(solicitado) ? solicitado : inicio);
         } catch (error) {
             console.error('[Admin] Error al comprobar permisos:', error.code, error);
             alert(`No se pudo cargar tu perfil (${error.code || 'error desconocido'}). Revisa la consola.`);
@@ -114,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function recargarDatosCRM() {
         if (!globalToken) return;
         try {
-            const resClientes = await fetch(`${API_URL}/clientes`); const clientes = await resClientes.json();
+            const clientes = await consultarConToken('/clientes');
             const clientesBody = document.getElementById('clientes-body'); const selectClientes = document.getElementById('int-cliente-id');
             if (clientesBody) clientesBody.innerHTML = ''; if (selectClientes) selectClientes.innerHTML = '<option value="">Selecciona un cliente...</option>';
             
@@ -131,9 +173,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (selectClientes) selectClientes.innerHTML += `<option value="${cli.id}">${cli.nombre}</option>`;
 
                 try {
-                    const resInt = await fetch(`${API_URL}/clientes/${cli.id}/interacciones`);
-                    if(resInt.ok) {
-                        const ints = await resInt.json(); mapIntCliente[cli.id] = ints.length;
+                    const ints = await consultarConToken(`/clientes/${encodeURIComponent(cli.id)}/interacciones`);
+                    if (Array.isArray(ints)) { mapIntCliente[cli.id] = ints.length;
                         ints.forEach(int => { int.nombreCliente = cli.nombre; if(new Date(int.fecha).getMonth() === mesActual && new Date(int.fecha).getFullYear() === anioActual) interaccionesMes++; });
                         todasLasInteracciones.push(...ints);
                     }
@@ -171,9 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
     async function abrirDetalleCliente(id) {
         document.getElementById('seccion-clientes').classList.add('seccion-oculta'); document.getElementById('seccion-detalle-cliente').classList.remove('seccion-oculta');
         try {
-            const cliente = await (await fetch(`${API_URL}/clientes/${id}`)).json();
+            const cliente = await consultarConToken(`/clientes/${encodeURIComponent(id)}`);
             document.getElementById('detalle-inicial').textContent = cliente.nombre.charAt(0).toUpperCase(); document.getElementById('detalle-nombre').textContent = cliente.nombre; document.getElementById('detalle-correo').textContent = cliente.correo; document.getElementById('detalle-telefono').textContent = cliente.telefono; document.getElementById('detalle-registro').textContent = `ID: ${cliente.id}`; document.getElementById('detalle-etapa').value = cliente.estado; document.getElementById('form-detalle-interaccion').dataset.clienteId = id;
-            const interacciones = await (await fetch(`${API_URL}/clientes/${id}/interacciones`)).json();
+            const interacciones = await consultarConToken(`/clientes/${encodeURIComponent(id)}/interacciones`);
             const timeline = document.getElementById('detalle-timeline'); timeline.innerHTML = '';
             if (interacciones.length === 0) timeline.innerHTML = '<p style="text-align: center; color: #888;">No hay interacciones registradas.</p>';
             else interacciones.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).forEach(int => { let icono = int.tipo === 'Llamada' ? 'bi-telephone' : (int.tipo === 'Correo' ? 'bi-envelope' : 'bi-journal-text'); timeline.innerHTML += `<div style="display:flex; gap:15px; border-left:2px solid #eee; padding-left:15px; margin-bottom:10px;"><div style="color:#16a085; font-size:1.1rem;"><i class="${icono}"></i></div><div><div style="font-size:0.8rem; color:#888;">${int.fecha || 'Reciente'} - <strong>${int.tipo}</strong></div><div style="font-size:0.9rem; color:#333;">${int.descripcion}</div></div></div>`; });
@@ -230,7 +271,13 @@ document.addEventListener('DOMContentLoaded', () => {
         onSnapshot(usuariosRef, (snapshot) => {
             document.getElementById('usuarios-body').innerHTML = ''; if (document.getElementById('metric-usuarios')) document.getElementById('metric-usuarios').textContent = snapshot.size;
             snapshot.forEach(docSnap => {
-                const u = { id: docSnap.id, ...docSnap.data() }; const rolBadge = u.rol === 'admin' ? '<span class="badge" style="background:#4F231C; color:white;">Admin</span>' : '<span class="badge" style="background:#6c757d; color:white;">Cliente</span>';
+                const u = { id: docSnap.id, ...docSnap.data() };
+                const etiquetas = {
+                    admin:['Administrador','#4F231C'], ventas:['Ventas','#155eef'],
+                    logistica:['Logística','#00836a'], cliente:['Cliente','#6c757d']
+                };
+                const [etiqueta, color] = etiquetas[u.rol] || ['Sin rol','#6c757d'];
+                const rolBadge = `<span class="badge" style="background:${color};color:white;">${etiqueta}</span>`;
                 document.getElementById('usuarios-body').innerHTML += `<tr><td><strong>${u.nombre || 'Sin nombre'}</strong><br><small style="color:#888;">${u.correo}</small></td><td>${rolBadge}</td><td>${u.telefono || 'N/A'}</td><td>Reciente</td><td class="acciones-iconos"><i class="bi bi-pencil-square icon-edit-user" data-id="${u.id}" data-correo="${u.correo}" data-rol="${u.rol || 'cliente'}" data-nombre="${encodeURIComponent(u.nombre || '')}" data-telefono="${u.telefono || ''}" style="cursor: pointer; color: #16a085;"></i></td></tr>`;
             });
         });
@@ -243,7 +290,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.getElementById('form-editar-usuario')?.addEventListener('submit', async (e) => {
-        e.preventDefault(); const btn = e.target.querySelector('button'); btn.textContent = "..."; btn.disabled = true;
+        e.preventDefault();
+        if (globalRol !== 'admin') return mostrarNotificacion('Solo el administrador puede editar usuarios.');
+        const btn = e.target.querySelector('button'); btn.textContent = "..."; btn.disabled = true;
         try { await updateDoc(doc(db, "usuarios", document.getElementById('usuario-id').value), { rol: document.getElementById('usuario-rol').value, nombre: document.getElementById('usuario-nombre').value.trim(), telefono: document.getElementById('usuario-telefono').value.trim() }); document.getElementById('modal-usuario').style.display = 'none';
         } catch (e) {} finally { btn.textContent = "Guardar Cambios"; btn.disabled = false; }
     });
@@ -258,10 +307,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. MÓDULO SCM (El "Cerebro" Logístico)
     // ==========================================
     async function cargarTodoSCM() {
-        if (!globalToken) return;
+        if (!globalToken || !['admin','logistica'].includes(globalRol)) return;
         try {
             // PROVEEDORES
-            const resProv = await fetch(`${API_URL}/proveedores`); proveedoresGlobal = await resProv.json();
+            proveedoresGlobal = await consultarConToken('/proveedores');
             document.getElementById('scm-total-prov').textContent = proveedoresGlobal.length;
             const provBody = document.getElementById('proveedores-body'); const selProv = document.getElementById('proveedor-producto');
           if (provBody) {
@@ -280,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (selProv) selProv.innerHTML = '<option value="">Selecciona proveedor...</option>' + proveedoresGlobal.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
 
             // ALMACÉN (PRODUCTOS)
-            const resProd = await fetch(`${API_URL}/productos`); productosGlobal = await resProd.json();
+            productosGlobal = await consultarConToken('/productos');
             let stockCritico = 0, stockNormal = 0, valorInventario = 0;
             const stockBody = document.getElementById('stock-body'); const movProdSel = document.getElementById('mov-producto');
             if (stockBody) stockBody.innerHTML = ''; if (movProdSel) movProdSel.innerHTML = '<option value="">Selecciona un producto</option>';
@@ -303,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('saludInventarioChart')) { if(chartSalud) chartSalud.destroy(); chartSalud = new Chart(document.getElementById('saludInventarioChart'), { type: 'doughnut', data: { labels: ['Normal', 'Crítico'], datasets: [{ data: [stockNormal, stockCritico], backgroundColor: ['#16a085', '#e74c3c'], borderWidth:0 }] }, options: { plugins: { legend: { position: 'bottom' } } } }); }
 
             // KARDEX (MOVIMIENTOS)
-            const resMov = await fetch(`${API_URL}/movimientos`); const movs = await resMov.json();
+            const movs = await consultarConToken('/movimientos');
             let entradas = 0, salidas = 0; const mBody = document.getElementById('movimientos-body'); if (mBody) mBody.innerHTML = '';
             movs.forEach(m => {
                 if(m.tipo === 'Entrada') entradas++; else salidas++;
@@ -313,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('movimientosChart')) { if(chartMov) chartMov.destroy(); chartMov = new Chart(document.getElementById('movimientosChart'), { type: 'doughnut', data: { labels: ['Entradas', 'Salidas'], datasets: [{ data: [entradas, salidas], backgroundColor: ['#0d6efd', '#f39c12'], borderWidth:0 }] }, options: { plugins: { legend: { position: 'bottom' } } } }); }
 
            // ÓRDENES DE COMPRA (PUSH Y PULL)
-            const resOrd = await fetch(`${API_URL}/ordenes_compra`); const ordenes = await resOrd.json();
+            const ordenes = await consultarConToken('/ordenes_compra');
             const oBody = document.getElementById('ordenes-body');
             if (oBody) {
                 oBody.innerHTML = ''; if(ordenes.length === 0) oBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888; padding: 20px;">No hay órdenes pendientes. El inventario está sano.</td></tr>`;
@@ -362,8 +411,38 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {}
     }
 
+    // Ventas: acceso de solo consulta a productos; evita traer datos de
+    // proveedores, órdenes de compra y movimientos restringidos a SCM.
+    async function cargarCatalogoVentas() {
+        if (globalRol !== 'ventas') return;
+        try {
+            const productos = await consultarConToken('/productos');
+            productosGlobal = productos;
+            const cuerpo = document.getElementById('stock-body');
+            if (!cuerpo) return;
+            const encabezados = cuerpo.closest('table')?.querySelectorAll('thead th');
+            if (encabezados?.length === 6) {
+                ['Imagen','Producto','Disponibilidad','Precio','Estado','Acciones']
+                    .forEach((titulo, i) => { encabezados[i].textContent = titulo; });
+            }
+            cuerpo.innerHTML = productos.map(p => {
+                const nombre = String(p.nombre || 'Producto').replace(/[&<>"']/g, c =>
+                    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+                const unidades = Number(p.stock_actual ?? p.cantidad ?? 0);
+                const precio = new Intl.NumberFormat('es-MX', {style:'currency', currency:'MXN'})
+                    .format(Number(p.precio) || 0);
+                return `<tr><td><i class="bi bi-box-seam"></i></td><td><strong>${nombre}</strong></td>` +
+                    `<td>${unidades > 0 ? 'Disponible' : 'Agotado'}</td><td>${precio}</td>` +
+                    `<td><span class="erp-status">Solo lectura</span></td><td>—</td></tr>`;
+            }).join('') || '<tr><td colspan="6">No hay productos.</td></tr>';
+        } catch (error) {
+            console.error('[Ventas] Error al cargar productos:', error);
+            mostrarNotificacion('No se pudo cargar el catálogo de ventas.');
+        }
+    }
+
     // Formularios SCM
-   // Formularios SCM - Proveedores
+    // Formularios SCM - Proveedores
     document.getElementById('btn-abrir-modal-proveedor')?.addEventListener('click', () => { 
         document.getElementById('form-nuevo-proveedor').reset(); 
         document.getElementById('proveedor-id').value = ''; // Limpiamos el ID oculto
@@ -600,7 +679,10 @@ document.addEventListener('DOMContentLoaded', () => {
         erpDatos.cargado = false;
         try {
             const [clientes, productos, ordenes, movimientos] = await Promise.all([
-                erpApi('/clientes'), erpApi('/productos'), erpApi('/ordenes_clientes'), erpApi('/movimientos')
+                ['admin','ventas'].includes(globalRol) ? erpApi('/clientes') : Promise.resolve([]),
+                erpApi('/productos'),
+                erpApi('/ordenes_clientes'),
+                ['admin','logistica'].includes(globalRol) ? erpApi('/movimientos') : Promise.resolve([])
             ]);
             if (![clientes, productos, ordenes, movimientos].every(Array.isArray)) throw new Error('Los datos ERP recibidos no son válidos');
             Object.assign(erpDatos, { clientes, productos, ordenes, movimientos, cargado: true });
@@ -671,7 +753,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderizarERP() {
         const e = erpEstadisticas();
-        erpTexto('erp-kpi-clientes', e.activos);
+        erpTexto('erp-kpi-clientes', globalRol === 'logistica' ? '—' : e.activos);
         erpTexto('erp-kpi-ordenes', e.ordenes.length);
         erpTexto('erp-kpi-ventas', erpMXN(e.ventas));
         erpTexto('erp-kpi-unidades', e.unidades);
@@ -817,7 +899,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function erpConfirmarOrden() {
-        if (erpEnviando || !erpCarrito.size) return;
+        if (!['admin','ventas'].includes(globalRol) || erpEnviando || !erpCarrito.size) return;
         const clienteId = erpElemento('erp-select-cliente').value;
         const items = [...erpCarrito].map(([producto_id, cantidad]) => ({producto_id, cantidad}));
         erpEnviando = true;
@@ -947,6 +1029,26 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.disabled = false; 
         }
     });
+    async function cargarMiActividad() {
+        if (globalRol !== 'ventas') return;
+        const cuerpo = document.getElementById('actividad-body');
+        if (!cuerpo) return;
+        cuerpo.innerHTML = '<tr><td colspan="3" class="erp-empty">Cargando actividad…</td></tr>';
+        try {
+            const datos = await erpApi('/mi-actividad');
+            const registros = Array.isArray(datos?.registros) ? datos.registros : [];
+            const escapar = erpEsc;
+            erpTexto('actividad-total', `${registros.length} movimientos recientes`);
+            cuerpo.innerHTML = registros.length
+                ? registros.map(a => `<tr><td>${escapar(erpFecha(a.fecha))}</td>` +
+                    `<td>${escapar(a.tipo)}</td><td>${escapar(a.descripcion)}</td></tr>`).join('')
+                : '<tr><td colspan="3" class="erp-empty">Aún no tienes interacciones u órdenes registradas.</td></tr>';
+        } catch (error) {
+            console.error('[Mi actividad] Error:', error);
+            cuerpo.innerHTML = '<tr><td colspan="3" class="erp-empty">No se pudo cargar tu actividad.</td></tr>';
+        }
+    }
+
     const seccionesMap = {
         '#dashboard-crm': ['.metrics-section', '#seccion-graficas'],
         '#seccion-reportes': ['#seccion-reportes'],
@@ -967,12 +1069,15 @@ document.addEventListener('DOMContentLoaded', () => {
         '#seccion-erp-exito': ['#seccion-erp-exito'],
         '#seccion-erp-reportes': ['#seccion-erp-reportes'],
         '#seccion-erp-nivel': ['#seccion-erp-nivel'],
-        '#seccion-erp-roles': ['#seccion-erp-roles']
+        '#seccion-erp-roles': ['#seccion-erp-roles'],
+        '#seccion-erp-inventario': ['#seccion-erp-inventario'],
+        '#seccion-mi-actividad': ['#seccion-mi-actividad'],
+        '#seccion-configuracion': ['#seccion-configuracion']
     };
 
     function mostrarSeccion(destino) {
         const partes = seccionesMap[destino];
-        if (!partes) return;
+        if (!partes || !puedeVer(destino)) return;
         const seccion = destino !== '#dashboard-crm' ? document.querySelector(destino) : null;
         if (seccion?.dataset.roles && !seccion.dataset.roles.split(',').includes(globalRol)) return;
         document.querySelectorAll('.crud-section, .tracking-section, .metrics-section, .charts-section').forEach(seccion => seccion.classList.add('seccion-oculta'));
@@ -980,6 +1085,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
         document.querySelector(`.sidebar-menu a[href="${destino}"]`)?.closest('li')?.classList.add('active');
         if (document.getElementById('global-search')) document.getElementById('global-search').value = '';
+        if (destino === '#seccion-mi-actividad') cargarMiActividad();
         if (destino.startsWith('#seccion-erp')) {
             // Chart.js debe reajustarse después de mostrar contenedores que estaban ocultos.
             requestAnimationFrame(() => Object.values(erpGraficas).forEach(grafica => grafica.resize()));

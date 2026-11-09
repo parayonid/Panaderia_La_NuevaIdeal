@@ -63,9 +63,11 @@ def permitir_roles(*roles_permitidos):
             raise HTTPException(status_code=401, detail="Token de Firebase inválido o vencido")
         uid = usuario_jwt.get("uid")
         usuario_doc = db.collection("usuarios").document(uid).get()
-        if not usuario_doc.exists or usuario_doc.to_dict().get("rol") not in roles_permitidos:
+        rol_efectivo = usuario_doc.to_dict().get("rol") if usuario_doc.exists else None
+        if rol_efectivo not in roles_permitidos:
             raise HTTPException(status_code=403, detail="No tienes permisos para esta operación")
-        return usuario_jwt
+        # El rol proviene del perfil guardado en el servidor, nunca del navegador.
+        return {**usuario_jwt, "rol_verificado": rol_efectivo}
     return comprobar
 
 verificar_token_admin = permitir_roles("admin")
@@ -73,6 +75,8 @@ verificar_token_crm = permitir_roles("admin", "ventas")
 verificar_token_scm = permitir_roles("admin", "logistica")
 verificar_token_erp_escritura = permitir_roles("admin", "ventas")
 verificar_token_erp_lectura = permitir_roles("admin", "ventas", "logistica")
+# Ventas puede consultar el catálogo de productos, pero no modificarlo.
+verificar_token_catalogo = permitir_roles("admin", "ventas", "logistica")
 
 @app.get("/")
 def raiz(): return {"mensaje": "API de La Nueva Ideal funcionando al 100%"}
@@ -81,9 +85,9 @@ def raiz(): return {"mensaje": "API de La Nueva Ideal funcionando al 100%"}
 async def crear_cliente(cliente: Cliente):
     nuevo = cliente.model_dump(); nuevo["fecha_registro"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     doc_ref = db.collection("clientes").document(); doc_ref.set(nuevo); return {"id": doc_ref.id}
-@app.get("/clientes")
+@app.get("/clientes", dependencies=[Depends(verificar_token_crm)])
 def obtener_clientes(): return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("clientes").get()]
-@app.get("/clientes/{id}")
+@app.get("/clientes/{id}", dependencies=[Depends(verificar_token_crm)])
 async def obtener_cliente(id: str):
     doc_ref = db.collection("clientes").document(id).get()
     if not doc_ref.exists: raise HTTPException(status_code=404)
@@ -93,18 +97,18 @@ async def actualizar_cliente(id: str, cliente: Cliente): db.collection("clientes
 @app.delete("/clientes/{id}", dependencies=[Depends(verificar_token_crm)])
 async def eliminar_cliente(id: str): db.collection("clientes").document(id).update({"estado": "inactivo"}); return {"mensaje": "Ok"}
 
-@app.get("/interacciones")
+@app.get("/interacciones", dependencies=[Depends(verificar_token_crm)])
 def obtener_interacciones(): return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("interacciones").get()]
 @app.post("/interacciones", status_code=201, dependencies=[Depends(verificar_token_crm)])
 async def crear_interaccion(interaccion: Interaccion):
     nueva = interaccion.model_dump(); nueva["fecha"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     db.collection("interacciones").add(nueva); return {"mensaje": "Ok"}
-@app.get("/clientes/{cliente_id}/interacciones")
+@app.get("/clientes/{cliente_id}/interacciones", dependencies=[Depends(verificar_token_crm)])
 def obtener_interacciones_cliente(cliente_id: str): return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("interacciones").where("cliente_id", "==", cliente_id).get()]
 
 @app.post("/proveedores", status_code=201, dependencies=[Depends(verificar_token_scm)])
 async def crear_proveedor(proveedor: Proveedor): doc_ref = db.collection("proveedores").document(); doc_ref.set(proveedor.model_dump()); return {"id": doc_ref.id}
-@app.get("/proveedores")
+@app.get("/proveedores", dependencies=[Depends(verificar_token_scm)])
 def obtener_proveedores(): return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("proveedores").get()]
 @app.put("/proveedores/{id}", dependencies=[Depends(verificar_token_scm)])
 async def actualizar_proveedor(id: str, proveedor: Proveedor):
@@ -122,13 +126,37 @@ async def eliminar_proveedor(id: str):
 @app.post("/productos", status_code=201, dependencies=[Depends(verificar_token_scm)])
 async def crear_producto(producto: Producto): doc_ref = db.collection("productos").document(); doc_ref.set(producto.model_dump()); return {"id": doc_ref.id}
 @app.get("/productos")
-def obtener_productos(): return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("productos").get()]
+def obtener_productos(usuario=Depends(verificar_token_catalogo)):
+    productos = [{"id": documento.id, **documento.to_dict()} for documento in db.collection("productos").get()]
+    # Ventas consulta nombre, precio y disponibilidad; no recibe costos,
+    # proveedores internos, stock mínimo ni estrategia de reposición.
+    if usuario.get("rol_verificado") == "ventas":
+        campos = {"id", "nombre", "descripcion", "categoria", "imagen", "precio", "stock_actual", "cantidad"}
+        return [{llave: valor for llave, valor in producto.items() if llave in campos} for producto in productos]
+    return productos
+@app.get("/catalogo_publico")
+def catalogo_publico():
+    """Catálogo público: sin costos internos ni estrategia de abastecimiento."""
+    return [
+        {
+            "id": documento.id,
+            "nombre": datos.get("nombre", ""),
+            "descripcion": datos.get("descripcion", ""),
+            "categoria": datos.get("categoria", ""),
+            "imagen": datos.get("imagen", ""),
+            "precio": datos.get("precio", 0),
+            "cantidad": max(0, int(datos.get("stock_actual", datos.get("cantidad", 0)) or 0)),
+        }
+        for documento in db.collection("productos").stream()
+        for datos in [documento.to_dict() or {}]
+    ]
+
 @app.put("/productos/{id}", dependencies=[Depends(verificar_token_scm)])
 async def actualizar_producto(id: str, producto: Producto): db.collection("productos").document(id).update(producto.model_dump()); return {"mensaje": "Ok"}
 @app.delete("/productos/{id}", dependencies=[Depends(verificar_token_scm)])
 async def eliminar_producto(id: str): db.collection("productos").document(id).delete(); return {"mensaje": "Ok"}
 
-@app.get("/movimientos")
+@app.get("/movimientos", dependencies=[Depends(verificar_token_scm)])
 def obtener_movimientos():
     return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("movimientos").order_by("fecha", direction=firestore.Query.DESCENDING).limit(50).get()]
 
@@ -195,7 +223,7 @@ async def crear_orden_manual(orden: OrdenCompra):
 
     return registrar(transaction)
 
-@app.get("/ordenes_compra")
+@app.get("/ordenes_compra", dependencies=[Depends(verificar_token_scm)])
 def obtener_ordenes_compra():
     return [{"id": d.id, **d.to_dict()} for d in db.collection('ordenes_compra')
             .order_by('fecha', direction=firestore.Query.DESCENDING).stream()]
@@ -235,6 +263,35 @@ async def actualizar_orden_compra(id: str, data: dict):
         return {'mensaje':'Orden aprobada e inventario actualizado', 'estado':'Completada'}
 
     return aprobar(transaccion)
+
+# =============================================================
+# VENTAS: ACTIVIDAD DEL EMPLEADO AUTENTICADO
+# =============================================================
+@app.get("/mi-actividad")
+def mi_actividad(usuario=Depends(permitir_roles("ventas"))):
+    # Derivar el correo exclusivamente del token ya verificado.
+    correo = usuario.get("email", "")
+    if not correo:
+        raise HTTPException(status_code=400, detail="La cuenta no tiene correo asociado")
+    registros = []
+    for documento in db.collection("interacciones").where("usuario_id", "==", correo).stream():
+        item = documento.to_dict() or {}
+        registros.append({
+            "tipo": "Interacción CRM",
+            "fecha": item.get("fecha", ""),
+            "descripcion": item.get("descripcion", ""),
+            "referencia": documento.id,
+        })
+    for documento in db.collection("ordenes_clientes").where("usuario_id", "==", correo).stream():
+        item = documento.to_dict() or {}
+        registros.append({
+            "tipo": "Orden ERP",
+            "fecha": item.get("fecha", ""),
+            "descripcion": f"{item.get('folio', documento.id)} · {item.get('cliente_nombre', 'Cliente')}",
+            "referencia": documento.id,
+        })
+    registros.sort(key=lambda item: str(item.get("fecha") or "").replace(" ", "T"), reverse=True)
+    return {"registros": registros[:40]}
 
 # =============================================================
 # ERP: ÓRDENES DE CLIENTES Y SINCRONIZACIÓN CRM + SCM
