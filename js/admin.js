@@ -184,13 +184,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function recargarDatosCRM() {
         if (!globalToken) return;
+        const aviso = document.getElementById('crm-carga-estado');
+        if (aviso) { aviso.textContent = 'Consultando clientes en Render…'; aviso.hidden = false; }
         try {
             const clientes = await consultarConToken('/clientes');
+            if (aviso) { aviso.textContent = ''; aviso.hidden = true; }
             const clientesBody = document.getElementById('clientes-body'); const selectClientes = document.getElementById('int-cliente-id');
             if (clientesBody) clientesBody.innerHTML = ''; if (selectClientes) selectClientes.innerHTML = '<option value="">Selecciona un cliente...</option>';
             
             let totalClientes = 0, clientesActivos = 0, interaccionesMes = 0; let etapas = { Prospecto: 0, Activo: 0, Inactivo: 0 }; let mapIntCliente = {}; let todasLasInteracciones = [];
             const mesActual = new Date().getMonth(); const anioActual = new Date().getFullYear();
+            if (!Array.isArray(clientes)) throw new Error('La API no devolvió una lista de clientes.');
+            const solicitudesInteracciones = [];
 
            for (let cli of clientes) {
                 totalClientes++; mapIntCliente[cli.id] = 0; 
@@ -201,15 +206,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (clientesBody) clientesBody.innerHTML += `<tr><td><strong>${cli.nombre}</strong></td><td>${cli.empresa || 'N/A'}</td><td>${cli.correo}<br><small>${cli.telefono}</small></td><td><span class="badge" style="background:${colorBadge}; color:white;">${cli.estado || 'Activo'}</span></td><td class="acciones-iconos"><i class="bi bi-eye icon-ver-detalle" data-id="${cli.id}" style="color:#0d6efd; cursor:pointer; font-size:1.1rem; margin-right:10px;"></i><i class="bi bi-trash icon-delete-cliente" data-id="${cli.id}" style="color:#e74c3c; cursor:pointer; font-size:1.1rem;"></i></td></tr>`;
                 if (selectClientes) selectClientes.innerHTML += `<option value="${cli.id}">${cli.nombre}</option>`;
 
-                try {
-                    const ints = await consultarConToken(`/clientes/${encodeURIComponent(cli.id)}/interacciones`);
-                    if (Array.isArray(ints)) { mapIntCliente[cli.id] = ints.length;
-                        ints.forEach(int => { int.nombreCliente = cli.nombre; if(new Date(int.fecha).getMonth() === mesActual && new Date(int.fecha).getFullYear() === anioActual) interaccionesMes++; });
+                // No detener los indicadores de clientes por consultar cada interacción.
+                solicitudesInteracciones.push(consultarConToken(`/clientes/${encodeURIComponent(cli.id)}/interacciones`)
+                    .then(ints => {
+                        if (!Array.isArray(ints)) throw new Error('Respuesta inválida de interacciones');
+                        mapIntCliente[cli.id] = ints.length;
+                        ints.forEach(int => {
+                            int.nombreCliente=cli.nombre;
+                            if(new Date(int.fecha).getMonth() === mesActual && new Date(int.fecha).getFullYear()===anioActual) interaccionesMes++;
+                        });
                         todasLasInteracciones.push(...ints);
-                    }
-                } catch(e) { console.warn(`[CRM] Interacciones cliente ${cli.id}:`, e.message); }
+                    })
+                    .catch(e => { console.warn(`[CRM] Interacciones cliente ${cli.id}:`, e.message); }));
             }
 
+            // Mostrar clientes sin esperar las llamadas de interacciones (a veces Render tarda).
+            if (document.getElementById('metric-clientes')) document.getElementById('metric-clientes').textContent = clientesActivos;
+            if (document.getElementById('rep-total-cli')) document.getElementById('rep-total-cli').textContent = totalClientes;
+            if (document.getElementById('rep-activos-cli')) document.getElementById('rep-activos-cli').textContent = clientesActivos;
+            if (document.getElementById('rep-activos-pct')) document.getElementById('rep-activos-pct').textContent = totalClientes > 0 ? Math.round((clientesActivos/totalClientes)*100)+'%' : '0%';
+            if (document.getElementById('metric-interacciones')) document.getElementById('metric-interacciones').textContent = '…';
+            await Promise.allSettled(solicitudesInteracciones);
             let sinInt = Object.values(mapIntCliente).filter(v => v === 0).length;
             if (document.getElementById('metric-clientes')) document.getElementById('metric-clientes').textContent = clientesActivos; 
             if (document.getElementById('rep-total-cli')) document.getElementById('rep-total-cli').textContent = totalClientes; 
@@ -232,6 +249,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (repPieChart) { repPieChart.data.datasets[0].data = [etapas.Prospecto, etapas.Activo, etapas.Inactivo]; repPieChart.update(); }
         } catch (error) {
             console.error('[CRM] No se pudieron cargar clientes:',error);
+            if (aviso) { aviso.textContent = `No se pudieron cargar los clientes: ${error.message}`; aviso.hidden = false; }
+            const metrica=document.getElementById('metric-clientes');
+            if (metrica) metrica.textContent='—';
             mostrarFalloTabla('clientes-body',5,error.message);
             mostrarNotificacion(`CRM: ${error.message}`);
         }
@@ -339,97 +359,149 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 3. MÓDULO SCM (El "Cerebro" Logístico)
     // ==========================================
+    // Cada recurso del SCM se pinta al llegar; una consulta lenta no bloquea las demás.
+    let scmSolicitudActual = 0;
     async function cargarTodoSCM() {
         if (!globalToken || !['admin','logistica'].includes(globalRol)) return;
-        const endpoints = ['/proveedores','/productos','/movimientos','/ordenes_compra'];
-        // Se consultan en paralelo: una falla no impide cargar las otras tres tablas.
-        const resultados = await Promise.allSettled(endpoints.map(ruta => consultarConToken(ruta)));
-        const extraer = (indice, nombre) => {
-            const resultado = resultados[indice];
-            if (resultado.status === 'rejected') {
-                console.error(`[SCM] ${nombre}:`, resultado.reason);
-                mostrarNotificacion(`${nombre}: ${resultado.reason.message}`);
-                return {datos:[], error:resultado.reason.message};
-            }
-            if (!Array.isArray(resultado.value)) {
-                const error=`Formato inválido en ${nombre}; se esperaba una lista.`;
-                console.error('[SCM]',error);
-                return {datos:[],error};
-            }
-            return {datos:resultado.value,error:null};
-        };
-        const prov = extraer(0,'Proveedores');
-        const prod = extraer(1,'Productos');
-        const mov = extraer(2,'Kardex');
-        const ord = extraer(3,'Órdenes de compra');
-        proveedoresGlobal = prov.datos;
-        productosGlobal = prod.datos;
-        const provBody = document.getElementById('proveedores-body');
-        const selectorProveedor = document.getElementById('proveedor-producto');
-        const contarProv = document.getElementById('scm-total-prov');
-        if (contarProv) contarProv.textContent = prov.error ? '—' : prov.datos.length;
-        if (selectorProveedor) selectorProveedor.innerHTML = '<option value="">Selecciona proveedor...</option>'+
-            prov.datos.map(p=>`<option value="${textoSeguro(p.id)}">${textoSeguro(p.nombre)}</option>`).join('');
-        if (prov.error) mostrarFalloTabla('proveedores-body',5,prov.error);
-        else if (provBody) provBody.innerHTML = prov.datos.length ? prov.datos.map(p=>`<tr><td><strong>${textoSeguro(p.nombre)}</strong></td><td>${textoSeguro(p.contacto)}</td><td>${textoSeguro(p.correo)}<br><small>${textoSeguro(p.telefono)}</small></td><td><span class="badge" style="background:#16a085;color:white">Activo</span></td><td><i class="bi bi-pencil-square icon-edit-prov" data-id="${textoSeguro(p.id)}" style="cursor:pointer;color:#16a085;margin-right:12px"></i><i class="bi bi-trash icon-delete-prov" data-id="${textoSeguro(p.id)}" style="cursor:pointer;color:#e74c3c"></i></td></tr>`).join('') : '<tr><td colspan="5">No hay proveedores registrados.</td></tr>';
+        const idSolicitud = ++scmSolicitudActual;
+        const estado = { proveedores: [], productos: [], movimientos: [], ordenes: [] };
+        const vigente = () => scmSolicitudActual === idSolicitud;
+        const textoCarga = 'Cargando datos…';
+        const mensajeVacio = (id, cols) => mostrarFalloTabla(id, cols, textoCarga);
 
-        const stockBody = document.getElementById('stock-body');
-        const movSel = document.getElementById('mov-producto');
-        const logSel = document.getElementById('log-producto');
-        let critico=0, normal=0, valor=0, push=0, pull=0;
-        if (movSel) movSel.innerHTML = '<option value="">Selecciona un producto</option>' + prod.datos.map(p=>`<option value="${textoSeguro(p.id)}">${textoSeguro(p.nombre)}</option>`).join('');
-        if (logSel) logSel.innerHTML = '<option value="">Selecciona un producto...</option>' + prod.datos.map(p=>`<option value="${textoSeguro(p.id)}">${textoSeguro(p.nombre)}</option>`).join('');
-        if (prod.error) {
-            mostrarFalloTabla('stock-body',6,prod.error);
-            mostrarFalloTabla('log-table-body',5,prod.error);
-        } else {
-            if (stockBody) stockBody.innerHTML = prod.datos.map(p=>{
-                const stock = cantidadDisponible(p), minimo = Number(p.stock_minimo ?? 0);
-                const bajo = stock<=minimo;
-                const imagen = String(p.imagen||'').trim();
-                const src = /^https?:\/\//i.test(imagen) ? imagen : (imagen ? '../'+imagen : '../images/images/muffin.jpg');
-                // Evita HTML inyectado en texto y atributos.
-                return `<tr><td><img src="${textoSeguro(src)}" alt="" style="width:45px;height:45px;object-fit:cover;border-radius:5px"></td><td><strong>${textoSeguro(p.nombre)}</strong><br><small>Logística: ${textoSeguro(p.estrategia_logistica || 'PULL')}</small></td><td><strong style="color:${bajo?'#e74c3c':'#16a085'}">${stock} pcs</strong></td><td>${minimo}</td><td><span style="color:${bajo?'#e74c3c':'#16a085'}">${bajo?'Stock Bajo':'Normal'}</span></td><td><i class="bi bi-pencil-square icon-edit" data-id="${textoSeguro(p.id)}" style="cursor:pointer;color:#16a085;margin-right:12px"></i><i class="bi bi-trash icon-delete" data-id="${textoSeguro(p.id)}" style="cursor:pointer;color:#e74c3c"></i></td></tr>`;
+        ['proveedores-body','stock-body','movimientos-body','ordenes-body','log-table-body']
+            .forEach((id, i) => mensajeVacio(id,[5,6,5,6,5][i]));
+        ['scm-total-prov','scm-stock-critico','scm-valor-inv','log-kpi-push','log-kpi-pull']
+            .forEach(id => {const el=document.getElementById(id); if(el) el.textContent='…';});
+
+        function mostrarProveedores() {
+            const lista = estado.proveedores;
+            const tabla = document.getElementById('proveedores-body');
+            proveedoresGlobal = lista;
+            const contador = document.getElementById('scm-total-prov');
+            if(contador) contador.textContent = lista.length;
+            const sel = document.getElementById('proveedor-producto');
+            if(sel) sel.innerHTML='<option value="">Selecciona proveedor...</option>'+
+                lista.map(p=>`<option value="${textoSeguro(p.id)}">${textoSeguro(p.nombre)}</option>`).join('');
+            if(tabla) tabla.innerHTML=lista.map(p=>`<tr>
+                <td><strong>${textoSeguro(p.nombre)}</strong></td><td>${textoSeguro(p.contacto)}</td>
+                <td>${textoSeguro(p.correo)}<br><small>${textoSeguro(p.telefono)}</small></td>
+                <td><span class="badge" style="background:#16a085;color:white">Activo</span></td>
+                <td><i class="bi bi-pencil-square icon-edit-prov" data-id="${textoSeguro(p.id)}" style="cursor:pointer;color:#16a085;margin-right:12px"></i>
+                <i class="bi bi-trash icon-delete-prov" data-id="${textoSeguro(p.id)}" style="cursor:pointer;color:#e74c3c"></i></td>
+            </tr>`).join('') || '<tr><td colspan="5">No hay proveedores registrados.</td></tr>';
+        }
+
+        function mostrarProductos() {
+            const lista = estado.productos;
+            productosGlobal = lista;
+            const tabla = document.getElementById('stock-body');
+            const movSel = document.getElementById('mov-producto');
+            const logSel = document.getElementById('log-producto');
+            const opciones = lista.map(p=>`<option value="${textoSeguro(p.id)}">${textoSeguro(p.nombre)}</option>`).join('');
+            if(movSel) movSel.innerHTML='<option value="">Selecciona un producto</option>'+opciones;
+            if(logSel) logSel.innerHTML='<option value="">Selecciona un producto...</option>'+opciones;
+            let critico=0,normal=0,valor=0,push=0,pull=0;
+            if(tabla) tabla.innerHTML=lista.map(p=>{
+                const stock=cantidadDisponible(p),minimo=Number(p.stock_minimo??0),bajo=stock<=minimo;
+                const imagen=String(p.imagen||'').trim();
+                const src=/^https?:\/\//i.test(imagen)?imagen:(imagen?'../'+imagen:'../images/images/muffin.jpg');
+                return `<tr><td><img src="${textoSeguro(src)}" alt="" style="width:45px;height:45px;object-fit:cover;border-radius:5px"></td>
+                <td><strong>${textoSeguro(p.nombre)}</strong><br><small>Logística: ${textoSeguro(p.estrategia_logistica||'PULL')}</small></td>
+                <td><strong style="color:${bajo?'#e74c3c':'#16a085'}">${stock} pcs</strong></td>
+                <td>${minimo}</td><td><span style="color:${bajo?'#e74c3c':'#16a085'}">${bajo?'Stock Bajo':'Normal'}</span></td>
+                <td><i class="bi bi-pencil-square icon-edit" data-id="${textoSeguro(p.id)}" style="cursor:pointer;color:#16a085;margin-right:12px"></i>
+                <i class="bi bi-trash icon-delete" data-id="${textoSeguro(p.id)}" style="cursor:pointer;color:#e74c3c"></i></td></tr>`;
             }).join('') || '<tr><td colspan="6">No hay productos registrados.</td></tr>';
-            prod.datos.forEach(p => {
-                const stock = cantidadDisponible(p), minimo = Number(p.stock_minimo ?? 0);
-                valor += stock * (Number(p.costo_unitario ?? p.precio ?? 0)||0);
-                if(stock<=minimo) critico++; else normal++;
-                if(String(p.estrategia_logistica || 'PULL').toUpperCase()==='PUSH') push++; else pull++;
-            });
-            const logBody = document.getElementById('log-table-body');
-            if (logBody) logBody.innerHTML = prod.datos.map(p => {
-                const estrategia=String(p.estrategia_logistica || 'PULL').toUpperCase();
-                return `<tr><td>${textoSeguro(p.nombre)}</td><td>${textoSeguro(p.categoria)}</td><td>${cantidadDisponible(p)}</td><td>${Number(p.stock_minimo||0)}</td><td><span class="badge-toggle-est" data-id="${textoSeguro(p.id)}" data-est="${textoSeguro(estrategia)}" style="cursor:pointer;color:${estrategia==='PUSH'?'#16a085':'#0d6efd'}">${textoSeguro(estrategia)} ⇄</span></td></tr>`;
+            const logBody=document.getElementById('log-table-body');
+            if(logBody) logBody.innerHTML=lista.map(p=>{
+                const estrategia=String(p.estrategia_logistica||'PULL').toUpperCase();
+                return `<tr><td>${textoSeguro(p.nombre)}</td><td>${textoSeguro(p.categoria)}</td>
+                <td>${cantidadDisponible(p)}</td><td>${Number(p.stock_minimo||0)}</td>
+                <td><span class="badge-toggle-est" data-id="${textoSeguro(p.id)}" data-est="${textoSeguro(estrategia)}"
+                style="cursor:pointer;color:${estrategia==='PUSH'?'#16a085':'#0d6efd'}">${textoSeguro(estrategia)} ⇄</span></td></tr>`;
             }).join('') || '<tr><td colspan="5">No hay productos registrados.</td></tr>';
+            lista.forEach(p=>{
+                const stock=cantidadDisponible(p),minimo=Number(p.stock_minimo??0);
+                valor+=stock*(Number(p.costo_unitario??p.precio??0)||0);
+                if(stock<=minimo) critico++; else normal++;
+                if(String(p.estrategia_logistica||'PULL').toUpperCase()==='PUSH') push++;else pull++;
+            });
+            const cifras={
+                'scm-stock-critico':critico,
+                'scm-valor-inv':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(valor),
+                'log-kpi-push':push,'log-kpi-pull':pull
+            };
+            Object.entries(cifras).forEach(([id,valor])=>{const el=document.getElementById(id);if(el)el.textContent=valor;});
+            if(typeof Chart!=='undefined' && document.getElementById('saludInventarioChart')){
+                try {chartSalud?.destroy();chartSalud=new Chart(document.getElementById('saludInventarioChart'),{
+                    type:'doughnut',data:{labels:['Normal','Crítico'],datasets:[{data:[normal,critico],backgroundColor:['#16a085','#e74c3c']}]}
+                });} catch(e){console.error('[SCM] Gráfica de inventario:',e);}
+            }
         }
-        const stockCritico = document.getElementById('scm-stock-critico');
-        const valorInv = document.getElementById('scm-valor-inv');
-        if (stockCritico) stockCritico.textContent = prod.error?'—':critico;
-        if (valorInv) valorInv.textContent = prod.error?'—':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(valor);
-        if (document.getElementById('log-kpi-push')) document.getElementById('log-kpi-push').textContent=prod.error?'—':push;
-        if (document.getElementById('log-kpi-pull')) document.getElementById('log-kpi-pull').textContent=prod.error?'—':pull;
-        if (!prod.error && typeof Chart !== 'undefined' && document.getElementById('saludInventarioChart')) {
-            chartSalud?.destroy(); chartSalud = new Chart(document.getElementById('saludInventarioChart'),{type:'doughnut',data:{labels:['Normal','Crítico'],datasets:[{data:[normal,critico],backgroundColor:['#16a085','#e74c3c']}]}});
+
+        function mostrarMovimientos() {
+            const tabla=document.getElementById('movimientos-body');
+            const movs=estado.movimientos;
+            if(tabla) tabla.innerHTML=movs.map(m=>{
+                const producto=estado.productos.find(p=>p.id===m.producto_id);
+                return `<tr><td>${textoSeguro(m.fecha)}</td><td>${textoSeguro(producto?.nombre||m.producto_id)}</td>
+                <td>${textoSeguro(m.tipo)}</td><td>${Number(m.cantidad)||0}</td><td>${textoSeguro(m.motivo)}</td></tr>`;
+            }).join('') || '<tr><td colspan="5">No hay movimientos registrados.</td></tr>';
+            if(typeof Chart!=='undefined' && document.getElementById('movimientosChart')){
+                try {chartMov?.destroy();chartMov=new Chart(document.getElementById('movimientosChart'),{
+                    type:'doughnut',data:{labels:['Entradas','Salidas'],datasets:[{data:[movs.filter(m=>m.tipo==='Entrada').length,movs.filter(m=>m.tipo==='Salida').length],backgroundColor:['#0d6efd','#f39c12']}]}
+                });} catch(e){console.error('[SCM] Gráfica de movimientos:',e);}
+            }
         }
-        const movimientosBody = document.getElementById('movimientos-body');
-        if (mov.error) mostrarFalloTabla('movimientos-body',5,mov.error);
-        else if (movimientosBody) movimientosBody.innerHTML = mov.datos.map(m => {
-            const producto=prod.datos.find(p=>p.id===m.producto_id);
-            return `<tr><td>${textoSeguro(m.fecha)}</td><td>${textoSeguro(producto?.nombre || m.producto_id)}</td><td>${textoSeguro(m.tipo)}</td><td>${Number(m.cantidad)||0}</td><td>${textoSeguro(m.motivo)}</td></tr>`;
-        }).join('') || '<tr><td colspan="5">No hay movimientos registrados.</td></tr>';
-        if (!mov.error && typeof Chart !== 'undefined' && document.getElementById('movimientosChart')) {
-            chartMov?.destroy(); chartMov = new Chart(document.getElementById('movimientosChart'),{type:'doughnut',data:{labels:['Entradas','Salidas'],datasets:[{data:[mov.datos.filter(m=>m.tipo==='Entrada').length,mov.datos.filter(m=>m.tipo==='Salida').length],backgroundColor:['#0d6efd','#f39c12']}]}});
+
+        function mostrarOrdenes() {
+            const tabla=document.getElementById('ordenes-body');
+            if(tabla) tabla.innerHTML=estado.ordenes.map(o=>{
+                const p=estado.productos.find(p=>p.id===o.producto_id);
+                const prov=estado.proveedores.find(p=>p.id===o.proveedor_id);
+                const pendiente=o.estado==='Pendiente';
+                return `<tr><td>${textoSeguro(o.fecha)}</td><td>${textoSeguro(prov?.nombre||'Sin proveedor')}</td>
+                <td>${textoSeguro(p?.nombre||o.producto_id)}</td><td>${Number(o.cantidad)||0} pcs</td>
+                <td>${textoSeguro(o.tipo||o.estado)}</td><td>${pendiente?`<button class="btn-aprobar-orden" type="button"
+                data-id="${textoSeguro(o.id)}" style="background:#0d6efd;color:white;border:0;padding:7px 10px;border-radius:5px;cursor:pointer">Aprobar reabastecimiento</button>`:'Completada'}</td></tr>`;
+            }).join('') || '<tr><td colspan="6">No hay órdenes de compra.</td></tr>';
         }
-        const ordenesBody = document.getElementById('ordenes-body');
-        if (ord.error) mostrarFalloTabla('ordenes-body',6,ord.error);
-        else if (ordenesBody) ordenesBody.innerHTML = ord.datos.map(o => {
-            const p=prod.datos.find(p=>p.id===o.producto_id), proveedor=prov.datos.find(p=>p.id===o.proveedor_id);
-            const pendiente=o.estado==='Pendiente';
-            return `<tr><td>${textoSeguro(o.fecha)}</td><td>${textoSeguro(proveedor?.nombre || 'Sin proveedor')}</td><td>${textoSeguro(p?.nombre || o.producto_id)}</td><td>${Number(o.cantidad)||0} pcs</td><td>${textoSeguro(o.tipo || o.estado)}</td><td>${pendiente?`<button class="btn-aprobar-orden" type="button" data-id="${textoSeguro(o.id)}" style="background:#0d6efd;color:white;border:0;padding:7px 10px;border-radius:5px;cursor:pointer">Aprobar reabastecimiento</button>`:'Completada'}</td></tr>`;
-        }).join('') || '<tr><td colspan="6">No hay órdenes de compra.</td></tr>';
-        // Solo el ERP depende de sus propios datos, nunca de las celdas del SCM.
-        if (!prod.error) renderizarInventarioERP();
+
+        function consultarIndependiente(nombre,ruta,alCargar,tabla,columnas) {
+            return consultarConToken(ruta).then(datos=>{
+                if(!vigente()) return;
+                if(!Array.isArray(datos)) throw new Error(`Formato incorrecto en ${ruta}: se esperaba una lista`);
+                estado[nombre]=datos;
+                alCargar();
+                if(nombre==='productos') {
+                    if(estado.movimientosCargados) mostrarMovimientos();
+                    if(estado.ordenesCargadas) mostrarOrdenes();
+                    renderizarInventarioERP();
+                }
+                if(nombre==='proveedores' && estado.ordenesCargadas) mostrarOrdenes();
+                estado[nombre+'Cargados']=true;
+            }).catch(error=>{
+                if(!vigente()) return;
+                console.error(`[SCM] ${nombre}:`,error);
+                mostrarFalloTabla(tabla,columnas,`No se pudo cargar ${nombre}: ${error.message}`);
+                if(nombre==='productos') {
+                    mostrarFalloTabla('log-table-body',5,`No se pudieron cargar productos: ${error.message}`);
+                    for(const id of ['scm-stock-critico','scm-valor-inv','log-kpi-push','log-kpi-pull']){
+                        const el=document.getElementById(id);if(el)el.textContent='—';
+                    }
+                }
+                if(nombre==='proveedores') {const el=document.getElementById('scm-total-prov');if(el)el.textContent='—';}
+                mostrarNotificacion(`SCM ${nombre}: ${error.message}`);
+            });
+        }
+
+        await Promise.allSettled([
+            consultarIndependiente('proveedores','/proveedores',mostrarProveedores,'proveedores-body',5),
+            consultarIndependiente('productos','/productos',mostrarProductos,'stock-body',6),
+            consultarIndependiente('movimientos','/movimientos',mostrarMovimientos,'movimientos-body',5),
+            consultarIndependiente('ordenes','/ordenes_compra',mostrarOrdenes,'ordenes-body',6)
+        ]);
     }
 
     // Ventas: acceso de solo consulta a productos; evita traer datos de
