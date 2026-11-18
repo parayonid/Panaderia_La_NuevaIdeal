@@ -4,7 +4,19 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "crm-backend/**",
+      "data/**",
+      "*.zip",
+      "**/*.py",
+      "**/*.pyc",
+      "**/serviceAccountKey.json",
+      "**/*.pem",
+      "**/*.key",
+      "**/.env*",
+      "**/README*",
+      "**/package-lock.json",
+      "**/skills-lock.json"
     ],
     "headers": [
       {
