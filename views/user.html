@@ -1,132 +1,108 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Perfil e Historial</title>
-    <link rel="stylesheet" href="../css/styles.css"> <style>
-        body { padding: 40px 20px; }
-        .user-container { max-width: 900px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
-        .user-container h1, .user-container h2 { color: #2D343C; text-align: center; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        table th, table td { border: 1px solid #ddd; padding: 12px; text-align: left; color: #333; }
-        table th { background-color: #4F231C; color: #FFFFFF; }
-
-        /* --- NUEVOS ESTILOS --- */
-        
-        /* Estilo para el nuevo botón de seguimiento */
-        .btn-ver-seguimiento { background-color: #f39c12; }
-        .btn-ver-seguimiento:hover { background-color: #d68910; }
-
-        /* Estilos para el flujo de seguimiento visual */
-        .tracker-list {
-            list-style: none;
-            padding: 0;
-            margin-top: 20px;
-        }
-        .tracker-list li {
-            position: relative;
-            padding: 10px 10px 10px 40px; /* Espacio para el ícono */
-            border-bottom: 1px solid #eee;
-            font-size: 16px;
-        }
-        .tracker-list li:last-child {
-            border-bottom: none;
-        }
-        /* Círculo e ícono */
-        .tracker-list li::before {
-            content: '✔';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background-color: #f0f0f0;
-            font-weight: bold;
-        }
-        
-        /* Estilo para pasos completados */
-        .tracker-list li.step-completed {
-            color: #333;
-        }
-        .tracker-list li.step-completed::before {
-            background-color: #16a085; /* Verde (mismo que .btn-ver-detalles) */
-            color: white;
-        }
-        .tracker-list li.step-completed .step-time {
-            font-size: 0.9em;
-            color: #777;
-        }
-        /* --- FIN DE NUEVOS ESTILOS --- */
-
-    </style>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mi cuenta · La Nueva Ideal</title>
+<link rel="stylesheet" href="../css/styles.css">
+<style>
+  [hidden]{display:none!important}*,*::before,*::after{box-sizing:border-box}
+  body{background:#a46749!important;margin:0!important;padding:0!important;color:#322b2b;font-family:Arial,sans-serif}
+  .cuenta-header{background:#fff;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px max(18px,calc((100vw - 1160px)/2));border-bottom:1px solid #eee}
+  .cuenta-header strong{font-size:20px;color:#4F231C}.cuenta-header a{color:#4F231C;font-weight:650;text-decoration:none}
+  .cuenta-contenedor{width:min(1160px,calc(100% - 36px));margin:35px auto 70px}
+  .cuenta-titulo{color:white;font-size:36px;font-weight:800;line-height:1.2;margin:0 0 8px}.cuenta-subtitulo{color:#fff;margin:0 0 26px}
+  .cuenta-card{background:#fff;border-radius:18px;padding:25px;box-shadow:0 5px 24px rgba(58,25,16,.08);margin-bottom:20px}
+  .cuenta-card h2{font-size:23px!important;margin:0 0 16px;color:#4F231C;text-align:left}
+  .cuenta-nav{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px}
+  .cuenta-nav button{border:1px solid #e5ddd7;background:#fff;color:#4F231C;padding:12px 18px;border-radius:10px;font-weight:700;cursor:pointer}
+  .cuenta-nav button.activa{background:#4F231C;color:#fff}
+  .cuenta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+  .cuenta-form label{display:block;font-weight:650;margin:12px 0 6px;color:#4F231C}
+  .cuenta-form input,.cuenta-form select,.cuenta-form textarea{display:block;width:100%;padding:12px;border:1px solid #d6d0cd;border-radius:8px;background:white;color:#252525;font:inherit}
+  .cuenta-btn,.btn-perfil{display:inline-block;background:#f35200;color:white;border:0;border-radius:9px;padding:11px 18px;cursor:pointer;font-weight:bold;margin:8px 8px 0 0}
+  .btn-perfil{padding:7px 10px;background:#4F231C;font-size:13px}
+  .cuenta-btn:disabled{opacity:.6;cursor:wait}
+  .cuenta-dato{font-size:34px;font-weight:800;color:#4F231C;margin:8px 0}
+  .cuenta-tabla{width:100%;border-collapse:collapse;min-width:550px}.cuenta-tabla th{background:#f6f6f6;color:#4F231C}.cuenta-tabla td,.cuenta-tabla th{padding:13px;text-align:left;border-bottom:1px solid #eee}
+  .cuenta-scroll{overflow-x:auto}.cuenta-nota{font-size:13px;line-height:1.55;color:#6d5c55}
+  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:4000;overflow-y:auto;padding:25px}
+  .modal-content{width:min(700px,100%);margin:25px auto;background:white;border-radius:14px;padding:25px;position:relative}
+  .modal h3{color:#4F231C;margin:0 0 20px}.close-button{cursor:pointer;position:absolute;right:20px;top:14px;font-size:25px}
+  .tracker-list{list-style:none;padding:0}.tracker-list li{border-left:3px solid #16a085;padding:12px 15px;margin:0 0 4px;background:#f5faf8}
+  .step-time{color:#67747b;font-size:13px;margin-top:6px}
+  @media(max-width:650px){.cuenta-card{padding:17px}.cuenta-titulo{font-size:27px}.cuenta-header strong{font-size:16px}}
+</style>
 </head>
 <body>
-    <div class="user-container">
-        <h1>Mi Perfil</h1>
-        <h2>Historial de Pedidos</h2>
-        <a href="../index.html" class="btn-1" style="display: block; width: 200px; margin: 0 auto 30px; text-align: center;">Volver al Inicio</a> <table>
-            <thead>
-                <tr>
-                    <th>ID Pedido</th>
-                    <th>Fecha</th>
-                    <th>Total</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="historial-body"></tbody>
-        </table>
+<header class="cuenta-header"><strong>La Nueva Ideal · Mi cuenta</strong><div><a href="../index.html">Volver a la tienda</a></div></header>
+<main class="cuenta-contenedor">
+  <h1 class="cuenta-titulo">Mi perfil y mis compras</h1>
+  <p class="cuenta-subtitulo">Consulta pedidos, monedero y atención al cliente desde un mismo lugar.</p>
+  <nav class="cuenta-nav" aria-label="Secciones de mi cuenta">
+    <button type="button" class="activa" data-pestana="perfil">Mi perfil</button>
+    <button type="button" data-pestana="pedidos">Mis pedidos</button>
+    <button type="button" data-pestana="monedero">Mi monedero</button>
+    <button type="button" data-pestana="tickets">Atención al cliente</button>
+  </nav>
+  <p id="perfil-mensaje" role="status" aria-live="polite"></p>
+  <section data-vista="perfil" class="cuenta-card">
+    <h2>Datos personales</h2>
+    <p><strong>Correo:</strong> <span id="perfil-correo">Cargando…</span> · <strong>Rol:</strong> <span id="perfil-rol">—</span></p>
+    <form id="perfil-form" class="cuenta-form">
+      <div class="cuenta-grid">
+        <div><label for="perfil-nombre">Nombre</label><input id="perfil-nombre" required maxlength="150"></div>
+        <div><label for="perfil-telefono">Teléfono</label><input id="perfil-telefono" required maxlength="30"></div>
+      </div>
+      <button class="cuenta-btn" type="submit">Guardar mis datos</button>
+    </form>
+    <button type="button" id="cerrar-sesion" class="cuenta-btn" style="background:#4F231C">Cerrar sesión</button>
+  </section>
+  <section data-vista="pedidos" class="cuenta-card" hidden>
+    <h2>Historial de pedidos</h2>
+    <div class="cuenta-scroll"><table class="cuenta-tabla"><thead><tr><th>Folio</th><th>Fecha</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="historial-body"></tbody></table></div>
+    <p class="cuenta-nota">Solo aparecen pedidos realizados desde tu cuenta de Firebase. Las órdenes ERP antiguas sin UID asociado no se atribuyen automáticamente.</p>
+  </section>
+  <section data-vista="monedero" class="cuenta-card" hidden>
+    <h2>Mi monedero</h2>
+    <p>Saldo disponible</p><div class="cuenta-dato" id="monedero-saldo">$0.00</div>
+    <p class="cuenta-nota">El saldo se consulta en el servidor, no en el almacenamiento local del navegador.</p>
+    <div id="contenedor-recarga-demo" class="cuenta-form" hidden>
+      <h3>Recarga simulada (solo demostración académica)</h3>
+      <p class="cuenta-nota">No hay cobro bancario ni dinero real. Disponible solo cuando Render tenga ETAPA4_DEMO_MODE=true.</p>
+      <label for="recarga-monto">Cantidad ficticia en MXN</label>
+      <input id="recarga-monto" type="number" min="1" max="2000" step="1" value="100">
+      <button id="recargar-demo" type="button" class="cuenta-btn">Agregar saldo ficticio</button>
     </div>
-
-    <div id="detalle-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-button">×</span>
-            <h3>Detalles del Pedido</h3>
-            <table id="detalle-pedido-tabla">
-                <thead>
-                    <tr>
-                        <th>Imagen</th>
-                        <th>Producto</th>
-                        <th>Precio</th>
-                    </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div id="seguimiento-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-button">×</span>
-            <h3 id="seguimiento-titulo">Seguimiento del Pedido</h3>
-            
-            <ul class="tracker-list">
-                <li class="step-completed">
-                    <div><strong>Pedido Recibido</strong></div>
-                    <div class="step-time">08/10/2025, 10:30 AM</div>
-                </li>
-                <li class="step-completed">
-                    <div><strong>Pedido en Preparación</strong></div>
-                    <div class="step-time">08/10/2025, 10:45 AM</div>
-                </li>
-                <li class="step-completed">
-                    <div><strong>En Reparto</strong></div>
-                    <div class="step-time">08/10/2025, 11:15 AM</div>
-                </li>
-                <li class="step-completed">
-                    <div><strong>Entregado</strong></div>
-                    <div class="step-time">08/10/2025, 11:40 AM</div>
-                </li>
-            </ul>
-        </div>
-    </div>
-
-    <script src="../js/user.js"></script> </body>
+    <h3>Historial de movimientos</h3>
+    <div class="cuenta-scroll"><table class="cuenta-tabla"><thead><tr><th>Fecha</th><th>Concepto</th><th>Movimiento</th><th>Saldo después</th></tr></thead><tbody id="monedero-movimientos-body"></tbody></table></div>
+  </section>
+  <section data-vista="tickets" class="cuenta-card" hidden>
+    <h2>Atención a clientes</h2>
+    <form id="ticket-form" class="cuenta-form">
+      <div class="cuenta-grid">
+        <div><label for="ticket-asunto">Asunto</label><select id="ticket-asunto"><option>Pedido</option><option>Producto</option><option>Facturación</option><option>Monedero</option><option>Otro</option></select></div>
+        <div><label for="ticket-pedido">Pedido asociado</label><select id="ticket-pedido"><option value="">Sin pedido asociado</option></select></div>
+      </div>
+      <label for="ticket-mensaje">Describe tu solicitud</label><textarea id="ticket-mensaje" required minlength="8" maxlength="2000" rows="4" placeholder="Cuéntanos cómo podemos ayudarte"></textarea>
+      <button id="ticket-enviar" class="cuenta-btn" type="submit">Enviar ticket</button>
+    </form>
+    <h3>Mis tickets</h3>
+    <div class="cuenta-scroll"><table class="cuenta-tabla"><thead><tr><th>Fecha</th><th>Asunto</th><th>Estado</th><th>Respuesta</th></tr></thead><tbody id="tickets-body"></tbody></table></div>
+  </section>
+</main>
+<div id="detalle-modal" class="modal" role="dialog" aria-modal="true" aria-label="Detalles de pedido">
+  <div class="modal-content"><button type="button" class="close-button" data-cerrar-modal="detalle-modal" aria-label="Cerrar">×</button>
+    <h3 id="detalle-titulo">Pedido</h3>
+    <div class="cuenta-scroll"><table id="detalle-pedido-tabla" class="cuenta-tabla"><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody></tbody></table></div>
+    <p><strong>Total:</strong> <span id="detalle-total"></span></p><p><strong>Pago:</strong> <span id="detalle-pago"></span></p>
+    <p class="cuenta-nota">Recibo de demostración. No es CFDI ni comprobante de pago bancario.</p>
+  </div>
+</div>
+<div id="seguimiento-modal" class="modal" role="dialog" aria-modal="true" aria-label="Seguimiento de pedido">
+  <div class="modal-content"><button type="button" class="close-button" data-cerrar-modal="seguimiento-modal" aria-label="Cerrar">×</button>
+    <h3 id="seguimiento-titulo">Seguimiento del pedido</h3><ul id="seguimiento-pasos" class="tracker-list"></ul>
+  </div>
+</div>
+<script type="module" src="../js/user.js?v=4.0"></script>
+</body>
 </html>
