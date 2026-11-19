@@ -968,3 +968,16 @@ except ImportError:
     from etapa4 import construir_router_etapa4
 
 app.include_router(construir_router_etapa4(db, permitir_roles))
+
+# =========================================================
+# MANTENIMIENTO — MONEDEROS DE CLIENTES
+# =========================================================
+
+try:
+    from .mantenimiento import construir_router_mantenimiento
+except ImportError:
+    from mantenimiento import construir_router_mantenimiento
+
+app.include_router(
+    construir_router_mantenimiento(db, permitir_roles)
+)
