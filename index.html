@@ -7,19 +7,6 @@
     <title>La Nueva Ideal</title>
     <link rel="stylesheet" href="css/styles.css">
     <style>#nav-admin[hidden] { display: none !important; }</style>
-
-<style id="etapa4-estilos">
-[hidden]{display:none!important}
-.etapa4-input{display:block;width:100%;padding:11px;margin:8px 0 13px;border:1px solid #d6cfd0;border-radius:8px;background:white;color:#333;font:inherit}
-.etapa4-info{font-size:13px;line-height:1.5;color:#634e46}
-#checkout-error{color:#b42318;font-weight:700}
-.checkout-content{max-height:calc(100vh - 50px);overflow-y:auto}
-.carrito-cantidad{padding:3px 8px;margin:0 3px;border-radius:5px;cursor:pointer}
-.product[hidden]{display:none!important}
-.catalogo-controles{display:flex;flex-wrap:wrap;gap:12px;margin:14px 0 22px}
-.catalogo-controles input,.catalogo-controles select{border:1px solid #ddd;border-radius:8px;padding:11px;color:#4F231C;background:white}
-@media(max-width:650px){.checkout-grid{display:block!important}}
-</style>
 </head>
 
 <body>
@@ -48,8 +35,6 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-gear-fill" viewBox="0 0 16 16"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311a1.464 1.464 0 0 1-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413-1.4-2.397 0-2.81l.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" /></svg>
                 </a>
                 
-                <span id="estado-sesion" aria-live="polite" style="display:none;font-size:12px;color:#4F231C"></span>
-                <button type="button" id="cerrar-sesion-tienda" hidden style="border:0;border-radius:7px;background:#4F231C;color:white;padding:8px;cursor:pointer">Cerrar sesión</button>
                 <a href="views/user.html" class="nav-icon" id="nav-profile" title="Mi Perfil e Historial">
                     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-person-fill" viewBox="0 0 16 16"><path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" /></svg>
                 </a>
@@ -59,12 +44,11 @@
                         <img src="images/images/car.svg" id="ig-carrito" alt="Carrito de compras">
                         <div id="carrito">
                             <table id="lista-carrito">
-                                <thead><tr><th>Imagen</th><th>Nombre</th><th>Precio</th><th>Cantidad</th><th>Acciones</th></tr></thead>
+                                <thead><tr><th>Imagen</th><th>Nombre</th><th>Precio</th><th></th></tr></thead>
                                 <tbody></tbody>
                             </table>
                             <a href="#" id="vaciar-carrito" class="btn-2">Vaciar carrito</a>
-                            <p id="carrito-aviso" class="etapa4-info" role="status" hidden></p>
-                            <div id="checkout"><p>Artículos: <span id="carrito-cantidad-total">0</span></p><p>Total estimado: $<span id="total">0.00</span></p><a href="#" id="finalizar-compra" class="btn-2">Finalizar compra</a></div>
+                            <div id="checkout"><p>Total: $<span id="total">0</span></p><a href="#" id="finalizar-compra" class="btn-2">Finalizar compra</a></div>
                         </div>
                     </li>
                 </ul>
@@ -82,7 +66,6 @@
 
    <section class="products container" id="lista-1">
             <h2>Panes</h2>
-            <div class="catalogo-controles"><input type="search" id="buscador-productos" placeholder="Buscar productos..." aria-label="Buscar productos"><select id="ordenar-productos" aria-label="Ordenar"><option value="normal">Orden habitual</option><option value="menor">Menor precio</option><option value="mayor">Mayor precio</option></select></div>
             <!-- Dejamos este contenedor vacío para que Firebase lo llene -->
             <div class="products-content" id="contenedor-panes"></div>
         </section>
@@ -184,62 +167,208 @@
     </div>
 
 
-    <div id="checkout-modal" class="modal" style="display:none;z-index:3000">
-    <div class="modal-content checkout-content">
-      <button type="button" id="close-checkout" class="close-button" aria-label="Cerrar">×</button>
-      <h2>Finalizar compra</h2>
-      <p class="etapa4-info">El total se calcula en el servidor. Los pagos bancarios quedan pendientes de verificación.</p>
-      <div class="checkout-grid">
-        <div class="checkout-left">
-          <div class="checkout-section"><h3>Datos de entrega</h3>
-            <label for="checkout-entrega">Modalidad</label>
-            <select class="etapa4-input" id="checkout-entrega"><option value="recoger">Recoger en tienda</option><option value="domicilio">Entrega a domicilio</option></select>
-            <div id="checkout-direccion-contenedor" hidden><label for="checkout-direccion">Dirección</label><textarea id="checkout-direccion" class="etapa4-input" maxlength="240" rows="2"></textarea></div>
-          </div>
-          <div class="checkout-section"><h3>Promociones</h3><label for="checkout-cupon">Código de descuento</label><input class="etapa4-input" id="checkout-cupon" maxlength="36" placeholder="Cupón"><button type="button" id="checkout-aplicar-cupon" class="btn-2">Aplicar</button></div>
-          <div class="checkout-section"><h3>Método de pago</h3>
-            <label for="checkout-metodo">Selecciona un método</label>
-            <select id="checkout-metodo" class="etapa4-input"><option value="monedero">Monedero electrónico</option><option value="demo" hidden>Pago simulado (pruebas)</option><option value="transferencia">Transferencia (pendiente)</option><option value="qr">QR (pendiente)</option><option value="cheque">Cheque (pendiente)</option></select>
-            <p>Saldo disponible: <strong id="wallet-balance">$0.00</strong></p>
-            <p id="checkout-demo-aviso" class="etapa4-info" hidden>Solo en un proyecto de pruebas. No implica dinero real.</p>
-            <label><input type="checkbox" id="invoice-check"> Solicitar factura (sin emisión CFDI real)</label>
-          </div>
+    <div id="checkout-modal" class="modal" style="display: none;">
+        <div class="modal-content checkout-content">
+            <span class="close-button" id="close-checkout">×</span>
+            <h2>Finalizar Compra</h2>
+            
+            <div class="checkout-grid">
+                <div class="checkout-left">
+                    
+                    <div class="checkout-section">
+                        <h3>📄 Datos Fiscales</h3>
+                        <label class="row">
+                            <input type="checkbox" id="invoice-check"> 
+                            Requiero Factura (CFDI)
+                        </label>
+                        
+                        <div id="fiscal-form" style="display:none; margin-top:15px;">
+                            <label>Tipo de Persona:</label>
+                            <select id="fiscal-type" style="width:100%; padding:8px; margin-bottom:10px;">
+                                <option value="fisica">Persona Física</option>
+                                <option value="moral">Persona Moral</option>
+                            </select>
+
+                            <input type="text" id="fiscal-rfc" placeholder="RFC" style="width:100%; margin-bottom:10px;">
+                            <input type="text" id="fiscal-name" placeholder="Razón Social / Nombre Completo" style="width:100%; margin-bottom:10px;">
+                            <select id="fiscal-regime" style="width:100%; padding:8px; margin-bottom:10px;">
+                                <option value="">Selecciona Régimen Fiscal...</option>
+                                <option value="601">General de Ley Personas Morales</option>
+                                <option value="605">Sueldos y Salarios</option>
+                                <option value="626">Régimen Simplificado de Confianza</option>
+                            </select>
+                            <input type="text" id="fiscal-cp" placeholder="Código Postal Fiscal" style="width:100%;">
+                        </div>
+                    </div>
+
+                    <div class="checkout-section">
+                        <h3>💳 Método de Pago</h3>
+                        
+                        <label class="payment-option">
+                            <input type="radio" name="payment-method" value="wallet">
+                            <strong>Monedero Electrónico</strong>
+                            <span class="badge-wallet">Saldo: $<span id="wallet-balance">500.00</span></span>
+                        </label>
+
+                        <label class="payment-option">
+                            <input type="radio" name="payment-method" value="qr">
+                            <strong>Pago con QR (Efectivo)</strong>
+                        </label>
+                        <div id="qr-info" class="payment-details" style="display:none;">
+                            <p>Escanea este código en caja o con tu app bancaria:</p>
+                            <div class="qr-placeholder">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PagoLaNuevaIdeal" alt="QR Pago">
+                            </div>
+                        </div>
+
+                        <label class="payment-option">
+                            <input type="radio" name="payment-method" value="deposit">
+                            <strong>Depósito / Transferencia</strong>
+                        </label>
+                        <div id="deposit-info" class="payment-details" style="display:none;">
+                            <p>Banco: BBVA<br>Cuenta: 0123456789<br>CLABE: 012001001234567890<br>Ref: Tu Pedido</p>
+                        </div>
+
+                        <label class="payment-option">
+                            <input type="radio" name="payment-method" value="cheque">
+                            <strong>Cheque (Contraentrega)</strong>
+                        </label>
+                        <div id="cheque-info" class="payment-details" style="display:none;">
+                            <p>Prepara tu cheque a nombre de: <strong>La Nueva Ideal S.A. de C.V.</strong></p>
+                            <p style="font-size:0.8rem;">* Se validará al momento de la entrega.</p>
+                        </div>
+
+                        <label class="payment-option">
+                            <input type="radio" name="payment-method" value="card" checked>
+                            <strong>Tarjeta de Crédito/Débito</strong>
+                        </label>
+                        
+                        <div id="card-form-container" class="payment-details" style="display:block;"> 
+                            <input type="text" id="card-number" placeholder="Número de Tarjeta (16 dígitos)" maxlength="16" style="width:100%; padding:8px; margin-bottom:10px; border:1px solid #ccc; border-radius:4px;">
+                            <div class="card-row" style="display:flex; gap:10px; margin-bottom:10px;">
+                                <input type="text" id="card-expiry" placeholder="MM/AA" maxlength="5" style="width:50%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                                <input type="password" id="card-cvv" placeholder="CVV" maxlength="4" style="width:50%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                            </div>
+                            <input type="text" id="card-name" placeholder="Nombre del Titular" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="checkout-right">
+                    <h3>Resumen</h3>
+                    <p>Subtotal: $<span id="checkout-subtotal">0.00</span></p>
+                    <p>Donación: $<span id="checkout-donation">0.00</span></p>
+                    <hr>
+                    <p style="font-size: 1.2rem; font-weight: bold;">Total a Pagar: $<span id="checkout-total">0.00</span></p>
+                    <button class="btn-1" id="btn-pay-now" style="width:100%; margin-top:20px;">Pagar Ahora</button>
+                    
+                    <div class="checkout-policies">
+                        <small>
+                            * Al confirmar, aceptas que los productos perecederos no tienen devolución. 
+                            Revisa nuestras <a href="views/devoluciones.html" target="_blank" style="color: #fff; text-decoration: underline;">políticas de venta</a>.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span style="font-size: 1.1rem;">🔒</span>
+                <p style="margin: 0;">Este sitio implementa <strong>certificación digital simulada</strong> para reforzar la confianza en el usuario.</p>
+            </div>
+            </div>
+    </div>
+
+    <div id="cfdi-modal" class="modal" style="display: none; z-index: 3001;">
+        <div class="modal-content cfdi-content">
+            <span class="close-button" id="close-cfdi">×</span>
+            
+            <div class="cfdi-header">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h2 style="margin:0; color:#333;">LA NUEVA IDEAL</h2>
+                        <small>RFC: <strong>IDE800101XYZ</strong></small><br>
+                        <small>Régimen Fiscal: 601 - General de Ley Personas Morales</small>
+                    </div>
+                    <div style="text-align:right;">
+                        <h3 style="margin:0; color:#4F231C;">FACTURA</h3>
+                        <p style="margin:0; font-size:0.8rem;">Folio Fiscal (UUID):</p>
+                        <p style="margin:0; font-family:monospace; font-size:0.8rem;">A1B2C3D4-E5F6-7890-1234-567890ABCDEF</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cfdi-body">
+                <p><strong>Receptor:</strong> <span id="cfdi-client-name">PUBLICO EN GENERAL</span></p>
+                <p><strong>RFC:</strong> <span id="cfdi-client-rfc">XAXX010101000</span></p>
+                <p><strong>Uso CFDI:</strong> G03 - Gastos en general</p>
+                
+                <table class="cfdi-table">
+                    <thead>
+                        <tr>
+                            <th>Cant.</th>
+                            <th>Concepto</th>
+                            <th>Precio Unit.</th>
+                            <th>Importe</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cfdi-items">
+                        </tbody>
+                </table>
+
+                <div style="text-align:right; margin-top:10px;">
+                    <p>Subtotal: $<span id="cfdi-subtotal">0.00</span></p>
+                    <p>IVA (16%): $<span id="cfdi-tax">0.00</span></p>
+                    <p style="font-weight:bold; font-size:1.1rem;">Total: $<span id="cfdi-total">0.00</span></p>
+                </div>
+            </div>
+
+            <div class="cfdi-footer">
+                <div class="cfdi-qr">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://verificacfdi.facturaelectronica.sat.gob.mx" alt="QR SAT">
+                </div>
+                <div class="cfdi-stamps">
+                    <p><strong>Sello Digital del CFDI:</strong></p>
+                    <p class="stamp-text">k8Js9Lq2WzX4cR5vB7nM1...[Firma Digital Simulada]...aB3cD4eF5g</p>
+                    <p><strong>Sello del SAT:</strong></p>
+                    <p class="stamp-text">XyZ1aB2cD3eF4gH5...[Sello SAT Simulado]...9iJ8kL7mN6</p>
+                    <p>Este documento es una representación impresa de un CFDI.</p>
+                </div>
+            </div>
+
+            <div class="cfdi-actions">
+                <button class="btn-1" id="btn-email-cfdi">✉ Enviar por Correo</button>
+                <button class="btn-2" id="btn-download-cfdi">⬇ Descargar XML/PDF</button>
+            </div>
         </div>
-        <div class="checkout-right"><h3>Resumen</h3>
-          <div id="checkout-desglose">Se calculará en el servidor.</div>
-          <p id="checkout-error" role="alert" hidden></p>
-          <p class="etapa4-info">Nunca ingreses números reales de tarjeta o CVV.</p>
-          <button type="button" id="btn-pay-now" class="btn-1">Confirmar pedido</button>
-          <span id="checkout-subtotal" hidden>0</span><span id="checkout-total" hidden>0</span>
+    </div>
+
+    <div id="receipt-modal" class="modal" style="display: none; z-index: 3001;">
+        <div class="modal-content" style="text-align: center; max-width: 400px; border: 2px dashed #4F231C;">
+            <span class="close-button" id="close-receipt">×</span>
+            <h3 style="color: #4F231C;">RECIBO DE COMPRA</h3>
+            <p style="font-size: 0.9rem; color: #555;">La Nueva Ideal</p>
+            <hr style="border: 0; border-top: 1px dashed #ccc; margin: 10px 0;">
+            <p><strong>Fecha:</strong> <span id="receipt-date"></span></p>
+            <p><strong>Folio:</strong> #<span id="receipt-id"></span></p>
+            <p style="font-size: 1.2rem; margin: 15px 0;"><strong>Total Pagado: $<span id="receipt-total"></span></strong></p>
+            <p style="font-size: 0.8rem;">Gracias por su preferencia.</p>
+            
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                <button class="btn-1" id="btn-email-receipt">✉ Enviar por Correo</button>
+                <button class="btn-2" id="btn-close-receipt-action">Cerrar</button>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
-  
-  <div id="receipt-modal" class="modal" style="display:none;z-index:3001">
-    <div class="modal-content" style="max-width:430px;text-align:center;border:2px dashed #4F231C">
-      <button type="button" id="close-receipt" class="close-button" aria-label="Cerrar">×</button>
-      <h3>Pedido registrado</h3><p>La Nueva Ideal</p>
-      <p>Fecha: <span id="receipt-date"></span></p>
-      <p>Folio: <strong id="receipt-id"></strong></p>
-      <p>Total: $<strong id="receipt-total"></strong></p>
-      <p>Estado: <span id="receipt-estado"></span></p>
-      <p id="receipt-aviso" class="etapa4-info"></p>
-      <p class="etapa4-info">Recibo comercial académico; no es factura CFDI.</p>
-      <a href="views/user.html" class="btn-2">Mis pedidos</a>
-      <button type="button" id="btn-close-receipt-action" class="btn-2">Cerrar</button>
+
+    <div id="error-modal" class="modal" style="display: none; z-index: 3002;">
+        <div class="modal-content" style="text-align: center; max-width: 400px; border-top: 5px solid #ef4444;">
+            <span class="close-button" id="close-error">×</span>
+            <div style="font-size: 3rem; margin-bottom: 10px;">❌</div>
+            <h3 style="color: #ef4444; margin-top: 0;">¡Error en el Pago!</h3>
+            <p id="error-message" style="color: #555; margin-bottom: 20px;">Ocurrió un problema con tu solicitud.</p>
+            <button class="btn-1" id="btn-retry" style="background-color: #ef4444;">Intentar de nuevo</button>
+        </div>
     </div>
-  </div>
-  <div id="detalle-producto-modal" class="modal" style="display:none;z-index:3000">
-    <div class="modal-content" style="max-width:600px">
-      <button type="button" id="cerrar-detalle-producto" class="close-button" aria-label="Cerrar">×</button>
-      <img id="detalle-producto-img" width="170" alt="Producto seleccionado">
-      <h2 id="detalle-producto-nombre"></h2><p id="detalle-producto-descripcion"></p><p id="detalle-producto-stock"></p>
-      <strong id="detalle-producto-precio"></strong>
-      <button type="button" id="detalle-producto-agregar" class="btn-1">Agregar al carrito</button>
-    </div>
-  </div>
-  
 
     <footer class="footer-ideal" id="footer">
     
@@ -320,8 +449,166 @@
     </div>
 </footer>
 
+    <!-- Carrito y monedero: compatibilidad sin modificar el HTML original -->
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+  const $ = id => document.getElementById(id);
+
+  // Carrito: conservar la tabla y añadir únicamente cantidades y avisos.
+  const encabezado = document.querySelector('#lista-carrito thead tr');
+  if (encabezado?.children.length === 4) {
+    encabezado.children[3].textContent = 'Cantidad';
+    const acciones = document.createElement('th');
+    acciones.textContent = 'Acciones';
+    encabezado.append(acciones);
+  }
+
+  if (!$('carrito-aviso')) {
+    const aviso = document.createElement('p');
+    aviso.id = 'carrito-aviso';
+    aviso.hidden = true;
+    aviso.setAttribute('role', 'status');
+    aviso.style.cssText = 'font-size:13px;color:#4F231C;margin:8px 0';
+    $('vaciar-carrito')?.after(aviso);
+  }
+
+  if (!$('carrito-cantidad-total')) {
+    const p = document.createElement('p');
+    p.append('Productos: ');
+    const cuenta = document.createElement('span');
+    cuenta.id = 'carrito-cantidad-total';
+    cuenta.textContent = '0';
+    p.append(cuenta);
+    $('checkout')?.prepend(p);
+  }
+
+  const estilos = document.createElement('style');
+  estilos.textContent = '.carrito-cantidad{padding:3px 8px;margin:0 3px;border:1px solid #ddd;border-radius:5px;cursor:pointer}#checkout-desglose p{margin:6px 0}#checkout-desglose p:last-child{display:none}';
+  document.head.append(estilos);
+
+  // Monedero: mostrar el saldo REAL y el acceso a su recarga desde Mi perfil.
+  const saldo = $('wallet-balance');
+  if (saldo) {
+    const prefijo = saldo.previousSibling;
+    if (prefijo?.nodeType === Node.TEXT_NODE) {
+      prefijo.textContent = prefijo.textContent.replace(/Saldo:\s*\$/, 'Saldo: ');
+    }
+    saldo.textContent = '$0.00';
+
+    const enlace = document.createElement('p');
+    enlace.style.cssText = 'font-size:13px;margin:7px 0 14px';
+    const a = document.createElement('a');
+    a.href = 'views/user.html';
+    a.textContent = 'Consultar o recargar en Mi perfil → Mi monedero';
+    a.style.cssText = 'color:#4F231C;text-decoration:underline';
+    enlace.append(a);
+    saldo.closest('label')?.after(enlace);
+  }
+
+  // Mantener tus botones de radio originales: traducirlos al valor del backend.
+  const metodos = { wallet: 'monedero', deposit: 'transferencia', qr: 'qr', cheque: 'cheque' };
+  const selector = document.createElement('select');
+  selector.id = 'checkout-metodo';
+  selector.hidden = true;
+  for (const [radio, metodo] of Object.entries(metodos)) {
+    const opcion = document.createElement('option');
+    opcion.value = metodo;
+    opcion.textContent = radio;
+    selector.append(opcion);
+  }
+  $('checkout-modal')?.querySelector('.modal-content')?.prepend(selector);
+
+  // No solicitar datos bancarios que todavía no se procesan en el proyecto.
+  const tarjeta = document.querySelector('input[name="payment-method"][value="card"]');
+  if (tarjeta) {
+    tarjeta.checked = false;
+    tarjeta.disabled = true;
+    tarjeta.closest('label')?.querySelector('strong')?.append(' (no disponible)');
+  }
+  const formularioTarjeta = $('card-form-container');
+  if (formularioTarjeta) {
+    formularioTarjeta.style.display = 'none';
+    formularioTarjeta.querySelectorAll('input').forEach(input => input.disabled = true);
+  }
+
+  function sincronizarPago() {
+    const elegido = document.querySelector('input[name="payment-method"]:checked');
+    selector.value = metodos[elegido?.value] || 'transferencia';
+    for (const [id, valor] of [['qr-info','qr'],['deposit-info','deposit'],['cheque-info','cheque']]) {
+      const detalle = $(id);
+      if (detalle) detalle.style.display = elegido?.value === valor ? 'block' : 'none';
+    }
+  }
+
+  const transferencia = document.querySelector('input[name="payment-method"][value="deposit"]');
+  if (transferencia) transferencia.checked = true;
+  document.querySelectorAll('input[name="payment-method"]').forEach(r => r.addEventListener('change', sincronizarPago));
+  sincronizarPago();
+
+  // No mostrar datos de transferencia ni códigos QR ficticios como si fueran cobros reales.
+  if ($('deposit-info')) $('deposit-info').textContent = 'Pedido pendiente de pago. Solicita los datos bancarios oficiales a la panadería.';
+  if ($('qr-info')) $('qr-info').textContent = 'Pedido pendiente de pago. No hay cobro QR automático.';
+
+  // La cotización del carrito se calcula en FastAPI.
+  const derecha = document.querySelector('#checkout-modal .checkout-right');
+  if (derecha) {
+    const desglose = document.createElement('div');
+    desglose.id = 'checkout-desglose';
+    desglose.textContent = 'Calculando desde el servidor…';
+    derecha.querySelector('h3')?.after(desglose);
+
+    const subtotal = $('checkout-subtotal')?.closest('p');
+    if (subtotal) subtotal.style.display = 'none';
+    const donacion = $('checkout-donation')?.closest('p');
+    if (donacion) donacion.style.display = 'none';
+
+    const error = document.createElement('p');
+    error.id = 'checkout-error';
+    error.hidden = true;
+    error.setAttribute('role','alert');
+    error.style.cssText = 'color:#7c281e;background:#fff1ec;border-left:4px solid #e25742;border-radius:6px;padding:10px;font-weight:600';
+    $('btn-pay-now')?.before(error);
+
+    const boton = $('btn-pay-now');
+    if (boton) boton.textContent = 'Confirmar pedido';
+  }
+
+  // Un pedido pendiente no debe mostrarse como un pago ya realizado.
+  const totalRecibo = $('receipt-total');
+  const negrita = totalRecibo?.closest('strong');
+  if (negrita) {
+    negrita.childNodes.forEach(n => {
+      if (n.nodeType === Node.TEXT_NODE) n.textContent = n.textContent.replace('Total Pagado', 'Total del pedido');
+    });
+    const estado = document.createElement('p');
+    estado.innerHTML = '<strong>Estado:</strong> <span id="receipt-estado">Pendiente</span>';
+    negrita.closest('p')?.after(estado);
+    const aclaracion = document.createElement('p');
+    aclaracion.id = 'receipt-aviso';
+    aclaracion.style.cssText = 'font-size:13px;color:#4F231C';
+    estado.after(aclaracion);
+  }
+
+  // Evitar solicitar una compra con monedero sin saldo suficiente.
+  $('btn-pay-now')?.addEventListener('click', event => {
+    if (selector.value !== 'monedero') return;
+    const disponible = Number((saldo?.textContent || '0').replace(/[^\d.-]/g,''));
+    const total = Number($('checkout-total')?.textContent || '0');
+    if (Number.isFinite(disponible) && Number.isFinite(total) && disponible < total) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const error = $('checkout-error');
+      if (error) {
+        error.textContent = 'Saldo insuficiente. Entra a Mi perfil → Mi monedero para recargar (si tu cuenta está autorizada), o selecciona una opción de pago pendiente.';
+        error.hidden = false;
+      }
+    }
+  }, true);
+});
+    </script>
+
     <!-- Scripts cargados una sola vez, después de todos los modales y formularios. -->
-    <script type="module" src="js/auth.js?v=4.5"></script>
-    <script type="module" src="js/script.js?v=4.5"></script>
+    <script type="module" src="js/auth.js?v=3.1"></script>
+    <script type="module" src="js/script.js?v=4.9"></script>
 </body>
 </html>
