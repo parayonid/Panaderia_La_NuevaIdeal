@@ -958,3 +958,13 @@ def crear_orden_cliente(
                 "Consulta los logs de Render."
             )
         ) from exc
+
+
+# ETAPA 4: checkout, pedidos, monedero, promociones e impuestos.
+# NO modifica los endpoints existentes CRM/SCM/ERP.
+try:
+    from .etapa4 import construir_router_etapa4
+except ImportError:
+    from etapa4 import construir_router_etapa4
+
+app.include_router(construir_router_etapa4(db, permitir_roles))

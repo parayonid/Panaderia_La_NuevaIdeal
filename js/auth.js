@@ -1,412 +1,738 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { 
-    getAuth, 
-    signInWithEmailAndPassword, 
-    createUserWithEmailAndPassword,
-    sendPasswordResetEmail,
-    onAuthStateChanged
+
+import {
+  initializeApp,
+  getApps,
+  getApp
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-import { 
-    getFirestore, 
-    collection, 
-    onSnapshot, 
-    doc, 
-    setDoc,
-    getDoc
+
+import {
+  getFirestore,
+  collection,
+  onSnapshot,
+  doc,
+  setDoc,
+  getDoc
 } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
-// --- CONFIGURACIÓN DE FIREBASE ---
+// ======================================================
+// CONFIGURACIÓN FIREBASE
+// ======================================================
+
 const firebaseConfig = {
-    apiKey: "AIzaSyBns2UIA_ED5CsjBMEmJxUYLqxp1PRXlGo",
-    authDomain: "weblanuevaideal.firebaseapp.com",
-    projectId: "weblanuevaideal",
-    storageBucket: "weblanuevaideal.firebasestorage.app",
-    messagingSenderId: "783648403901",
-    appId: "1:783648403901:web:f52f6438c6afcf12cb62d4"
+  apiKey: "AIzaSyBns2UIA_ED5CsjBMEmJxUYLqxp1PRXlGo",
+  authDomain: "weblanuevaideal.firebaseapp.com",
+  projectId: "weblanuevaideal",
+  storageBucket: "weblanuevaideal.firebasestorage.app",
+  messagingSenderId: "783648403901",
+  appId: "1:783648403901:web:f52f6438c6afcf12cb62d4"
 };
 
-const app = initializeApp(firebaseConfig);
+const app = getApps().length
+  ? getApp()
+  : initializeApp(firebaseConfig);
+
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Tres perfiles del panel; los compradores siguen siendo "cliente".
-const ROLES_PANEL = new Set(["admin", "ventas", "logistica"]);
-const ROLES_VALIDOS = new Set([...ROLES_PANEL, "cliente"]);
+const ROLES_PANEL = new Set([
+  "admin",
+  "ventas",
+  "logistica"
+]);
+
+const ROLES_VALIDOS = new Set([
+  "admin",
+  "ventas",
+  "logistica",
+  "cliente"
+]);
 
 function normalizarRol(valor) {
-    return typeof valor === "string" ? valor.trim().toLowerCase() : "";
+  return typeof valor === "string"
+    ? valor.trim().toLowerCase()
+    : "";
 }
 
+function $(id) {
+  return document.getElementById(id);
+}
 
-document.addEventListener('DOMContentLoaded', () => {
+function escaparHTML(valor) {
+  return String(valor ?? "").replace(
+    /[&<>"']/g,
+    caracter => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    })[caracter]
+  );
+}
 
-    // ==========================================
-    // 1. ALTERNANCIA DE PESTAÑAS (LOGIN / REGISTRO)
-    // ==========================================
-    const tabLogin = document.getElementById('tab-login');
-    const tabRegister = document.getElementById('tab-register');
-    const formLogin = document.getElementById('login-form');
-    const formRegister = document.getElementById('register-form');
-    const loginModal = document.getElementById('login-modal');
+document.addEventListener("DOMContentLoaded", () => {
+  const tabLogin = $("tab-login");
+  const tabRegister = $("tab-register");
 
-    // El enlace al panel se oculta por defecto en index.html.
-    // Esta visibilidad es UX; la autorización real depende de Firestore/API.
-    const enlaceAdmin = document.getElementById('nav-admin');
-    onAuthStateChanged(auth, async (usuario) => {
-        if (enlaceAdmin) enlaceAdmin.hidden = true;
-        if (!usuario) {
-            localStorage.removeItem('usuarioActual');
-            localStorage.removeItem('isLoggedIn');
-            return;
+  const formLogin = $("login-form");
+  const formRegister = $("register-form");
+  const loginModal = $("login-modal");
+
+  const regPassword = $("reg-password");
+  const btnSubmitReg = $("btn-submit-reg");
+
+  const errorReg = $("reg-error");
+  const errorLogin = $("login-error");
+
+  const enlaceAdmin = $("nav-admin");
+
+  // ======================================================
+  // VISIBILIDAD DEL PANEL POR ROL
+  // ======================================================
+
+  onAuthStateChanged(auth, async usuario => {
+    if (enlaceAdmin) {
+      enlaceAdmin.hidden = true;
+    }
+
+    if (!usuario) {
+      localStorage.removeItem("usuarioActual");
+      localStorage.removeItem("isLoggedIn");
+      return;
+    }
+
+    try {
+      const perfil = await getDoc(
+        doc(db, "usuarios", usuario.uid)
+      );
+
+      if (auth.currentUser?.uid !== usuario.uid) {
+        return;
+      }
+
+      const rol = perfil.exists()
+        ? normalizarRol(perfil.data().rol)
+        : "";
+
+      if (!ROLES_VALIDOS.has(rol)) {
+        return;
+      }
+
+      if (enlaceAdmin) {
+        enlaceAdmin.hidden = !ROLES_PANEL.has(rol);
+      }
+    } catch (error) {
+      console.error(
+        "[Navegación] No se pudo consultar el rol:",
+        error.code || error
+      );
+
+      if (enlaceAdmin) {
+        enlaceAdmin.hidden = true;
+      }
+    }
+  });
+
+  // ======================================================
+  // PESTAÑAS DE LOGIN Y REGISTRO
+  // ======================================================
+
+  if (tabLogin && tabRegister) {
+    tabLogin.addEventListener("click", () => {
+      tabLogin.classList.add("active");
+      tabRegister.classList.remove("active");
+
+      if (formLogin) {
+        formLogin.style.display = "block";
+      }
+
+      if (formRegister) {
+        formRegister.style.display = "none";
+        formRegister.reset();
+      }
+    });
+
+    tabRegister.addEventListener("click", () => {
+      tabRegister.classList.add("active");
+      tabLogin.classList.remove("active");
+
+      if (formRegister) {
+        formRegister.style.display = "block";
+      }
+
+      if (formLogin) {
+        formLogin.style.display = "none";
+        formLogin.reset();
+      }
+    });
+  }
+
+  // ======================================================
+  // VALIDACIÓN DE CONTRASEÑAS
+  // ======================================================
+
+  const reglas = {
+    length: $("rule-length"),
+    upper: $("rule-upper"),
+    number: $("rule-number"),
+    special: $("rule-special")
+  };
+
+  function actualizarRegla(elemento, valida) {
+    if (!elemento) return;
+
+    elemento.className = valida ? "valid" : "invalid";
+
+    const icono = document.createElement("i");
+
+    icono.className = valida
+      ? "bi bi-check-circle-fill"
+      : "bi bi-x-circle";
+
+    // Conservar la etiqueta original de la regla.
+    const texto = elemento.dataset.texto ||
+      elemento.textContent.trim();
+
+    elemento.dataset.texto = texto;
+    elemento.replaceChildren(
+      icono,
+      document.createTextNode(` ${texto}`)
+    );
+  }
+
+  function validarContrasena(password) {
+    const longitud = password.length >= 8;
+    const mayuscula = /[A-Z]/.test(password);
+    const numero = /[0-9]/.test(password);
+    const especial = /[@$!%*?&]/.test(password);
+
+    actualizarRegla(reglas.length, longitud);
+    actualizarRegla(reglas.upper, mayuscula);
+    actualizarRegla(reglas.number, numero);
+    actualizarRegla(reglas.special, especial);
+
+    return (
+      longitud &&
+      mayuscula &&
+      numero &&
+      especial
+    );
+  }
+
+  if (regPassword) {
+    regPassword.addEventListener("input", evento => {
+      const valida = validarContrasena(
+        evento.target.value
+      );
+
+      if (btnSubmitReg) {
+        btnSubmitReg.disabled = !valida;
+      }
+    });
+  }
+
+  // ======================================================
+  // REGISTRO DE NUEVOS CLIENTES
+  // ======================================================
+
+  if (formRegister) {
+    formRegister.addEventListener(
+      "submit",
+      async evento => {
+        evento.preventDefault();
+
+        const email = $("reg-email")
+          .value.trim().toLowerCase();
+
+        const password = regPassword.value;
+        const nombre = $("reg-name").value.trim();
+        const telefono = $("reg-phone").value.trim();
+
+        if (!nombre || !validarContrasena(password)) {
+          if (errorReg) {
+            errorReg.textContent =
+              "Revisa tu nombre y contraseña.";
+            errorReg.style.display = "block";
+          }
+          return;
         }
+
+        if (btnSubmitReg) {
+          btnSubmitReg.disabled = true;
+          btnSubmitReg.textContent = "Registrando...";
+        }
+
+        if (errorReg) {
+          errorReg.style.display = "none";
+        }
+
+        let credencial;
+
+        // PASO 1: CREAR LA CUENTA EN AUTHENTICATION
+
         try {
-            const perfil = await getDoc(doc(db, 'usuarios', usuario.uid));
-            // Evitar actualizar el menú con el resultado de una sesión antigua.
-            if (auth.currentUser?.uid !== usuario.uid) return;
-            const rol = perfil.exists() ? normalizarRol(perfil.data().rol) : '';
-            if (!ROLES_VALIDOS.has(rol)) return;
-            if (enlaceAdmin) enlaceAdmin.hidden = !ROLES_PANEL.has(rol);
+          credencial = await createUserWithEmailAndPassword(
+            auth,
+            email,
+            password
+          );
         } catch (error) {
-            console.error('[Navegación] No se pudo consultar el rol:', error.code || error);
-            if (enlaceAdmin) enlaceAdmin.hidden = true;
+          console.error(
+            "[Registro/Authentication]",
+            error.code,
+            error
+          );
+
+          if (errorReg) {
+            errorReg.style.display = "block";
+
+            if (error.code === "auth/email-already-in-use") {
+              errorReg.textContent =
+                "Este correo ya tiene una cuenta. " +
+                "Inicia sesión en lugar de registrarte nuevamente.";
+            } else if (error.code === "auth/invalid-email") {
+              errorReg.textContent =
+                "El formato del correo no es válido.";
+            } else {
+              errorReg.textContent =
+                "No se pudo crear la cuenta: " +
+                (error.code || error.message);
+            }
+          }
+
+          if (btnSubmitReg) {
+            btnSubmitReg.disabled = false;
+            btnSubmitReg.textContent = "Registrarme";
+          }
+
+          return;
         }
-    });
 
-    if (tabLogin && tabRegister) {
-        tabLogin.addEventListener('click', () => {
-            tabLogin.classList.add('active');
-            tabRegister.classList.remove('active');
-            formLogin.style.display = 'block';
-            formRegister.style.display = 'none';
-            if (formRegister) formRegister.reset();
-        });
+        // PASO 2: CREAR EL DOCUMENTO EN FIRESTORE
+        // IMPORTANTE: usar credencial.user, no userCredential.user.
 
-        tabRegister.addEventListener('click', () => {
-            tabRegister.classList.add('active');
-            tabLogin.classList.remove('active');
-            formRegister.style.display = 'block';
-            formLogin.style.display = 'none';
-            if(formLogin) formLogin.reset();
-        });
-    }
+        try {
+          await setDoc(
+            doc(db, "usuarios", credencial.user.uid),
+            {
+              nombre,
+              telefono,
+              correo: credencial.user.email,
+              rol: "cliente",
+              fechaRegistro: new Date()
+            }
+          );
 
-    // ==========================================
-    // 2. VALIDACIÓN VISUAL DE CONTRASEÑA EN TIEMPO REAL
-    // ==========================================
-    const regPassword = document.getElementById('reg-password');
-    const btnSubmitReg = document.getElementById('btn-submit-reg');
-    const rules = {
-        length: document.getElementById('rule-length'),
-        upper: document.getElementById('rule-upper'),
-        number: document.getElementById('rule-number'),
-        special: document.getElementById('rule-special')
-    };
+          localStorage.setItem("isLoggedIn", "true");
 
-    const updateRule = (element, isValid) => {
-        if (!element) return;
-        if (isValid) {
-            element.className = 'valid';
-            element.innerHTML = '<i class="bi bi-check-circle-fill"></i> ' + element.innerText.replace(/[^a-zA-Z0-9 ÁÉÍÓÚáéíóú@$!%*?&()]/g, '').trim();
-        } else {
-            element.className = 'invalid';
-            element.innerHTML = '<i class="bi bi-x-circle"></i> ' + element.innerText.replace(/[^a-zA-Z0-9 ÁÉÍÓÚáéíóú@$!%*?&()]/g, '').trim();
+          if (loginModal) {
+            loginModal.style.display = "none";
+          }
+
+          window.location.href = "views/user.html";
+        } catch (error) {
+          console.error(
+            "[Registro/Firestore]",
+            error.code,
+            error
+          );
+
+          if (errorReg) {
+            errorReg.style.display = "block";
+            errorReg.textContent =
+              "La cuenta se creó en Authentication, " +
+              "pero no se pudo guardar el perfil en Firestore " +
+              `(${error.code || error.name || "error desconocido"}). ` +
+              "No vuelvas a registrarla con el mismo correo.";
+          }
+        } finally {
+          if (btnSubmitReg) {
+            btnSubmitReg.disabled = false;
+            btnSubmitReg.textContent = "Registrarme";
+          }
         }
-    };
+      }
+    );
+  }
 
-    if (regPassword) {
-        regPassword.addEventListener('input', (e) => {
-            const val = e.target.value;
-            const validLength = val.length >= 8;
-            const validUpper = /[A-Z]/.test(val);
-            const validNumber = /[0-9]/.test(val);
-            const validSpecial = /[@$!%*?&]/.test(val);
+  // ======================================================
+  // INICIO DE SESIÓN
+  // ======================================================
 
-            updateRule(rules.length, validLength);
-            updateRule(rules.upper, validUpper);
-            updateRule(rules.number, validNumber);
-            updateRule(rules.special, validSpecial);
+  if (formLogin) {
+    formLogin.addEventListener(
+      "submit",
+      async evento => {
+        evento.preventDefault();
 
-            // Se habilita el botón únicamente cuando todas las reglas se cumplen
-            if (btnSubmitReg) {
-                btnSubmitReg.disabled = !(validLength && validUpper && validNumber && validSpecial);
-            }
-        });
-    }
+        const email = $("login-email").value.trim();
+        const password = $("login-password").value;
 
-    // ==========================================
-    // 3. REGISTRO DE CUENTA EN FIREBASE
-    // ==========================================
-    const errorReg = document.getElementById('reg-error');
-    if (formRegister) {
-        formRegister.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('reg-email').value.trim().toLowerCase();
-            const pass = regPassword.value;
-            const nombre = document.getElementById('reg-name').value.trim();
-            const telefono = document.getElementById('reg-phone').value.trim();
+        const boton = formLogin.querySelector(
+          'button[type="submit"]'
+        );
 
-            if (btnSubmitReg) btnSubmitReg.textContent = "Registrando...";
-            if (errorReg) errorReg.style.display = "none";
+        if (boton) {
+          boton.disabled = true;
+          boton.textContent = "Verificando...";
+        }
 
-            let credencial;
-            try {
-                credencial = await createUserWithEmailAndPassword(auth, email, pass);
-            } catch (error) {
-                console.error('[Registro/Auth]',error.code,error);
-                if (errorReg) {
-                    errorReg.style.display='block';
-                    errorReg.textContent = error.code==='auth/email-already-in-use'
-                        ? 'Este correo ya existe en Authentication. Inicia sesión; no crees otra cuenta.'
-                        : error.code==='auth/invalid-email' ? 'Correo no válido.'
-                        : `No se pudo crear la cuenta en Authentication (${error.code || 'error de conexión'}).`;
-                }
-                if (btnSubmitReg) btnSubmitReg.textContent='Registrarme';
-                return;
-            }
-          
-try {
-    await setDoc(doc(db, "usuarios", credencial.user.uid), {
-        nombre,
-        telefono,
-        correo: credencial.user.email,
-        rol: "cliente",
-        fechaRegistro: new Date()
-    });
+        if (errorLogin) {
+          errorLogin.style.display = "none";
+        }
 
-    localStorage.setItem('isLoggedIn', 'true');
+        function mostrarErrorLogin(texto) {
+          if (!errorLogin) return;
 
-    if (loginModal) {
-        loginModal.style.display = 'none';
-    }
+          errorLogin.textContent = texto;
+          errorLogin.style.display = "block";
+        }
 
-    window.location.href = 'views/user.html';
+        try {
+          let usuario;
 
-} catch (error) {
-    console.error('[Registro/Firestore]', error.code, error);
+          try {
+            const resultado = await signInWithEmailAndPassword(
+              auth,
+              email,
+              password
+            );
 
-    if (errorReg) {
-        errorReg.style.display = 'block';
-        errorReg.textContent =
-            `No se pudo guardar el perfil (${error.code || error.message}).`;
-    }
-}
+            usuario = resultado.user;
+          } catch (error) {
+            console.error(
+              "[Login/Authentication]",
+              error.code,
+              error
+            );
 
-        });
-    }
-
-    
-    // ==========================================
-    // 4. INICIO DE SESIÓN EN FIREBASE
-    // ==========================================
-    const errorLogin = document.getElementById('login-error');
-    if (formLogin) {
-        formLogin.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-
-            const email = document.getElementById('login-email').value.trim();
-            const pass = document.getElementById('login-password').value;
-            const btnSubmit = formLogin.querySelector('button[type="submit"]');
-            if (btnSubmit) {
-                btnSubmit.textContent = 'Verificando...';
-                btnSubmit.disabled = true;
-            }
-            if (errorLogin) errorLogin.style.display = 'none';
-
-            const mostrarErrorLogin = (mensaje) => {
-                if (errorLogin) {
-                    errorLogin.textContent = mensaje;
-                    errorLogin.style.display = 'block';
-                }
+            const mensajes = {
+              "auth/invalid-credential":
+                "Correo o contraseña incorrectos.",
+              "auth/wrong-password":
+                "Correo o contraseña incorrectos.",
+              "auth/user-not-found":
+                "Esta cuenta no existe.",
+              "auth/invalid-email":
+                "El correo no es válido.",
+              "auth/user-disabled":
+                "Esta cuenta está deshabilitada.",
+              "auth/network-request-failed":
+                "No se pudo conectar con Firebase.",
+              "auth/too-many-requests":
+                "Demasiados intentos. Intenta más tarde.",
+              "auth/unauthorized-domain":
+                "Este dominio no está autorizado en Firebase."
             };
 
-            try {
-                // Paso 1: Auth (correo y contraseña).
-                // Paso 2: Perfil Firestore. No confundir errores de un paso con el otro.
-                let user;
-                try {
-                    const resultado = await signInWithEmailAndPassword(auth, email, pass);
-                    user = resultado.user;
-                    console.info('[Login] Firebase Authentication correcto.');
-                } catch (error) {
-                    console.error('[Login] Falló Firebase Authentication:', error.code, error);
-                    const mensajesAuth = {
-                        'auth/invalid-credential': 'Correo o contraseña incorrectos.',
-                        'auth/wrong-password': 'Correo o contraseña incorrectos.',
-                        'auth/user-not-found': 'La cuenta no existe en Firebase Authentication.',
-                        'auth/invalid-email': 'El formato del correo no es válido.',
-                        'auth/user-disabled': 'Esta cuenta está deshabilitada.',
-                        'auth/network-request-failed': 'No se pudo conectar con Firebase. Comprueba tu conexión.',
-                        'auth/too-many-requests': 'Demasiados intentos. Inténtalo más tarde.',
-                        'auth/operation-not-allowed': 'El inicio de sesión por correo no está habilitado en Firebase.',
-                        'auth/unauthorized-domain': 'Este dominio no está autorizado en Firebase Authentication.'
-                    };
-                    mostrarErrorLogin(mensajesAuth[error.code] || `Error de autenticación: ${error.code || 'desconocido'}`);
-                    return;
-                }
+            mostrarErrorLogin(
+              mensajes[error.code] ||
+              `Error: ${error.code || "desconocido"}`
+            );
 
-                let userDoc;
-                try {
-                    userDoc = await getDoc(doc(db, 'usuarios', user.uid));
-                    console.info('[Login] Lectura del perfil de Firestore correcta.');
-                } catch (error) {
-                    console.error('[Login] Falló la consulta del perfil en Firestore:', error.code, error);
-                    if (error.code === 'permission-denied') {
-                        mostrarErrorLogin('Inicio de sesión correcto, pero Firestore denegó la lectura de tu perfil (permission-denied). Revisa las reglas de usuarios.');
-                    } else if (error.code === 'unavailable') {
-                        mostrarErrorLogin('Inicio de sesión correcto, pero Firestore no está disponible. Comprueba tu conexión.');
-                    } else {
-                        mostrarErrorLogin(`Inicio de sesión correcto, pero falló Firestore: ${error.code || 'desconocido'}`);
-                    }
-                    return;
-                }
+            return;
+          }
 
-                if (!userDoc.exists()) {
-                    console.warn('[Login] Falta el documento usuarios/{UID}. UID:', user.uid);
-                    mostrarErrorLogin('La contraseña fue aceptada, pero no existe tu perfil en la colección usuarios de Firestore.');
-                    return;
-                }
+          // OBTENER ROL DESDE FIRESTORE
 
-                const userRole = normalizarRol(userDoc.data().rol);
-                if (!ROLES_VALIDOS.has(userRole)) {
-                    console.warn('[Login] Rol inválido:', userRole);
-                    mostrarErrorLogin('Tu cuenta inició sesión, pero tiene un rol sin configurar correctamente en Firestore.');
-                    return;
-                }
+          let perfil;
 
-                localStorage.setItem('isLoggedIn', 'true');
-                localStorage.setItem('usuarioActual', JSON.stringify({
-                    correo: user.email,
-                    rol: userRole
-                }));
-                if (loginModal) loginModal.style.display = 'none';
-                window.location.href = ROLES_PANEL.has(userRole)
-                    ? 'views/admin.html'
-                    : 'views/user.html';
-            } finally {
-                if (btnSubmit) {
-                    btnSubmit.textContent = 'Entrar';
-                    btnSubmit.disabled = false;
-                }
+          try {
+            perfil = await getDoc(
+              doc(db, "usuarios", usuario.uid)
+            );
+          } catch (error) {
+            console.error(
+              "[Login/Firestore]",
+              error.code,
+              error
+            );
+
+            mostrarErrorLogin(
+              "La contraseña es correcta, pero no " +
+              "se pudo consultar el perfil: " +
+              (error.code || "error desconocido")
+            );
+
+            return;
+          }
+
+          if (!perfil.exists()) {
+            mostrarErrorLogin(
+              "Tu cuenta existe en Authentication, " +
+              "pero no tiene un perfil en Firestore."
+            );
+
+            return;
+          }
+
+          const rol = normalizarRol(
+            perfil.data().rol
+          );
+
+          if (!ROLES_VALIDOS.has(rol)) {
+            mostrarErrorLogin(
+              "El rol de tu usuario no es válido. " +
+              "Consulta al administrador."
+            );
+
+            return;
+          }
+
+          // GUARDAR DATOS PARA COMPATIBILIDAD VISUAL.
+          // LOS PERMISOS REALES LOS VERIFICA FASTAPI.
+
+          localStorage.setItem("isLoggedIn", "true");
+
+          localStorage.setItem(
+            "usuarioActual",
+            JSON.stringify({
+              correo: usuario.email,
+              rol
+            })
+          );
+
+          if (loginModal) {
+            loginModal.style.display = "none";
+          }
+
+          window.location.href = ROLES_PANEL.has(rol)
+            ? "views/admin.html"
+            : "views/user.html";
+
+        } finally {
+          if (boton) {
+            boton.disabled = false;
+            boton.textContent = "Entrar";
+          }
+        }
+      }
+    );
+  }
+
+  // ======================================================
+  // CARGAR PRODUCTOS DESDE FIRESTORE
+  // ======================================================
+
+  const contenedorPanes = $("contenedor-panes");
+  const contenedorCafes = $("contenedor-cafes");
+
+  if (contenedorPanes || contenedorCafes) {
+    onSnapshot(
+      collection(db, "productos"),
+      snapshot => {
+        if (contenedorPanes) {
+          contenedorPanes.replaceChildren();
+        }
+
+        if (contenedorCafes) {
+          contenedorCafes.replaceChildren();
+        }
+
+        snapshot.forEach(documento => {
+          const producto = documento.data();
+
+          const categoria = producto.categoria || "Panes";
+
+          const imagen = producto.imagen ||
+            "images/images/muffin.jpg";
+
+          const imagenSegura =
+            /^https?:\/\//i.test(imagen) ||
+            /^images\//.test(imagen)
+              ? imagen
+              : "images/images/muffin.jpg";
+
+          const precioValido =
+            producto.precio !== undefined &&
+            producto.precio !== null &&
+            Number.isFinite(Number(producto.precio));
+
+          const precio = precioValido
+            ? new Intl.NumberFormat("es-MX", {
+                style: "currency",
+                currency: "MXN"
+              }).format(Number(producto.precio))
+            : "Precio no disponible";
+
+          const tarjeta = document.createElement("div");
+          tarjeta.className = "product";
+
+          tarjeta.innerHTML = `
+            <img
+              src="${escaparHTML(imagenSegura)}"
+              alt="${escaparHTML(producto.nombre)}"
+            >
+            <div class="product-txt">
+              <h3>${escaparHTML(producto.nombre)}</h3>
+              <p>
+                Disponible:
+                ${Number(producto.stock_actual ?? producto.cantidad ?? 0)}
+                pz
+              </p>
+              <p class="precio">${escaparHTML(precio)}</p>
+              <a
+                href="#"
+                class="agregar-carrito btn-2"
+                data-id="${escaparHTML(documento.id)}"
+              >
+                agregar al carrito
+              </a>
+            </div>
+          `;
+
+          if (categoria === "Cafés" && contenedorCafes) {
+            contenedorCafes.append(tarjeta);
+          } else if (contenedorPanes) {
+            contenedorPanes.append(tarjeta);
+          }
+        });
+      },
+      error => {
+        console.error(
+          "[Catálogo Firestore]",
+          error.code,
+          error
+        );
+
+        const texto =
+          "No se pudo cargar el catálogo. " +
+          "Revisa los permisos de Firestore.";
+
+        if (contenedorPanes) {
+          contenedorPanes.textContent = texto;
+        }
+
+        if (contenedorCafes) {
+          contenedorCafes.textContent = texto;
+        }
+      }
+    );
+  }
+
+  // ======================================================
+  // RECUPERAR CONTRASEÑA
+  // ======================================================
+
+  const authTabsContainer = $("auth-tabs-container");
+
+  const forgotPwdForm = $("forgot-pwd-form");
+  const linkForgotPwd = $("link-forgot-pwd");
+  const linkBackLogin = $("link-back-login");
+
+  const btnSubmitForgot = $("btn-submit-forgot");
+  const errorForgot = $("forgot-error");
+  const successForgot = $("forgot-success");
+
+  if (linkForgotPwd) {
+    linkForgotPwd.addEventListener(
+      "click",
+      evento => {
+        evento.preventDefault();
+
+        if (formLogin) {
+          formLogin.style.display = "none";
+        }
+
+        if (formRegister) {
+          formRegister.style.display = "none";
+        }
+
+        if (authTabsContainer) {
+          authTabsContainer.style.display = "none";
+        }
+
+        if (forgotPwdForm) {
+          forgotPwdForm.style.display = "block";
+          forgotPwdForm.reset();
+        }
+
+        if (errorForgot) {
+          errorForgot.style.display = "none";
+        }
+
+        if (successForgot) {
+          successForgot.style.display = "none";
+        }
+      }
+    );
+  }
+
+  if (linkBackLogin) {
+    linkBackLogin.addEventListener(
+      "click",
+      evento => {
+        evento.preventDefault();
+
+        if (forgotPwdForm) {
+          forgotPwdForm.style.display = "none";
+        }
+
+        if (authTabsContainer) {
+          authTabsContainer.style.display = "flex";
+        }
+
+        tabLogin?.click();
+      }
+    );
+  }
+
+  if (forgotPwdForm) {
+    forgotPwdForm.addEventListener(
+      "submit",
+      async evento => {
+        evento.preventDefault();
+
+        const email = $("forgot-email").value.trim();
+
+        if (btnSubmitForgot) {
+          btnSubmitForgot.textContent = "Enviando...";
+          btnSubmitForgot.disabled = true;
+        }
+
+        if (errorForgot) {
+          errorForgot.style.display = "none";
+        }
+
+        if (successForgot) {
+          successForgot.style.display = "none";
+        }
+
+        try {
+          await sendPasswordResetEmail(auth, email);
+
+          if (successForgot) {
+            successForgot.style.display = "block";
+          }
+
+          forgotPwdForm.reset();
+        } catch (error) {
+          if (errorForgot) {
+            errorForgot.style.display = "block";
+
+            if (error.code === "auth/invalid-email") {
+              errorForgot.textContent =
+                "El correo no es válido.";
+            } else {
+              errorForgot.textContent =
+                "No fue posible enviar el correo. Intenta de nuevo.";
             }
-        });
-    }
-
-    // ==========================================
-    // 5. CARGA DE PRODUCTOS DE FIRESTORE A LA TIENDA
-    // ==========================================
-    const contenedorPanes = document.getElementById('contenedor-panes');
-    const contenedorCafes = document.getElementById('contenedor-cafes');
-    
-
-    if (contenedorPanes || contenedorCafes) {
-        onSnapshot(collection(db, "productos"), (snapshot) => {
-            if(contenedorPanes) contenedorPanes.innerHTML = '';
-            if(contenedorCafes) contenedorCafes.innerHTML = '';
-            
-            if (snapshot.empty) return;
-
-            snapshot.forEach((docSnap) => {
-                const p = docSnap.data();
-                const escapar = valor => String(valor ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-                const img = p.imagen || 'images/images/muffin.jpg';
-                const imgSeguro = /^https?:\/\//i.test(img) || /^images\//.test(img) ? img : 'images/images/muffin.jpg';
-                const precio = p.precio !== undefined && p.precio !== null && Number.isFinite(Number(p.precio)) ? new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(Number(p.precio)) : 'Precio no disponible';
-                const categoria = p.categoria || 'Panes';
-
-                // Plantilla HTML del producto
-                const htmlProducto = `
-                    <div class="product">
-                        <img src="${escapar(imgSeguro)}" alt="${escapar(p.nombre)}">
-                        <div class="product-txt">
-                            <h3>${escapar(p.nombre)}</h3>
-                            <p>Disponible: ${p.stock_actual ?? p.cantidad ?? 0} pz</p>
-                            <p class="precio">${precio}</p>
-                            <a href="#" class="agregar-carrito btn-2" data-id="${escapar(docSnap.id)}">agregar al carrito</a>
-                        </div>
-                    </div>`;
-
-                // Clasificador automático
-                if (categoria === 'Cafés' && contenedorCafes) {
-                    contenedorCafes.innerHTML += htmlProducto;
-                } else if (contenedorPanes) {
-                    // Los "Panes" y "Otros" caen en la sección principal
-                    contenedorPanes.innerHTML += htmlProducto;
-                }
-            });
-        }, (error) => {
-            console.error('[Catálogo Firestore]', error.code, error);
-            const mensaje = 'No se pudo cargar el catálogo. Revisa los permisos de lectura de productos en Firestore.';
-            if (contenedorPanes) contenedorPanes.textContent = mensaje;
-            if (contenedorCafes) contenedorCafes.textContent = mensaje;
-        });
-    }
-// ==========================================
-    // 6. RECUPERACIÓN DE CONTRASEÑA
-    // ==========================================
-    const authTabsContainer = document.getElementById('auth-tabs-container');
-    const forgotPwdForm = document.getElementById('forgot-pwd-form');
-    const linkForgotPwd = document.getElementById('link-forgot-pwd');
-    const linkBackLogin = document.getElementById('link-back-login');
-    const btnSubmitForgot = document.getElementById('btn-submit-forgot');
-    const errorForgot = document.getElementById('forgot-error');
-    const successForgot = document.getElementById('forgot-success');
-
-    // Cambiar a la vista de "Recuperar Contraseña"
-    if (linkForgotPwd) {
-        linkForgotPwd.addEventListener('click', (e) => {
-            e.preventDefault();
-            formLogin.style.display = 'none';
-            formRegister.style.display = 'none';
-            authTabsContainer.style.display = 'none'; // Ocultar pestañas
-            forgotPwdForm.style.display = 'block';
-            forgotPwdForm.reset();
-            if(errorForgot) errorForgot.style.display = 'none';
-            if(successForgot) successForgot.style.display = 'none';
-        });
-    }
-
-    // Volver a la vista de "Iniciar Sesión"
-    if (linkBackLogin) {
-        linkBackLogin.addEventListener('click', (e) => {
-            e.preventDefault();
-            forgotPwdForm.style.display = 'none';
-            authTabsContainer.style.display = 'flex'; // Mostrar pestañas
-            if(tabLogin) tabLogin.click(); // Simular clic para acomodar todo
-        });
-    }
-
-    // Enviar el correo de recuperación
-    if (forgotPwdForm) {
-        forgotPwdForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('forgot-email').value.trim();
-            
-            btnSubmitForgot.textContent = "Enviando...";
-            btnSubmitForgot.disabled = true;
-            errorForgot.style.display = "none";
-            successForgot.style.display = "none";
-
-            try {
-                // Función nativa de Firebase que hace toda la magia
-                await sendPasswordResetEmail(auth, email);
-                successForgot.style.display = "block";
-                forgotPwdForm.reset();
-            } catch (error) {
-                errorForgot.style.display = "block";
-                if (error.code === 'auth/user-not-found') {
-                    errorForgot.textContent = "No hay ninguna cuenta registrada con este correo.";
-                } else if (error.code === 'auth/invalid-email') {
-                    errorForgot.textContent = "El formato de correo no es válido.";
-                } else {
-                    errorForgot.textContent = "Ocurrió un error. Intenta de nuevo más tarde.";
-                }
-            } finally {
-                btnSubmitForgot.textContent = "Enviar Enlace";
-                btnSubmitForgot.disabled = false;
-            }
-        });
-    }
-
-
+          }
+        } finally {
+          if (btnSubmitForgot) {
+            btnSubmitForgot.textContent = "Enviar Enlace";
+            btnSubmitForgot.disabled = false;
+          }
+        }
+      }
+    );
+  }
 });
