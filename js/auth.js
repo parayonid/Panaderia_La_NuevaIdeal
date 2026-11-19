@@ -45,13 +45,15 @@ const db = getFirestore(app);
 const ROLES_PANEL = new Set([
   "admin",
   "ventas",
-  "logistica"
+  "logistica",
+  "mantenimiento"
 ]);
 
 const ROLES_VALIDOS = new Set([
   "admin",
   "ventas",
   "logistica",
+  "mantenimiento",
   "cliente"
 ]);
 
@@ -128,6 +130,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (enlaceAdmin) {
         enlaceAdmin.hidden = !ROLES_PANEL.has(rol);
+        enlaceAdmin.href = rol === "mantenimiento"
+          ? "views/etapa4-gestion.html"
+          : "views/admin.html";
       }
     } catch (error) {
       console.error(
@@ -504,9 +509,11 @@ document.addEventListener("DOMContentLoaded", () => {
             loginModal.style.display = "none";
           }
 
-          window.location.href = ROLES_PANEL.has(rol)
-            ? "views/admin.html"
-            : "views/user.html";
+          window.location.href = rol === "mantenimiento"
+            ? "views/etapa4-gestion.html"
+            : ROLES_PANEL.has(rol)
+              ? "views/admin.html"
+              : "views/user.html";
 
         } finally {
           if (boton) {

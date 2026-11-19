@@ -449,7 +449,10 @@ body.dashboard-body.admin-redesign .dashboard-container > section[hidden] {
             <li data-nav-module="erp" data-roles="admin" hidden><a href="#seccion-erp-nivel"><i class="bi bi-layers"></i> Nivel ERP</a></li>
             <li data-nav-module="erp" data-roles="admin" hidden><a href="#seccion-erp-roles"><i class="bi bi-person-gear"></i> Panel por rol</a></li>
         </ul>
-        <div class="sidebar-footer"><a href="../index.html"><i class="bi bi-house-door"></i> Volver a la tienda</a></div>
+        <div class="sidebar-footer">
+            <a href="etapa4-gestion.html" data-roles="admin"><i class="bi bi-wallet2"></i> Mantenimiento · Etapa 4</a>
+            <a href="../index.html"><i class="bi bi-house-door"></i> Volver a la tienda</a>
+        </div>
     </aside>
 
     <main class="main-content admin-main">
@@ -804,7 +807,7 @@ body.dashboard-body.admin-redesign .dashboard-container > section[hidden] {
 
             <section id="seccion-erp-roles" class="crud-section seccion-oculta" data-roles="admin">
                 <div class="erp-head"><div><h2>Panel por rol</h2><p class="erp-subtitle">Los accesos se obtienen del campo <code>rol</code> de los usuarios en Firestore, no de un selector del navegador.</p></div></div>
-                <div class="erp-grid" style="grid-template-columns:repeat(auto-fit,minmax(250px,1fr));"><div class="erp-card erp-role" data-rol-card="admin"><h3><i class="bi bi-person-gear"></i> Administrador</h3><ul><li>Dashboard CRM, clientes y staff</li><li>Productos, inventario y proveedores</li><li>Órdenes de compra SCM</li><li>Órdenes de clientes ERP</li><li>Reportes, nivel ERP y roles</li></ul></div><div class="erp-card erp-role" data-rol-card="ventas"><h3><i class="bi bi-person-badge"></i> Ventas</h3><ul><li>Clientes e interacciones CRM</li><li>Consulta de productos SCM</li><li>Crear y consultar órdenes ERP</li><li>Reportes ERP</li></ul></div><div class="erp-card erp-role" data-rol-card="logistica"><h3><i class="bi bi-box-seam"></i> Logística</h3><ul><li>Productos y proveedores SCM</li><li>Inventario, Kardex y órdenes de compra</li><li>Consulta de órdenes de clientes ERP</li><li>Reportes ERP</li></ul></div></div>
+                <div class="erp-grid" style="grid-template-columns:repeat(auto-fit,minmax(250px,1fr));"><div class="erp-card erp-role" data-rol-card="admin"><h3><i class="bi bi-person-gear"></i> Administrador</h3><ul><li>Dashboard CRM, clientes y staff</li><li>Productos, inventario y proveedores</li><li>Órdenes de compra SCM</li><li>Órdenes de clientes ERP</li><li>Reportes, nivel ERP y roles</li></ul></div><div class="erp-card erp-role" data-rol-card="ventas"><h3><i class="bi bi-person-badge"></i> Ventas</h3><ul><li>Clientes e interacciones CRM</li><li>Consulta de productos SCM</li><li>Crear y consultar órdenes ERP</li><li>Reportes ERP</li></ul></div><div class="erp-card erp-role" data-rol-card="logistica"><h3><i class="bi bi-box-seam"></i> Logística</h3><ul><li>Productos y proveedores SCM</li><li>Inventario, Kardex y órdenes de compra</li><li>Consulta de órdenes de clientes ERP</li><li>Reportes ERP</li></ul></div><div class="erp-card erp-role" data-rol-card="mantenimiento"><h3><i class="bi bi-wallet2"></i> Mantenimiento</h3><ul><li>Consulta de monederos y movimientos</li><li>Ajustes académicos auditados</li><li>Promociones e impuestos</li><li>Tickets de atención</li><li>Sin acceso a CRM, SCM y ERP</li></ul></div></div>
             </section>
         </div>
     </main>
@@ -831,7 +834,7 @@ body.dashboard-body.admin-redesign .dashboard-container > section[hidden] {
     <div id="modal-usuario" class="modal-crm" style="display: none;">
         <div class="modal-crm-content"><div class="modal-crm-header"><h3>Editar Perfil de Usuario</h3><span class="close-crm" onclick="document.getElementById('modal-usuario').style.display='none'">&times;</span></div>
             <form id="form-editar-usuario">
-                <input type="hidden" id="usuario-id"><input type="email" id="usuario-correo" readonly disabled style="margin-bottom:15px; width:100%; padding:10px; background:#eee;"><input type="text" id="usuario-nombre" required placeholder="Nombre" style="margin-bottom:15px; width:100%; padding:10px;"><input type="text" id="usuario-telefono" required placeholder="Teléfono" style="margin-bottom:15px; width:100%; padding:10px;"><select id="usuario-rol" required style="margin-bottom:15px; width:100%; padding:10px;"><option value="cliente">Cliente Regular</option><option value="admin">Administrador</option><option value="ventas">Ventas</option><option value="logistica">Logística</option></select>
+                <input type="hidden" id="usuario-id"><input type="email" id="usuario-correo" readonly disabled style="margin-bottom:15px; width:100%; padding:10px; background:#eee;"><input type="text" id="usuario-nombre" required placeholder="Nombre" style="margin-bottom:15px; width:100%; padding:10px;"><input type="text" id="usuario-telefono" required placeholder="Teléfono" style="margin-bottom:15px; width:100%; padding:10px;"><select id="usuario-rol" required style="margin-bottom:15px; width:100%; padding:10px;"><option value="cliente">Cliente Regular</option><option value="admin">Administrador</option><option value="ventas">Ventas</option><option value="logistica">Logística</option><option value="mantenimiento">Mantenimiento (Etapa 4)</option></select>
                 <div class="modal-crm-actions"><button type="submit" class="btn-guardar" style="background-color: #4F231C; width:100%;">Guardar Cambios</button></div>
             </form>
         </div>
@@ -916,6 +919,6 @@ body.dashboard-body.admin-redesign .dashboard-container > section[hidden] {
 
      <!-- CONTENEDOR PARA NOTIFICACIONES FLOTANTES (TOASTS) -->
     <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
-    <script type="module" src="../js/admin.js?v=3.4"></script>
+    <script type="module" src="../js/admin.js?v=3.6"></script>
 </body>   
 </html>

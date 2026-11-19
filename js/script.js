@@ -1,4 +1,3 @@
-
 // ======================================================
 // LA NUEVA IDEAL - ETAPA 4
 // CARRITO, CHECKOUT Y PEDIDOS
@@ -11,6 +10,7 @@ import {
 import {
   getAuth, onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBns2UIA_ED5CsjBMEmJxUYLqxp1PRXlGo",
@@ -28,6 +28,12 @@ const app = getApps().length
   : initializeApp(firebaseConfig);
 
 const auth = getAuth(app);
+const db = getFirestore(app);
+
+async function consultarRolUsuario(uid) {
+  const snap = await getDoc(doc(db, "usuarios", uid));
+  return snap.exists() ? String(snap.data().rol || "").toLowerCase().trim() : "";
+}
 
 const $ = id => document.getElementById(id);
 
@@ -998,18 +1004,28 @@ function configurarEventos() {
     }
   );
 
-  // PANEL DE ADMINISTRACIÓN
+  // PANEL DE ADMINISTRACIÓN / MANTENIMIENTO
   $("nav-admin")?.addEventListener(
     "click",
     async evento => {
       evento.preventDefault();
-
       const usuario = await esperarAutenticacion();
-
-      if (usuario) {
-        window.location.href = "views/admin.html";
-      } else {
+      if (!usuario) {
         mostrarModal("login-modal");
+        return;
+      }
+      try {
+        // El perfil lo valida el servidor al acceder a recursos.
+        const perfil = await consultarRolUsuario(usuario.uid);
+        if (perfil === "mantenimiento") {
+          window.location.href = "views/etapa4-gestion.html";
+        } else if (["admin", "ventas", "logistica"].includes(perfil)) {
+          window.location.href = "views/admin.html";
+        } else {
+          aviso("El panel está reservado al personal autorizado.");
+        }
+      } catch (error) {
+        aviso("No fue posible verificar los permisos: " + error.message);
       }
     }
   );

@@ -335,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const u = { id: docSnap.id, ...docSnap.data() };
                 const etiquetas = {
                     admin:['Administrador','#4F231C'], ventas:['Ventas','#155eef'],
-                    logistica:['Logística','#00836a'], cliente:['Cliente','#6c757d']
+                    logistica:['Logística','#00836a'], mantenimiento:['Mantenimiento','#9a4c28'], cliente:['Cliente','#6c757d']
                 };
                 const [etiqueta, color] = etiquetas[u.rol] || ['Sin rol','#6c757d'];
                 const rolBadge = `<span class="badge" style="background:${color};color:white;">${etiqueta}</span>`;

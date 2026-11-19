@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Operación de tienda · La Nueva Ideal</title>
+<style>
+:root{font-family:Inter,system-ui,'Segoe UI',Arial,sans-serif;color:#352b2d;background:#a46749}*{box-sizing:border-box}body{margin:0}header{background:#fff;padding:18px max(22px,5vw);display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}h1{font-size:1.5rem;margin:0}h2{color:#4f231c}a{color:#803d28}main{max-width:1150px;margin:28px auto;padding:0 20px 55px}.panel{background:#fff;padding:24px;border-radius:16px;margin:18px 0;box-shadow:0 4px 18px #4423141a}label{display:block;font-weight:650;margin:12px 0 5px}input,select,textarea,button{font:inherit}input,select,textarea{padding:10px 12px;border:1px solid #c8cbd1;border-radius:7px;max-width:100%;width:100%}button{background:#4f231c;color:#fff;border:0;border-radius:8px;padding:11px 17px;cursor:pointer;margin:12px 6px 0 0}button:hover{background:#713e30}button:disabled{opacity:.55;cursor:not-allowed}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;margin-top:10px}th,td{text-align:left;padding:11px;border-bottom:1px solid #e9e9e9;vertical-align:top}th{background:#f8f4f2;color:#603c32}small,.muted{color:#5a6570}.notice{padding:12px;background:#fff7ed;border-left:4px solid #e9793c;border-radius:5px;margin:10px 0;white-space:pre-wrap}section[hidden]{display:none!important}.pill{display:inline-block;background:#eee5e0;padding:4px 9px;border-radius:99px}header a{font-weight:700}
+</style></head><body>
+<header><div><h1>La Nueva Ideal · Operación de tienda</h1><small>Monederos, promociones, impuestos y atención al cliente · Etapa 4</small></div><a id="volver-admin" href="admin.html">Volver al panel CRM · SCM · ERP</a><a href="../index.html">Ir a la tienda</a></header>
+<main><div id="estado" class="panel" role="status">Comprobando sesión y permisos…</div>
+<section class="panel" id="monederos-seccion" hidden>
+  <h2>Monederos de clientes</h2>
+  <p class="muted">Consulta el saldo de cada cliente y sus movimientos. Los ajustes son ficticios, exigen autorización en Render y siempre se registran en la bitácora.</p>
+  <p id="monederos-resumen" class="muted">Cargando saldos de clientes…</p>
+  <button type="button" id="monederos-actualizar">Actualizar saldos</button>
+  <div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Correo</th><th>Saldo</th><th>Acciones</th></tr></thead><tbody id="monederos-body"></tbody></table></div>
+  <div id="monederos-detalle" hidden style="margin-top:24px;border-top:1px solid #e9e9e9;padding-top:17px">
+    <h3 id="monederos-titulo" style="color:#4f231c">Movimientos</h3>
+    <p id="monederos-saldo" class="muted"></p>
+    <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Saldo resultante</th></tr></thead><tbody id="monederos-movimientos"></tbody></table></div>
+    <form id="monederos-ajuste-form" hidden>
+      <h3 style="color:#4f231c">Ajuste académico de saldo</h3>
+      <p class="notice">No acredita dinero real. Solo funciona con ETAPA4_DEMO_MODE y UID autorizado.</p>
+      <div class="grid">
+        <div><label for="ajuste-operacion">Operación</label><select id="ajuste-operacion"><option value="recarga">Agregar saldo</option><option value="debito">Descontar saldo</option></select></div>
+        <div><label for="ajuste-monto">Monto (MXN)</label><input id="ajuste-monto" type="number" min="1" max="2000" step="0.01" required></div>
+        <div><label for="ajuste-motivo">Motivo obligatorio</label><input id="ajuste-motivo" type="text" minlength="8" maxlength="300" required placeholder="Ej. Recarga de prueba autorizada"></div>
+      </div>
+      <button type="submit" id="ajuste-confirmar">Guardar ajuste en bitácora</button>
+    </form>
+  </div>
+</section>
+<section class="panel" id="tickets-seccion" hidden><h2>Atención a clientes · Tickets</h2><p class="muted">Administrador y Ventas pueden responder solicitudes de clientes.</p><div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Asunto y mensaje</th><th>Estado y respuesta</th><th>Acción</th></tr></thead><tbody id="tickets-body"></tbody></table></div><button type="button" id="tickets-actualizar">Actualizar tickets</button></section>
+<section class="panel" id="pedidos-seccion" hidden><h2>Seguimiento de pedidos de tienda</h2><p class="muted">Administrador y Logística pueden actualizar estados de entrega. Solo los pedidos con pago confirmado se pueden despachar.</p><div class="table-wrap"><table><thead><tr><th>Folio</th><th>Cliente</th><th>Pago</th><th>Entrega</th><th>Acción</th></tr></thead><tbody id="pedidos-body"></tbody></table></div><button type="button" id="pedidos-actualizar">Actualizar pedidos</button></section>
+<section class="panel" id="promociones-seccion" hidden><h2>Promociones</h2><form id="promocion-form" class="grid"><div><label for="codigo">Código</label><input id="codigo" pattern="[A-Z0-9_-]{3,36}" maxlength="36" required placeholder="PAN10"></div><div><label for="tipo">Tipo de descuento</label><select id="tipo"><option value="porcentaje">Porcentaje</option><option value="monto">Monto (MXN)</option></select></div><div><label for="valor">Valor</label><input id="valor" type="number" min="0.01" step="0.01" required></div><div><label for="fecha_fin">Vence (opcional, ISO 8601)</label><input id="fecha_fin" type="datetime-local"></div><div><label><input id="activo" type="checkbox" checked style="width:auto"> Activo</label><button type="submit">Guardar promoción</button></div></form><div class="table-wrap"><table><thead><tr><th>Código</th><th>Tipo</th><th>Valor</th><th>Estado</th></tr></thead><tbody id="promociones-body"></tbody></table></div></section>
+<section class="panel" id="impuestos-seccion" hidden><h2>Impuestos de demostración</h2><p class="notice">La tasa aquí es una configuración académica global, no una determinación fiscal por producto. No genera CFDI.</p><form id="impuestos-form"><div class="grid"><div><label for="tasa">Tasa (%)</label><input id="tasa" type="number" min="0" max="30" step="0.01" required></div><div><label for="nota">Nota</label><input id="nota" maxlength="300"></div></div><button type="submit">Guardar tasa</button></form></section>
+</main><script type="module" src="../js/etapa4-gestion.js?v=4.3"></script></body></html>
