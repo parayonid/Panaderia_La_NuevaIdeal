@@ -1,0 +1,15 @@
+Correo de bienvenida
+====================
+
+Configura estas variables en el entorno del backend (por ejemplo, en Render):
+
+- SMTP_HOST: servidor SMTP del proveedor de correo.
+- SMTP_PORT: puerto STARTTLS (587 por defecto).
+- SMTP_USER y SMTP_PASSWORD: credenciales SMTP; ambas son opcionales solo si
+  el servidor permite envíos sin autenticación.
+- SMTP_FROM: dirección remitente autorizada por el proveedor.
+- FRONTEND_LOGIN_URL: URL HTTPS de inicio de sesión. Por defecto:
+  https://weblanuevaideal.web.app/?login=1
+
+No guardes las credenciales SMTP en el repositorio. El envío requiere estas
+variables y un perfil de usuario ya creado en Firestore.

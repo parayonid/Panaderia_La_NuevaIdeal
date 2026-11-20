@@ -4,9 +4,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
 import firebase_admin
+from email.message import EmailMessage
+from html import escape
 import os
 import json
 import logging 
+import smtplib
+import ssl
 from firebase_admin import credentials, firestore, auth
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
@@ -212,6 +216,96 @@ def raiz(): return {"mensaje": "API de La Nueva Ideal en línea"}
 def salud():
     """Permite verificar el despliegue de Render sin exponer datos o credenciales."""
     return {"estado":"ok", "version":"3.4.0"}
+
+@app.post("/correo/bienvenida")
+def enviar_correo_bienvenida(
+    credenciales: HTTPAuthorizationCredentials = Security(security),
+):
+    try:
+        usuario = auth.verify_id_token(credenciales.credentials)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=401,
+            detail="Token de Firebase inválido o vencido",
+        ) from exc
+
+    correo = usuario.get("email")
+    uid = usuario.get("uid")
+    if not correo or not uid:
+        raise HTTPException(status_code=401, detail="El token no contiene un correo válido")
+
+    perfil = db.collection("usuarios").document(uid).get()
+    if not perfil.exists:
+        raise HTTPException(status_code=409, detail="No se encontró el perfil del usuario")
+    nombre = (perfil.to_dict() or {}).get("nombre") or "cliente"
+
+    smtp_host = os.environ.get("SMTP_HOST", "").strip()
+    smtp_user = os.environ.get("SMTP_USER", "").strip()
+    smtp_password = os.environ.get("SMTP_PASSWORD", "")
+    smtp_from = os.environ.get("SMTP_FROM", "").strip()
+    login_url = os.environ.get(
+        "FRONTEND_LOGIN_URL",
+        "https://weblanuevaideal.web.app/?login=1",
+    ).strip()
+
+    if not smtp_host or not smtp_from or bool(smtp_user) != bool(smtp_password):
+        raise HTTPException(
+            status_code=503,
+            detail="El servicio de correo no está configurado correctamente",
+        )
+    if not login_url.startswith("https://"):
+        raise HTTPException(
+            status_code=503,
+            detail="La dirección segura de inicio de sesión no está configurada",
+        )
+    try:
+        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+        if not 1 <= smtp_port <= 65535:
+            raise ValueError("SMTP_PORT fuera de rango")
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="El puerto SMTP no está configurado correctamente",
+        ) from exc
+
+    try:
+        mensaje = EmailMessage()
+        mensaje["Subject"] = "¡Bienvenido a La Nueva Ideal!"
+        mensaje["From"] = smtp_from
+        mensaje["To"] = correo
+        mensaje.set_content(
+            f"Hola {nombre},\n\n"
+            "¡Te damos la bienvenida a La Nueva Ideal! "
+            "Gracias por crear tu cuenta.\n\n"
+            f"Inicia sesión aquí: {login_url}\n"
+        )
+        mensaje.add_alternative(
+            "<html><body>"
+            f"<p>Hola {escape(str(nombre))},</p>"
+            "<p>¡Te damos la bienvenida a La Nueva Ideal! "
+            "Gracias por crear tu cuenta.</p>"
+            f'<p><a href="{escape(login_url, quote=True)}">'
+            "Iniciar sesión</a></p>"
+            "</body></html>",
+            subtype="html",
+        )
+
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as servidor:
+            servidor.starttls(context=ssl.create_default_context())
+            if smtp_user:
+                servidor.login(smtp_user, smtp_password)
+            servidor.send_message(mensaje)
+    except (OSError, smtplib.SMTPException, ValueError) as exc:
+        logging.getLogger("uvicorn.error").exception(
+            "[CORREO] No se pudo enviar el correo de bienvenida a %s",
+            correo,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail="No se pudo enviar el correo de bienvenida",
+        ) from exc
+
+    return {"mensaje": "Correo de bienvenida enviado"}
 
 @app.post("/clientes", status_code=201, dependencies=[Depends(verificar_token_crm)])
 async def crear_cliente(cliente: Cliente, request: Request):

@@ -41,6 +41,7 @@ const app = getApps().length
 
 const auth = getAuth(app);
 const db = getFirestore(app);
+const API_URL = "https://panaderia-la-nuevaideal.onrender.com";
 
 const ROLES_PANEL = new Set([
   "admin",
@@ -178,6 +179,21 @@ document.addEventListener("DOMContentLoaded", () => {
         formLogin.reset();
       }
     });
+  }
+
+  if (new URLSearchParams(window.location.search).get("login") === "1") {
+    tabLogin?.click();
+    if (loginModal) {
+      loginModal.style.display = "block";
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete("login");
+    window.history.replaceState(
+      null,
+      "",
+      `${url.pathname}${url.search}${url.hash}`
+    );
   }
 
   // ======================================================
@@ -334,6 +350,41 @@ document.addEventListener("DOMContentLoaded", () => {
               rol: "cliente",
               fechaRegistro: new Date()
             }
+          );
+
+          let correoBienvenidaEnviado = false;
+          try {
+            const token = await credencial.user.getIdToken();
+            const respuesta = await fetch(
+              `${API_URL}/correo/bienvenida`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`
+                }
+              }
+            );
+            const resultado = await respuesta.json().catch(() => ({}));
+
+            if (!respuesta.ok) {
+              throw new Error(
+                resultado.detail ||
+                `HTTP ${respuesta.status}`
+              );
+            }
+
+            correoBienvenidaEnviado = true;
+          } catch (error) {
+            console.error(
+              "[Registro/CorreoBienvenida]",
+              error
+            );
+          }
+
+          window.alert(
+            correoBienvenidaEnviado
+              ? "Hemos enviado un correo de bienvenida. Revisa tu bandeja de entrada."
+              : "Tu cuenta se creó, pero no se pudo enviar el correo de bienvenida. Inténtalo más tarde."
           );
 
           localStorage.setItem("isLoggedIn", "true");
