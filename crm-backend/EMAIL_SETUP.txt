@@ -1,15 +1,17 @@
 Correo de bienvenida
 ====================
 
-Configura estas variables en el entorno del backend (por ejemplo, en Render):
+El backend envía el correo mediante la API HTTPS de Brevo (puerto 443), no
+mediante SMTP. No es necesario configurar un puerto SMTP ni credenciales SMTP.
 
-- SMTP_HOST: servidor SMTP del proveedor de correo.
-- SMTP_PORT: puerto STARTTLS (587 por defecto).
-- SMTP_USER y SMTP_PASSWORD: credenciales SMTP; ambas son opcionales solo si
-  el servidor permite envíos sin autenticación.
-- SMTP_FROM: dirección remitente autorizada por el proveedor.
+- BREVO_API_KEY: clave API de Brevo. Se crea desde Configuración de la cuenta
+  > SMTP & API > API keys. No uses una clave SMTP.
+- BREVO_FROM_EMAIL: dirección remitente verificada en Brevo.
+- BREVO_FROM_NAME: nombre visible del remitente (opcional; por defecto
+  "La Nueva Ideal").
 - FRONTEND_LOGIN_URL: URL HTTPS de inicio de sesión. Por defecto:
   https://weblanuevaideal.web.app/?login=1
 
-No guardes las credenciales SMTP en el repositorio. El envío requiere estas
-variables y un perfil de usuario ya creado en Firestore.
+Guarda estas variables en el entorno del backend (por ejemplo, en Render), no
+en el repositorio. Brevo requiere que el remitente esté verificado. El envío
+también requiere un perfil de usuario ya creado en Firestore.

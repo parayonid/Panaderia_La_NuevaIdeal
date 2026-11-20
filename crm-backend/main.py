@@ -4,13 +4,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
 import firebase_admin
-from email.message import EmailMessage
 from html import escape
 import os
 import json
 import logging 
-import smtplib
-import ssl
+from urllib.error import HTTPError, URLError
+from urllib.request import Request as URLRequest, urlopen
 from firebase_admin import credentials, firestore, auth
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
@@ -239,16 +238,18 @@ def enviar_correo_bienvenida(
         raise HTTPException(status_code=409, detail="No se encontró el perfil del usuario")
     nombre = (perfil.to_dict() or {}).get("nombre") or "cliente"
 
-    smtp_host = os.environ.get("SMTP_HOST", "").strip()
-    smtp_user = os.environ.get("SMTP_USER", "").strip()
-    smtp_password = os.environ.get("SMTP_PASSWORD", "")
-    smtp_from = os.environ.get("SMTP_FROM", "").strip()
+    brevo_api_key = os.environ.get("BREVO_API_KEY", "").strip()
+    remitente = os.environ.get("BREVO_FROM_EMAIL", "").strip()
+    nombre_remitente = os.environ.get(
+        "BREVO_FROM_NAME",
+        "La Nueva Ideal",
+    ).strip()
     login_url = os.environ.get(
         "FRONTEND_LOGIN_URL",
         "https://weblanuevaideal.web.app/?login=1",
     ).strip()
 
-    if not smtp_host or not smtp_from or bool(smtp_user) != bool(smtp_password):
+    if not brevo_api_key or not remitente:
         raise HTTPException(
             status_code=503,
             detail="El servicio de correo no está configurado correctamente",
@@ -258,47 +259,56 @@ def enviar_correo_bienvenida(
             status_code=503,
             detail="La dirección segura de inicio de sesión no está configurada",
         )
-    try:
-        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-        if not 1 <= smtp_port <= 65535:
-            raise ValueError("SMTP_PORT fuera de rango")
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail="El puerto SMTP no está configurado correctamente",
-        ) from exc
 
-    try:
-        mensaje = EmailMessage()
-        mensaje["Subject"] = "¡Bienvenido a La Nueva Ideal!"
-        mensaje["From"] = smtp_from
-        mensaje["To"] = correo
-        mensaje.set_content(
-            f"Hola {nombre},\n\n"
-            "¡Te damos la bienvenida a La Nueva Ideal! "
-            "Gracias por crear tu cuenta.\n\n"
-            f"Inicia sesión aquí: {login_url}\n"
-        )
-        mensaje.add_alternative(
+    contenido = {
+        "sender": {
+            "name": nombre_remitente,
+            "email": remitente,
+        },
+        "to": [{"email": correo, "name": str(nombre)}],
+        "subject": "¡Bienvenido a La Nueva Ideal!",
+        "htmlContent": (
             "<html><body>"
             f"<p>Hola {escape(str(nombre))},</p>"
             "<p>¡Te damos la bienvenida a La Nueva Ideal! "
             "Gracias por crear tu cuenta.</p>"
             f'<p><a href="{escape(login_url, quote=True)}">'
             "Iniciar sesión</a></p>"
-            "</body></html>",
-            subtype="html",
-        )
+            "</body></html>"
+        ),
+    }
+    solicitud = URLRequest(
+        "https://api.brevo.com/v3/smtp/email",
+        data=json.dumps(contenido, ensure_ascii=False).encode("utf-8"),
+        headers={
+            "accept": "application/json",
+            "api-key": brevo_api_key,
+            "content-type": "application/json",
+        },
+        method="POST",
+    )
 
-        with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as servidor:
-            servidor.starttls(context=ssl.create_default_context())
-            if smtp_user:
-                servidor.login(smtp_user, smtp_password)
-            servidor.send_message(mensaje)
-    except (OSError, smtplib.SMTPException, ValueError) as exc:
+    try:
+        with urlopen(solicitud, timeout=15) as respuesta:
+            respuesta.read()
+    except HTTPError as exc:
+        try:
+            resultado = json.loads(exc.read().decode("utf-8"))
+            detalle = str(resultado.get("message") or resultado.get("code") or "")
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            detalle = ""
         logging.getLogger("uvicorn.error").exception(
-            "[CORREO] No se pudo enviar el correo de bienvenida a %s",
-            correo,
+            "[CORREO] Brevo rechazó el envío (HTTP %s): %s",
+            exc.code,
+            detalle[:300],
+        )
+        raise HTTPException(
+            status_code=502,
+            detail="No se pudo enviar el correo de bienvenida",
+        ) from exc
+    except (URLError, TimeoutError, OSError) as exc:
+        logging.getLogger("uvicorn.error").exception(
+            "[CORREO] No se pudo conectar con la API de Brevo"
         )
         raise HTTPException(
             status_code=502,
