@@ -246,7 +246,7 @@ def enviar_correo_bienvenida(
     ).strip()
     login_url = os.environ.get(
         "FRONTEND_LOGIN_URL",
-        "https://weblanuevaideal.web.app/?login=1",
+        "https://weblanuevaideal.web.app/?welcome=1",
     ).strip()
 
     if not brevo_api_key or not remitente:

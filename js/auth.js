@@ -88,6 +88,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const formLogin = $("login-form");
   const formRegister = $("register-form");
   const loginModal = $("login-modal");
+  const welcomeScreen = $("welcome-screen");
+  const welcomeContinue = $("welcome-continue");
 
   const regPassword = $("reg-password");
   const btnSubmitReg = $("btn-submit-reg");
@@ -181,19 +183,47 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  if (new URLSearchParams(window.location.search).get("login") === "1") {
+  const searchParams = new URLSearchParams(window.location.search);
+  const mostrarBienvenida =
+    searchParams.get("welcome") === "1" ||
+    searchParams.get("login") === "1";
+
+  function abrirInicioSesion() {
+    if (welcomeScreen) {
+      welcomeScreen.hidden = true;
+    }
+
     tabLogin?.click();
     if (loginModal) {
       loginModal.style.display = "block";
     }
 
     const url = new URL(window.location.href);
+    url.searchParams.delete("welcome");
     url.searchParams.delete("login");
     window.history.replaceState(
       null,
       "",
       `${url.pathname}${url.search}${url.hash}`
     );
+  }
+
+  if (mostrarBienvenida && welcomeScreen) {
+    welcomeScreen.hidden = false;
+    const tiempoBienvenida = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches ? 500 : 3000;
+    const temporizadorBienvenida = window.setTimeout(
+      abrirInicioSesion,
+      tiempoBienvenida
+    );
+
+    welcomeContinue?.addEventListener("click", () => {
+      window.clearTimeout(temporizadorBienvenida);
+      abrirInicioSesion();
+    });
+  } else if (mostrarBienvenida) {
+    abrirInicioSesion();
   }
 
   // ======================================================

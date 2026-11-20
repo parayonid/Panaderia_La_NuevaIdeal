@@ -166,6 +166,21 @@
         </div>
     </div>
 
+    <section id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title" aria-describedby="welcome-description" hidden>
+        <div class="welcome-card">
+            <div class="welcome-mark" aria-hidden="true">
+                <svg viewBox="0 0 64 64" focusable="false">
+                    <path d="M17 33l10 10 21-23"></path>
+                </svg>
+            </div>
+            <p class="welcome-eyebrow">LA NUEVA IDEAL</p>
+            <h1 id="welcome-title">¡Qué gusto tenerte aquí!</h1>
+            <p id="welcome-description">Tu cuenta está lista. Enseguida te llevaremos al inicio de sesión.</p>
+            <div class="welcome-progress" aria-hidden="true"><span></span></div>
+            <button type="button" class="btn-1" id="welcome-continue">Continuar al inicio de sesión</button>
+        </div>
+    </section>
+
 
     <div id="checkout-modal" class="modal" style="display: none;">
         <div class="modal-content checkout-content">
@@ -608,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </script>
 
     <!-- Scripts cargados una sola vez, después de todos los modales y formularios. -->
-    <script type="module" src="js/auth.js?v=3.1"></script>
+    <script type="module" src="js/auth.js?v=3.2"></script>
     <script type="module" src="js/script.js?v=4.9"></script>
 </body>
 </html>
